@@ -376,7 +376,7 @@ export const SiswaDashboard: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-stone-500">
-              NISN: {currentUser.nisn} · Kelas: {currentUser.kelas} ({currentUser.jurusan || 'Reguler'}) · {currentUser.ruangUjian}
+              NISN: {currentUser.nisn} · Kelas: {currentUser.kelas} ({currentUser.jurusan || 'Reguler'}) · {currentUser.ruangUjian || `Ruang Kelas ${currentUser.kelas}`}
             </p>
           </div>
 

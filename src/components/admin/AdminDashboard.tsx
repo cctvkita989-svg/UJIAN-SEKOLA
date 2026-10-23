@@ -2098,7 +2098,7 @@ export const AdminDashboard: React.FC = () => {
                               {s.agama || 'Islam'}
                             </span>
                           </td>
-                          <td className="py-3 px-4 text-slate-600">{s.ruangUjian} • {s.sesiUjian}</td>
+                          <td className="py-3 px-4 text-slate-600">{s.ruangUjian || `Ruang Kelas ${s.kelas}`} • {s.sesiUjian}</td>
                           <td className="py-3 px-4 text-right flex items-center justify-end gap-2">
                             <button
                               type="button"
@@ -2159,7 +2159,7 @@ export const AdminDashboard: React.FC = () => {
                     <th className="py-3 px-4">Tingkat</th>
                     <th className="py-3 px-4">Jurusan</th>
                     <th className="py-3 px-4">Wali Kelas</th>
-                    <th className="py-3 px-4">Lab Ujian</th>
+                    <th className="py-3 px-4">Ruang Ujian</th>
                     <th className="py-3 px-4">Kapasitas</th>
                     <th className="py-3 px-4 text-right">Aksi</th>
                   </tr>
@@ -2171,7 +2171,7 @@ export const AdminDashboard: React.FC = () => {
                       <td className="py-3 px-4 text-slate-600">{c.tingkat}</td>
                       <td className="py-3 px-4 text-slate-600">{c.jurusan}</td>
                       <td className="py-3 px-4 font-medium text-slate-800">{c.waliKelas || '-'}</td>
-                      <td className="py-3 px-4 font-mono text-indigo-600">{c.ruangLab || 'Lab Komputer 01'}</td>
+                      <td className="py-3 px-4 font-mono text-indigo-600">{c.ruangLab || `Ruang Kelas ${c.name}`}</td>
                       <td className="py-3 px-4 font-mono font-bold text-slate-700">{c.totalStudents || 36}</td>
                       <td className="py-3 px-4 text-right">
                         <button

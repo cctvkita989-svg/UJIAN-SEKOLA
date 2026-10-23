@@ -16,7 +16,7 @@ export const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose })
     tingkat: 'Kelas XII',
     jurusan: 'MIPA (Matematika & Ilmu Alam)',
     waliKelas: teachers[0]?.name || '',
-    ruangLab: 'Lab Komputer 01',
+    ruangLab: '',
     totalStudents: 36,
   });
 
@@ -31,7 +31,7 @@ export const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose })
       tingkat: formData.tingkat,
       jurusan: formData.jurusan,
       waliKelas: formData.waliKelas,
-      ruangLab: formData.ruangLab,
+      ruangLab: formData.ruangLab.trim() || `Ruang Kelas ${formData.name.trim()}`,
       totalStudents: Number(formData.totalStudents) || 30,
     });
 
@@ -132,18 +132,15 @@ export const AddClassModal: React.FC<AddClassModalProps> = ({ isOpen, onClose })
 
           <div>
             <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1.5">
-              Alokasi Ruang Lab CBT
+              Alokasi Ruang Ujian
             </label>
-            <select
+            <input
+              type="text"
+              placeholder={formData.name ? `Ruang Kelas ${formData.name}` : 'Ruang Kelas (Otomatis sesuai kelas)'}
               value={formData.ruangLab}
               onChange={e => setFormData({ ...formData, ruangLab: e.target.value })}
-              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none bg-white"
-            >
-              <option value="Lab Komputer 01">Lab Komputer 01</option>
-              <option value="Lab Komputer 02">Lab Komputer 02</option>
-              <option value="Lab Komputer 03">Lab Komputer 03</option>
-              <option value="Ruang Multimedia">Ruang Multimedia</option>
-            </select>
+              className="w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600 outline-none"
+            />
           </div>
 
           <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">

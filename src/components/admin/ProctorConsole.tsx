@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCBT } from '../../context/CBTContext';
 import {
   Users,
@@ -18,7 +18,11 @@ import {
   Mic,
   MicOff,
   ShieldAlert,
-  CheckCircle2
+  CheckCircle2,
+  Flame,
+  BellRing,
+  Building2,
+  Megaphone
 } from 'lucide-react';
 import { ExamSession, User } from '../../types/cbt';
 
@@ -39,36 +43,127 @@ export const ProctorConsole: React.FC = () => {
     disciplineNotes,
   } = useCBT();
 
-  const [selectedRoom, setSelectedRoom] = useState<string>('ALL');
+  const [selectedClass, setSelectedClass] = useState<string>('ALL');
   const [selectedExamFilter, setSelectedExamFilter] = useState<string>('ALL');
   const [searchStudent, setSearchStudent] = useState<string>('');
   const [broadcastInput, setBroadcastInput] = useState<string>('');
+  const [broadcastTarget, setBroadcastTarget] = useState<string>('ALL');
   const [broadcastPriority, setBroadcastPriority] = useState<'normal' | 'urgent'>('normal');
   const [quickExtendMinutes, setQuickExtendMinutes] = useState<number>(10);
   const [activeSubTab, setActiveSubTab] = useState<'seatmap' | 'sessions' | 'audio' | 'broadcast'>('seatmap');
   const [seatPage, setSeatPage] = useState<number>(1);
 
-  const students = users.filter(u => u.role === 'siswa');
+  const students = useMemo(() => users.filter(u => u.role === 'siswa'), [users]);
 
-  // Dynamic rooms list from all students (e.g. Lab Komputer 01 s/d 10)
-  const dynamicRooms: string[] = Array.from(
-    new Set(students.map(s => s.ruangUjian).filter((r): r is string => Boolean(r)))
-  ).sort();
-  const rooms: string[] = ['ALL', ...(dynamicRooms.length > 0 ? dynamicRooms : ['Lab Komputer 01', 'Lab Komputer 02', 'Lab Komputer 03'])];
-
-  // Filter students based on room and search
-  const filteredStudents = students.filter(s => {
-    const matchRoom = selectedRoom === 'ALL' || (s.ruangUjian || 'Lab Komputer 01') === selectedRoom;
-    const matchSearch =
-      s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
-      (s.nisn && s.nisn.includes(searchStudent)) ||
-      (s.kelas && s.kelas.toLowerCase().includes(searchStudent.toLowerCase()));
-    return matchRoom && matchSearch;
-  });
+  // Dynamic classrooms list from all students (e.g. VII-1, VII-2, VIII-1, dst.)
+  const dynamicClasses: string[] = useMemo(() => Array.from(
+    new Set(students.map(s => s.kelas).filter((k): k is string => Boolean(k)))
+  ).sort(), [students]);
 
   const getStudentSession = (studentId: string): ExamSession | undefined => {
     return examSessions.find(s => s.studentId === studentId);
   };
+
+  // Filter students based on classroom and search
+  const filteredStudents = useMemo(() => {
+    return students.filter(s => {
+      const matchClass = selectedClass === 'ALL' || s.kelas === selectedClass;
+      const matchSearch =
+        s.name.toLowerCase().includes(searchStudent.toLowerCase()) ||
+        (s.nisn && s.nisn.includes(searchStudent)) ||
+        (s.kelas && s.kelas.toLowerCase().includes(searchStudent.toLowerCase()));
+      return matchClass && matchSearch;
+    });
+  }, [students, selectedClass, searchStudent]);
+
+  // Detailed Class & Room Noise Ranking calculation to identify the loudest class
+  interface ClassNoiseStat {
+    className: string;
+    roomName: string;
+    studentCount: number;
+    inProgressCount: number;
+    avgDb: number;
+    maxDb: number;
+    whisperCount: number;
+    blockedCount: number;
+    isNoisiest: boolean;
+    noiseScore: number;
+    acousticStatus: 'hening' | 'waspada' | 'ribut';
+  }
+
+  const classNoiseStats: ClassNoiseStat[] = useMemo(() => {
+    const groupMap = new Map<string, { students: User[]; sessions: (ExamSession | undefined)[] }>();
+
+    students.forEach(st => {
+      const clsKey = st.kelas || 'Umum';
+      if (!groupMap.has(clsKey)) {
+        groupMap.set(clsKey, { students: [], sessions: [] });
+      }
+      const grp = groupMap.get(clsKey)!;
+      grp.students.push(st);
+      grp.sessions.push(getStudentSession(st.id));
+    });
+
+    const list: ClassNoiseStat[] = [];
+    groupMap.forEach((grp, cls) => {
+      let totalDb = 0;
+      let countWithDb = 0;
+      let maxDb = 0;
+      let whisperCount = 0;
+      let inProgress = 0;
+      let blocked = 0;
+
+      grp.students.forEach((st, i) => {
+        const ses = grp.sessions[i];
+        if (ses?.status === 'in_progress') inProgress++;
+        if (ses?.status === 'blocked' || st.statusLogin === 'terkunci') blocked++;
+        if (ses && (ses.audioViolationsCount || 0) > 0) {
+          whisperCount += (ses.audioViolationsCount || 0);
+        }
+        const db = ses?.currentAudioLevel || (ses?.status === 'blocked' ? 52 : 28);
+        totalDb += db;
+        countWithDb++;
+        if (db > maxDb) maxDb = db;
+      });
+
+      const avgDb = countWithDb > 0 ? Math.round(totalDb / countWithDb) : 28;
+      const primaryRoom = `Ruang Kelas ${cls}`;
+      const noiseScore = avgDb + (whisperCount * 12) + (maxDb >= 48 ? 15 : 0);
+
+      const acousticStatus: 'hening' | 'waspada' | 'ribut' =
+        avgDb >= 45 || whisperCount >= 2 || maxDb >= 55
+          ? 'ribut'
+          : avgDb >= 38 || whisperCount >= 1
+          ? 'waspada'
+          : 'hening';
+
+      list.push({
+        className: cls,
+        roomName: primaryRoom,
+        studentCount: grp.students.length,
+        inProgressCount: inProgress,
+        avgDb,
+        maxDb,
+        whisperCount,
+        blockedCount: blocked,
+        isNoisiest: false,
+        noiseScore,
+        acousticStatus,
+      });
+    });
+
+    list.sort((a, b) => b.noiseScore - a.noiseScore);
+
+    if (list.length > 0 && (list[0].avgDb >= 36 || list[0].whisperCount > 0)) {
+      list[0].isNoisiest = true;
+    }
+
+    return list;
+  }, [students, examSessions]);
+
+  const loudestClass = classNoiseStats.length > 0 && (classNoiseStats[0].isNoisiest || classNoiseStats[0].avgDb >= 36 || classNoiseStats[0].whisperCount > 0)
+    ? classNoiseStats[0]
+    : null;
 
   // Status statistics
   const totalInRoom = filteredStudents.length;
@@ -93,7 +188,7 @@ export const ProctorConsole: React.FC = () => {
   const handleSendBroadcast = (e: React.FormEvent) => {
     e.preventDefault();
     if (!broadcastInput.trim()) return;
-    sendProctorBroadcast(broadcastInput, selectedRoom, broadcastPriority);
+    sendProctorBroadcast(broadcastInput, broadcastTarget, broadcastPriority);
     setBroadcastInput('');
   };
 
@@ -111,7 +206,7 @@ export const ProctorConsole: React.FC = () => {
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Pantau denah komputer lab, status peserta, sensor anti-bisik, buka kunci darurat, dan siaran pengumuman.
+              Pantau denah meja siswa di ruang kelas masing-masing, status peserta, sensor anti-bisik, deteksi kebisingan kelas, dan siaran pengumuman.
             </p>
           </div>
 
@@ -124,7 +219,7 @@ export const ProctorConsole: React.FC = () => {
                   : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
               }`}
             >
-              Denah Kursi Lab
+              Denah Meja Siswa
             </button>
             <button
               onClick={() => setActiveSubTab('sessions')}
@@ -194,28 +289,109 @@ export const ProctorConsole: React.FC = () => {
           </div>
         </div>
 
-        {/* FILTERS TOOLBAR */}
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 pt-3 border-t border-slate-100">
-          <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-            <span className="text-xs font-semibold text-slate-600 flex items-center gap-1">
-              <Filter className="w-3.5 h-3.5" /> Ruang:
-            </span>
-            {rooms.map(room => (
+        {/* LOUDEST CLASS / NOISIEST ROOM REAL-TIME ALERT BANNER */}
+        {loudestClass && (
+          <div className="mt-4 p-3.5 bg-gradient-to-r from-rose-50 via-amber-50 to-rose-50 border border-rose-300 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-rose-600 text-white flex items-center justify-center shrink-0 animate-pulse">
+                <Flame className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="font-bold text-xs text-rose-900">
+                    DETEKSI RUANG KELAS PALING RIBUT:
+                  </span>
+                  <span className="px-2.5 py-0.5 bg-rose-600 text-white font-bold rounded-full text-[10px] uppercase tracking-wider animate-pulse">
+                    Ruang Kelas {loudestClass.className}
+                  </span>
+                </div>
+                <p className="text-[11px] text-rose-800 mt-0.5">
+                  Rata-rata suara vokal: <strong className="font-mono text-rose-900">{loudestClass.avgDb} dB SPL</strong> · Puncak: <strong className="font-mono text-rose-900">{loudestClass.maxDb} dB</strong> · <span className="font-bold">{loudestClass.whisperCount}x insiden bisikan</span> terdeteksi di ruang kelas ini.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2 shrink-0">
               <button
-                key={room}
-                onClick={() => setSelectedRoom(room)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
-                  selectedRoom === room
-                    ? 'bg-slate-900 text-white font-bold'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                type="button"
+                onClick={() => {
+                  setSelectedClass(loudestClass.className);
+                  setActiveSubTab('seatmap');
+                }}
+                className="px-2.5 py-1.5 bg-white hover:bg-rose-100 text-rose-800 border border-rose-300 rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                title="Filter langsung denah meja ke ruang kelas ini"
               >
-                {room === 'ALL' ? 'Semua Ruang' : room}
+                <span>Fokus ke Ruang {loudestClass.className}</span>
               </button>
-            ))}
+              <button
+                type="button"
+                onClick={() => {
+                  sendProctorBroadcast(
+                    `PERINGATAN KHUSUS RUANG KELAS ${loudestClass.className}: Ruangan kelas Anda terdeteksi paling ribut (${loudestClass.avgDb} dB). Seluruh siswa wajib hening segera!`,
+                    loudestClass.className,
+                    'urgent'
+                  );
+                }}
+                className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                title="Kirim siaran peringatan hening khusus ke ruang kelas ini"
+              >
+                <Megaphone className="w-3.5 h-3.5" />
+                <span>Tegur Ruang Kelas Ini</span>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* FILTERS TOOLBAR: RUANG KELAS UJIAN (SATU FILTER TUNGGAL) */}
+        <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+            <span className="text-xs font-semibold text-slate-700 flex items-center gap-1 mr-1">
+              <Building2 className="w-3.5 h-3.5 text-indigo-600" /> Ruang Kelas:
+            </span>
+            <button
+              onClick={() => setSelectedClass('ALL')}
+              className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
+                selectedClass === 'ALL'
+                  ? 'bg-indigo-600 text-white font-bold shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Semua Ruang Kelas ({students.length})
+            </button>
+            {dynamicClasses.map(cls => {
+              const stat = classNoiseStats.find(s => s.className === cls);
+              const isLoud = stat?.isNoisiest || (stat && stat.avgDb >= 45);
+              const isWarning = stat && stat.avgDb >= 38 && stat.avgDb < 45;
+
+              return (
+                <button
+                  key={cls}
+                  onClick={() => setSelectedClass(cls)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors flex items-center gap-1.5 cursor-pointer ${
+                    selectedClass === cls
+                      ? 'bg-indigo-600 text-white font-bold shadow-2xs'
+                      : isLoud
+                      ? 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-bold'
+                      : isWarning
+                      ? 'bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <span>Ruang {cls}</span>
+                  {stat && stat.avgDb && (
+                    <span className={`text-[10px] font-mono px-1 rounded ${
+                      selectedClass === cls ? 'bg-indigo-800 text-white' : 'text-slate-500'
+                    }`}>
+                      {stat.avgDb}dB
+                    </span>
+                  )}
+                  {isLoud && <Flame className="w-3 h-3 text-rose-500 animate-pulse" />}
+                </button>
+              );
+            })}
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
             <div className="relative w-full sm:w-64">
               <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
               <input
@@ -236,10 +412,10 @@ export const ProctorConsole: React.FC = () => {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
-                <span>Denah Meja Komputer Lab ({selectedRoom === 'ALL' ? 'Semua Lab' : selectedRoom})</span>
+                <span>Denah Meja Ujian ({selectedClass === 'ALL' ? 'Semua Ruang Kelas' : `Ruang Kelas ${selectedClass}`})</span>
               </h4>
               <p className="text-xs text-slate-500">
-                Klik kartu komputer siswa untuk melakukan aksi proktor cepat (Buka Kunci, +Waktu, Force Submit).
+                Klik kartu meja siswa untuk melakukan aksi proktor cepat (Buka Kunci, +Waktu, Force Submit).
               </p>
             </div>
 
@@ -309,7 +485,7 @@ export const ProctorConsole: React.FC = () => {
                 statusLabel = `Nilai: ${session?.score ?? 0}`;
               }
 
-              const seatNo = `PC-${String(globalIdx + 1).padStart(2, '0')}`;
+              const seatNo = `Meja-${String(globalIdx + 1).padStart(2, '0')}`;
               const answeredCount = session ? Object.keys(session.answers).length : 0;
               const minsLeft = session ? Math.floor(session.remainingSeconds / 60) : 0;
 
@@ -333,8 +509,8 @@ export const ProctorConsole: React.FC = () => {
                         {student.name}
                       </div>
                       <div className="text-[10px] text-slate-500 font-mono flex items-center justify-between">
-                        <span>{student.kelas}</span>
-                        <span>{student.ruangUjian || 'Lab 01'}</span>
+                        <span>Ruang Kelas {student.kelas}</span>
+                        <span>NISN: {student.nisn || '-'}</span>
                       </div>
                     </div>
 
@@ -427,13 +603,13 @@ export const ProctorConsole: React.FC = () => {
             })}
           </div>
 
-          {/* Seat Pagination if more than 60 PCs */}
+          {/* Seat Pagination if more than 60 Seats */}
           {totalSeatPages > 1 && (
             <div className="flex items-center justify-between pt-4 border-t border-slate-200 text-xs text-slate-600">
               <div>
-                Menampilkan komputer <span className="font-bold font-mono">{(currentSeatPage - 1) * seatsPerPage + 1}</span> s/d{' '}
+                Menampilkan meja <span className="font-bold font-mono">{(currentSeatPage - 1) * seatsPerPage + 1}</span> s/d{' '}
                 <span className="font-bold font-mono">{Math.min(currentSeatPage * seatsPerPage, filteredStudents.length)}</span> dari{' '}
-                <span className="font-bold font-mono">{filteredStudents.length}</span> komputer siswa
+                <span className="font-bold font-mono">{filteredStudents.length}</span> meja siswa
               </div>
               <div className="flex items-center gap-1">
                 <button
@@ -494,7 +670,7 @@ export const ProctorConsole: React.FC = () => {
                 <tr>
                   <th className="py-2.5 px-3">No</th>
                   <th className="py-2.5 px-3">Peserta & NISN</th>
-                  <th className="py-2.5 px-3">Kelas / Ruang</th>
+                  <th className="py-2.5 px-3">Ruang Kelas</th>
                   <th className="py-2.5 px-3">Status Ujian</th>
                   <th className="py-2.5 px-3">Sisa Waktu</th>
                   <th className="py-2.5 px-3">Pelanggaran</th>
@@ -524,8 +700,7 @@ export const ProctorConsole: React.FC = () => {
                         <div className="text-[10px] text-slate-500 font-mono">{st.nisn || '-'}</div>
                       </td>
                       <td className="py-2.5 px-3">
-                        <div className="font-medium text-slate-700">{st.kelas}</div>
-                        <div className="text-[10px] text-slate-400">{st.ruangUjian || 'Lab 01'}</div>
+                        <div className="font-semibold text-slate-800">Ruang Kelas {st.kelas}</div>
                       </td>
                       <td className="py-2.5 px-3">
                         {isBlocked ? (
@@ -704,7 +879,7 @@ export const ProctorConsole: React.FC = () => {
                   onClick={() => {
                     sendProctorBroadcast(
                       'PERINGATAN PROKTOR: Seluruh peserta dilarang berbisik, bergumam, atau menoleh. Sensor suara mikrofon mencatat setiap kegaduhan secara otomatis!',
-                      selectedRoom,
+                      selectedClass,
                       'urgent'
                     );
                   }}
@@ -759,6 +934,153 @@ export const ProctorConsole: React.FC = () => {
             </div>
           </div>
 
+          {/* PEMBAGIAN RUANG UJIAN PER KELAS & PERINGKAT KEBISINGAN */}
+          <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+              <div>
+                <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                  <Flame className="w-4 h-4 text-rose-600" />
+                  <span>Papan Pemantauan Kebisingan Antar Ruang Kelas</span>
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Ujian dilaksanakan di ruang kelas masing-masing dan diurutkan otomatis dari ruang kelas yang <strong>paling ribut</strong> hingga yang paling hening berdasarkan sensor suara mikrofon.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] font-semibold text-slate-500">
+                  Total Terpantau: <strong className="text-slate-800">{classNoiseStats.length} Ruang Kelas</strong>
+                </span>
+              </div>
+            </div>
+
+            {/* Grid Kartu Ruang Kelas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {classNoiseStats.map((clsStat, rankIdx) => {
+                const isRank1 = rankIdx === 0 && clsStat.isNoisiest;
+                const isSelected = selectedClass === clsStat.className;
+
+                let cardStyle = 'border-slate-200 bg-white hover:border-slate-300';
+                let rankBadge = 'bg-slate-100 text-slate-700';
+
+                if (isRank1) {
+                  cardStyle = 'border-rose-400 bg-rose-50/50 ring-2 ring-rose-400/30';
+                  rankBadge = 'bg-rose-600 text-white animate-pulse font-black';
+                } else if (clsStat.acousticStatus === 'ribut') {
+                  cardStyle = 'border-rose-200 bg-rose-50/30';
+                  rankBadge = 'bg-rose-500 text-white';
+                } else if (clsStat.acousticStatus === 'waspada') {
+                  cardStyle = 'border-amber-200 bg-amber-50/30';
+                  rankBadge = 'bg-amber-500 text-slate-950 font-bold';
+                } else {
+                  cardStyle = 'border-emerald-200/80 bg-emerald-50/20';
+                  rankBadge = 'bg-emerald-600 text-white';
+                }
+
+                return (
+                  <div
+                    key={clsStat.className}
+                    className={`rounded-2xl border p-4 flex flex-col justify-between transition-all shadow-2xs ${cardStyle}`}
+                  >
+                    <div>
+                      {/* Top Header Card */}
+                      <div className="flex items-center justify-between pb-2 border-b border-slate-100/80">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`text-[10px] uppercase font-bold px-2 py-0.5 rounded-full ${rankBadge}`}>
+                            {isRank1 ? '🚨 #1 Paling Ribut' : `#${rankIdx + 1} ${clsStat.acousticStatus === 'ribut' ? 'Gaduh' : clsStat.acousticStatus === 'waspada' ? 'Waspada' : 'Hening'}`}
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-slate-400 font-medium">
+                          {clsStat.studentCount} Siswa
+                        </span>
+                      </div>
+
+                      {/* Class & Room Title */}
+                      <div className="mt-2.5 space-y-0.5">
+                        <h5 className="font-bold text-slate-900 text-sm flex items-center justify-between">
+                          <span>Ruang Kelas {clsStat.className}</span>
+                          <span className="font-mono text-xs font-bold text-slate-700">
+                            {clsStat.avgDb} dB SPL
+                          </span>
+                        </h5>
+                        <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                          <Building2 className="w-3 h-3 text-slate-400" />
+                          <span>Ruang Kelas {clsStat.className}</span>
+                        </p>
+                      </div>
+
+                      {/* Decibel Visual Progress Bar */}
+                      <div className="mt-3 space-y-1">
+                        <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-300 ${
+                              clsStat.avgDb >= 48
+                                ? 'bg-rose-500'
+                                : clsStat.avgDb >= 38
+                                ? 'bg-amber-500'
+                                : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${Math.min(100, Math.max(10, (clsStat.avgDb / 80) * 100))}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+                          <span>Max: {clsStat.maxDb} dB</span>
+                          <span>{clsStat.whisperCount > 0 ? `${clsStat.whisperCount}x Bisik` : '0x Bisik'}</span>
+                        </div>
+                      </div>
+
+                      {/* Stats chips */}
+                      <div className="mt-3 grid grid-cols-2 gap-1.5 text-[10px] font-mono">
+                        <div className="p-1.5 rounded-lg bg-white/80 border border-slate-100">
+                          <span className="text-slate-400 block text-[9px]">Mengerjakan</span>
+                          <span className="font-bold text-slate-700">{clsStat.inProgressCount} siswa</span>
+                        </div>
+                        <div className="p-1.5 rounded-lg bg-white/80 border border-slate-100">
+                          <span className="text-slate-400 block text-[9px]">Terkunci</span>
+                          <span className={`font-bold ${clsStat.blockedCount > 0 ? 'text-rose-600' : 'text-slate-600'}`}>
+                            {clsStat.blockedCount} siswa
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Action buttons */}
+                    <div className="mt-3 pt-2.5 border-t border-slate-100/80 flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedClass(clsStat.className);
+                          setActiveSubTab('seatmap');
+                        }}
+                        className={`flex-1 py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer border ${
+                          isSelected
+                            ? 'bg-indigo-600 text-white border-indigo-600'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200'
+                        }`}
+                      >
+                        Pantau Meja Ruang {clsStat.className}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          sendProctorBroadcast(
+                            `PERINGATAN PROKTOR RUANG KELAS ${clsStat.className}: Sensor audio mendeteksi ruangan Anda sedang ribut (${clsStat.avgDb} dB). Seluruh siswa wajib hening segera!`,
+                            clsStat.className,
+                            'urgent'
+                          );
+                        }}
+                        className="py-1.5 px-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-lg text-[11px] font-bold transition-colors cursor-pointer"
+                        title="Kirim siaran teguran langsung ke kelas ini"
+                      >
+                        <Megaphone className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Table: Live Student Sound Telemetry */}
           <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
             <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -768,14 +1090,14 @@ export const ProctorConsole: React.FC = () => {
                   <span>Matriks Telemetri Audio Siswa Real-Time</span>
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Menampilkan tingkat kebisingan mikrofon dan histori pelanggaran bisikan dari masing-masing komputer siswa.
+                  Menampilkan tingkat kebisingan mikrofon dan histori pelanggaran bisikan dari masing-masing meja siswa.
                 </p>
               </div>
 
               <div className="flex items-center gap-2 text-xs">
-                <span className="text-slate-500 font-medium">Filter Ruang:</span>
+                <span className="text-slate-500 font-medium">Filter Ruang Kelas:</span>
                 <span className="font-bold font-mono text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-200">
-                  {selectedRoom}
+                  {selectedClass === 'ALL' ? 'Semua Ruang Kelas' : `Ruang Kelas ${selectedClass}`}
                 </span>
               </div>
             </div>
@@ -784,8 +1106,8 @@ export const ProctorConsole: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
-                    <th className="py-2.5 px-3">Komputer & Siswa</th>
-                    <th className="py-2.5 px-3">Kelas & Ruang</th>
+                    <th className="py-2.5 px-3">Meja & Siswa</th>
+                    <th className="py-2.5 px-3">Ruang Kelas</th>
                     <th className="py-2.5 px-3">Level Suara Mikrofon (dB SPL)</th>
                     <th className="py-2.5 px-3">Status Sensor</th>
                     <th className="py-2.5 px-3">Insiden Bisik</th>
@@ -812,12 +1134,11 @@ export const ProctorConsole: React.FC = () => {
                         <td className="py-2.5 px-3">
                           <div className="font-bold text-slate-900">{st.name}</div>
                           <div className="text-[10px] text-slate-500 font-mono">
-                            PC-{String(idx + 1).padStart(2, '0')} · NISN: {st.nisn}
+                            Meja-{String(idx + 1).padStart(2, '0')} · NISN: {st.nisn}
                           </div>
                         </td>
                         <td className="py-2.5 px-3">
-                          <div className="font-semibold text-slate-700">{st.kelas}</div>
-                          <div className="text-[10px] text-slate-500">{st.ruangUjian || 'Lab 01'}</div>
+                          <div className="font-semibold text-slate-800">Ruang Kelas {st.kelas}</div>
                         </td>
                         <td className="py-2.5 px-3">
                           <div className="space-y-1 w-36">
@@ -989,16 +1310,18 @@ export const ProctorConsole: React.FC = () => {
 
             <form onSubmit={handleSendBroadcast} className="space-y-3.5">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Target Ruangan Lab</label>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Target Ruang Kelas</label>
                 <select
-                  value={selectedRoom}
-                  onChange={e => setSelectedRoom(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg outline-none"
+                  value={broadcastTarget}
+                  onChange={e => setBroadcastTarget(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg outline-none font-medium"
                 >
-                  <option value="ALL">Semua Ruang Lab (Global)</option>
-                  <option value="Lab Komputer 01">Lab Komputer 01</option>
-                  <option value="Lab Komputer 02">Lab Komputer 02</option>
-                  <option value="Lab Komputer 03">Lab Komputer 03</option>
+                  <option value="ALL">Semua Ruang Kelas (Global)</option>
+                  <optgroup label="Target Spesifik Per Ruang Kelas">
+                    {dynamicClasses.map(cls => (
+                      <option key={cls} value={cls}>Ruang Kelas {cls}</option>
+                    ))}
+                  </optgroup>
                 </select>
               </div>
 
@@ -1066,6 +1389,16 @@ export const ProctorConsole: React.FC = () => {
                   >
                     Tertib Ruang
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBroadcastInput('PERINGATAN PROKTOR: Ruangan kelas Anda terdeteksi ribut/berbisik! Dilarang berbicara dan wajib segera hening.');
+                      setBroadcastPriority('urgent');
+                    }}
+                    className="px-2 py-0.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded text-[10px] cursor-pointer font-bold"
+                  >
+                    🚨 Teguran Ruang Kelas Ribut
+                  </button>
                 </div>
               </div>
 
@@ -1084,7 +1417,7 @@ export const ProctorConsole: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <h4 className="font-bold text-slate-900 text-sm">Riwayat Broadcast Aktif</h4>
-                <p className="text-xs text-slate-500">Daftar siaran yang telah dikirimkan ke ruang ujian</p>
+                <p className="text-xs text-slate-500">Daftar siaran yang telah dikirimkan ke ruang kelas ujian</p>
               </div>
 
               {broadcastMessages.length > 0 && (
@@ -1124,7 +1457,7 @@ export const ProctorConsole: React.FC = () => {
                           {msg.priority === 'urgent' ? 'MENDESAK' : 'INFO'}
                         </span>
                         <span className="text-xs font-bold text-slate-800">{msg.sender}</span>
-                        <span className="text-[10px] text-slate-400">· Target: {msg.targetRoom}</span>
+                        <span className="text-[10px] text-slate-400">· Target: {msg.targetRoom === 'ALL' ? 'Semua Ruang Kelas' : msg.targetRoom?.startsWith('Ruang') ? msg.targetRoom : `Ruang Kelas ${msg.targetRoom}`}</span>
                       </div>
                       <span className="text-[10px] font-mono text-slate-400">{msg.timestamp}</span>
                     </div>

@@ -92,7 +92,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onC
                 <div className="grid grid-cols-3">
                   <span className="text-slate-500">Ruang & Sesi</span>
                   <span className="col-span-2 text-slate-800">
-                    {student.ruangUjian} · {student.sesiUjian}
+                    {student.ruangUjian || `Ruang Kelas ${student.kelas}`} · {student.sesiUjian}
                   </span>
                 </div>
                 <div className="grid grid-cols-3">

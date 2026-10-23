@@ -95,7 +95,7 @@ export const ExamAdministrationDocs: React.FC = () => {
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
             }`}
           >
-            Nomor Meja Lab Komputer
+            Nomor Meja Ruang Kelas
           </button>
         </div>
 
@@ -268,7 +268,7 @@ export const ExamAdministrationDocs: React.FC = () => {
               <div className="space-y-1 text-right">
                 <div>Hari, Tanggal : <strong className="text-slate-900">Senin, 12 Oktober 2026</strong></div>
                 <div>Waktu / Sesi : <strong className="font-mono text-slate-900">{selectedExam?.startTime} - {selectedExam?.endTime} WIB</strong></div>
-                <div>Ruang Ujian : <strong className="text-slate-900">Lab Komputer CBT 01</strong></div>
+                <div>Ruang Ujian : <strong className="text-slate-900">{selectedClass === 'ALL' ? 'Ruang Kelas Masing-Masing' : `Ruang Kelas ${selectedClass}`}</strong></div>
               </div>
             </div>
 
@@ -375,8 +375,8 @@ export const ExamAdministrationDocs: React.FC = () => {
                   <span className="col-span-3 font-mono font-bold text-slate-900">: {selectedExam?.startTime} s.d. {selectedExam?.endTime} WIB (Durasi {selectedExam?.durationMinutes} Menit)</span>
                 </div>
                 <div className="grid grid-cols-4">
-                  <span className="text-slate-500">Ruang Laboratorium</span>
-                  <span className="col-span-3 font-bold text-slate-900">: Lab Komputer 01 (Server ID: CBT-SRV-01)</span>
+                  <span className="text-slate-500">Ruang Ujian</span>
+                  <span className="col-span-3 font-bold text-slate-900">: {selectedClass === 'ALL' ? 'Ruang Kelas Masing-Masing' : `Ruang Kelas ${selectedClass}`}</span>
                 </div>
               </div>
 
@@ -433,7 +433,7 @@ export const ExamAdministrationDocs: React.FC = () => {
           <div className="space-y-6">
             <div className="text-center print:hidden pb-3 border-b border-slate-200">
               <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 px-3 py-1 rounded-full">
-                Label Nomor Meja Komputer (Siap Gunting & Tempel pada Layar Monitor / Meja Lab)
+                Label Nomor Meja Siswa (Siap Gunting & Tempel pada Meja Ruang Kelas)
               </span>
             </div>
 
@@ -449,15 +449,15 @@ export const ExamAdministrationDocs: React.FC = () => {
                   </div>
 
                   <div className="my-2">
-                    <div className="text-xs text-slate-600 font-semibold uppercase">NOMOR MEJA LAB</div>
+                    <div className="text-xs text-slate-600 font-semibold uppercase">NOMOR MEJA UJIAN</div>
                     <div className="text-3xl font-black font-mono text-slate-900">
-                      PC-{String(idx + 1).padStart(2, '0')}
+                      Meja-{String(idx + 1).padStart(2, '0')}
                     </div>
                   </div>
 
                   <div className="pt-2 border-t border-slate-200 space-y-0.5 text-xs">
                     <div className="font-bold text-slate-900 truncate">{st.name}</div>
-                    <div className="font-mono text-[11px] text-slate-600">NISN: {st.nisn} · {st.kelas}</div>
+                    <div className="font-mono text-[11px] text-slate-600">NISN: {st.nisn} · Ruang Kelas {st.kelas}</div>
                     <div className="font-mono text-[10px] font-bold text-indigo-700">USER: {st.username}</div>
                   </div>
                 </div>

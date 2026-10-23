@@ -31,9 +31,8 @@ const CLASSES = [
 ];
 
 const LAB_ROOMS = [
-  'Lab Komputer 01', 'Lab Komputer 02', 'Lab Komputer 03', 'Lab Komputer 04',
-  'Lab Komputer 05', 'Lab Komputer 06', 'Lab Komputer 07', 'Lab Komputer 08',
-  'Lab Komputer 09', 'Lab Komputer 10'
+  'Ruang Kelas VII-1', 'Ruang Kelas VII-2', 'Ruang Kelas VII-3', 'Ruang Kelas VII-4',
+  'Ruang Kelas VII-5', 'Ruang Kelas VII-6', 'Ruang Kelas VII-7', 'Ruang Kelas VII-8'
 ];
 
 const RELIGIONS: ('Islam' | 'Kristen' | 'Katolik' | 'Hindu' | 'Buddha' | 'Konghucu')[] = [
@@ -140,7 +139,7 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     const studentId = `usr-sim-siswa-${String(i + 1).padStart(4, '0')}`;
     const nisn = `006819${String(1000 + i).slice(0, 4)}`;
     const studentClass = CLASSES[i % CLASSES.length];
-    const labRoom = LAB_ROOMS[Math.floor(i / 80) % LAB_ROOMS.length];
+    const labRoom = `Ruang Kelas ${studentClass}`;
     const religion = RELIGIONS[i % RELIGIONS.length];
     
     // Session 1, 2, or 3
@@ -267,7 +266,10 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
       correctCount: correctCount,
       wrongCount: wrongCount,
       violationsCount: violations,
-      lastActive: status === 'blocked' ? 'Terkunci (Pindah Tab > 3x)' : status === 'in_progress' ? 'Aktif (Mengerjakan)' : 'Selesai Mengumpulkan',
+      audioViolationsCount: violations > 0 ? violations : (studentClass === 'VII-1' && i % 5 === 0 ? 1 : 0),
+      currentAudioLevel: studentClass === 'VII-1' ? (48 + (i % 16)) : studentClass === 'VIII-2' ? (40 + (i % 12)) : (24 + (i % 10)),
+      lastAudioIncidentAt: (violations > 0 || (studentClass === 'VII-1' && i % 5 === 0)) ? `${String(baseHour).padStart(2, '0')}:${String(baseMin + 7).padStart(2, '0')} (${studentClass === 'VII-1' ? 52 : 46} dB)` : undefined,
+      lastActive: status === 'blocked' ? (violations > 1 ? 'Terkunci (Terdeteksi Berbisik)' : 'Terkunci (Pindah Tab > 3x)') : status === 'in_progress' ? (studentClass === 'VII-1' && i % 5 === 0 ? 'Peringatan Suara/Bisik' : 'Aktif (Mengerjakan)') : 'Selesai Mengumpulkan',
     };
 
     sessions.push(session);

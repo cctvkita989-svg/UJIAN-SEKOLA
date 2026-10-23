@@ -364,7 +364,11 @@ export const CBTExamRoom: React.FC = () => {
   const activeBroadcast = broadcastMessages.find(
     msg =>
       msg.id !== latestDismissedBroadcastId &&
-      (msg.targetRoom === 'ALL' || msg.targetRoom === session.studentRoom)
+      (msg.targetRoom === 'ALL' ||
+       msg.targetRoom === session.studentRoom ||
+       msg.targetRoom === session.studentClass ||
+       msg.targetRoom === `Kelas ${session.studentClass}` ||
+       msg.targetRoom === `Ruang Kelas ${session.studentClass}`)
   );
 
   // Helper for PG Kompleks answers
@@ -550,7 +554,7 @@ export const CBTExamRoom: React.FC = () => {
                 )}
               </div>
               <p className="text-xs text-slate-400 font-mono hidden sm:block">
-                {session.studentName} · {session.studentClass} · {session.studentNisn}
+                {session.studentName} · Ruang Kelas {session.studentClass} · {session.studentNisn}
               </p>
             </div>
           </div>

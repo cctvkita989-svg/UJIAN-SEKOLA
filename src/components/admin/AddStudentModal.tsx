@@ -14,7 +14,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClos
   const [kelas, setKelas] = useState(classes[0]?.name || 'VII-1');
   const [jurusan, setJurusan] = useState('Reguler');
   const [agama, setAgama] = useState<'Islam' | 'Kristen' | 'Katolik' | 'Hindu' | 'Buddha' | 'Konghucu'>('Islam');
-  const [ruangUjian, setRuangUjian] = useState('Lab Komputer 01');
+  const [ruangUjian, setRuangUjian] = useState('');
   const [sesiUjian, setSesiUjian] = useState('Sesi 1 (07.30 - 09.30)');
 
   if (!isOpen) return null;
@@ -31,7 +31,7 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClos
       kelas,
       jurusan,
       agama,
-      ruangUjian,
+      ruangUjian: ruangUjian.trim() || `Ruang Kelas ${kelas}`,
       sesiUjian,
       nomorPeserta: `U-24-${kelas.replace(/\s+/g, '-')}-${Math.floor(100 + Math.random() * 900)}`,
       email: `${nisn.trim()}@siswa.sch.id`,
@@ -138,18 +138,15 @@ export const AddStudentModal: React.FC<AddStudentModalProps> = ({ isOpen, onClos
             </div>
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Ruang Lab Ujian
+                Ruang Ujian Siswa
               </label>
-              <select
+              <input
+                type="text"
                 value={ruangUjian}
                 onChange={e => setRuangUjian(e.target.value)}
+                placeholder={`Ruang Kelas ${kelas}`}
                 className="w-full px-3 py-2 text-sm bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-600"
-              >
-                <option value="Lab Komputer 01">Lab Komputer 01</option>
-                <option value="Lab Komputer 02">Lab Komputer 02</option>
-                <option value="Lab Komputer 03">Lab Komputer 03</option>
-                <option value="Ruang Kelas Utama">Ruang Kelas Utama</option>
-              </select>
+              />
             </div>
           </div>
 

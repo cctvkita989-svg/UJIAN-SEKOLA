@@ -1,0 +1,93 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile for admin, teacher, or student",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "username": { "type": "string" },
+        "role": { "type": "string", "enum": ["admin", "guru", "siswa"] },
+        "nisn": { "type": "string" },
+        "kelas": { "type": "string" },
+        "ruangUjian": { "type": "string" },
+        "nomorPeserta": { "type": "string" },
+        "sesiUjian": { "type": "string" },
+        "statusLogin": { "type": "string", "enum": ["online", "offline", "ujian", "terkunci"] }
+      },
+      "required": ["id", "name", "username", "role"]
+    },
+    "Exam": {
+      "title": "Exam",
+      "description": "CBT exam package definition",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "subject": { "type": "string" },
+        "gradeLevel": { "type": "string" },
+        "durationMinutes": { "type": "number" },
+        "totalQuestions": { "type": "number" },
+        "token": { "type": "string" },
+        "isTokenActive": { "type": "boolean" },
+        "status": { "type": "string", "enum": ["draft", "published", "ongoing", "completed"] },
+        "kkm": { "type": "number" }
+      },
+      "required": ["id", "title", "subject", "token", "status"]
+    },
+    "ExamSession": {
+      "title": "ExamSession",
+      "description": "Student exam progress, answers, and scores",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "examId": { "type": "string" },
+        "studentId": { "type": "string" },
+        "studentName": { "type": "string" },
+        "studentNisn": { "type": "string" },
+        "studentClass": { "type": "string" },
+        "studentRoom": { "type": "string" },
+        "status": { "type": "string", "enum": ["not_started", "in_progress", "submitted", "blocked"] },
+        "score": { "type": "number" },
+        "correctCount": { "type": "number" },
+        "wrongCount": { "type": "number" },
+        "violationsCount": { "type": "number" },
+        "lastActive": { "type": "string" }
+      },
+      "required": ["id", "examId", "studentId", "status"]
+    },
+    "ProctorBroadcast": {
+      "title": "ProctorBroadcast",
+      "description": "Real-time broadcast announcement from proctor",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "sender": { "type": "string" },
+        "content": { "type": "string" },
+        "targetRoom": { "type": "string" },
+        "priority": { "type": "string", "enum": ["normal", "urgent"] },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["id", "sender", "content"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User accounts and profiles"
+    },
+    "/exams/{examId}": {
+      "schema": "Exam",
+      "description": "Exam schedules, tokens, and packages"
+    },
+    "/examSessions/{sessionId}": {
+      "schema": "ExamSession",
+      "description": "Student real-time exam sessions and results"
+    },
+    "/broadcasts/{broadcastId}": {
+      "schema": "ProctorBroadcast",
+      "description": "Live proctor broadcast messages"
+    }
+  }
+}

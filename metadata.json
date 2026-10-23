@@ -1,0 +1,6 @@
+{
+  "name": "EduCBT Nusantara - Aplikasi CBT Ujian Sekolah",
+  "description": "Sistem Computer Based Test (CBT) terintegrasi untuk ujian sekolah dengan dashboard khusus Admin, Guru, dan Siswa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useCBT } from '../../context/CBTContext';
 import {
   LayoutDashboard,
+  Building2,
   Users,
   School,
   BookOpen,
@@ -50,7 +51,11 @@ import {
   ExternalLink,
   Mic,
   MicOff,
-  Volume2
+  Volume2,
+  ArrowRight,
+  LayoutGrid,
+  List,
+  UserX
 } from 'lucide-react';
 import { AddStudentModal } from './AddStudentModal';
 import { StudentCardModal } from './StudentCardModal';
@@ -361,6 +366,103 @@ export const AdminDashboard: React.FC = () => {
   const ongoingExams = exams.filter(e => e.status === 'ongoing');
   const activeSessionsCount = examSessions.filter(s => s.status === 'in_progress').length;
   const lockedSessionsCount = examSessions.filter(s => s.status === 'blocked').length;
+
+  // State for Class Participation Summary in Dashboard
+  const [participationSearch, setParticipationSearch] = useState<string>('');
+  const [participationTingkatFilter, setParticipationTingkatFilter] = useState<string>('ALL');
+  const [participationViewMode, setParticipationViewMode] = useState<'table' | 'grid'>('table');
+
+  interface ClassParticipationSummary {
+    className: string;
+    roomName: string;
+    tingkat: string;
+    waliKelas: string;
+    totalStudents: number;
+    inProgressCount: number;
+    submittedCount: number;
+    blockedCount: number;
+    notStartedCount: number;
+    activeCount: number;
+    participationRate: number;
+  }
+
+  const classParticipationSummary: ClassParticipationSummary[] = useMemo(() => {
+    const map = new Map<string, {
+      total: number;
+      inProgress: number;
+      submitted: number;
+      blocked: number;
+      notStarted: number;
+    }>();
+
+    classes.forEach(c => {
+      map.set(c.name, { total: 0, inProgress: 0, submitted: 0, blocked: 0, notStarted: 0 });
+    });
+
+    students.forEach(s => {
+      const cls = s.kelas || 'Umum';
+      if (!map.has(cls)) {
+        map.set(cls, { total: 0, inProgress: 0, submitted: 0, blocked: 0, notStarted: 0 });
+      }
+      const data = map.get(cls)!;
+      data.total++;
+
+      const ses = examSessions.find(es => es.studentId === s.id);
+      if (ses) {
+        if (ses.status === 'in_progress') data.inProgress++;
+        else if (ses.status === 'submitted') data.submitted++;
+        else if (ses.status === 'blocked' || s.statusLogin === 'terkunci') data.blocked++;
+        else data.notStarted++;
+      } else {
+        if (s.statusLogin === 'terkunci') data.blocked++;
+        else data.notStarted++;
+      }
+    });
+
+    const list: ClassParticipationSummary[] = [];
+    map.forEach((data, clsName) => {
+      if (data.total === 0) return;
+      const classItem = classes.find(c => c.name === clsName);
+      const activeCount = data.inProgress + data.submitted + data.blocked;
+      const rate = data.total > 0 ? Math.round((activeCount / data.total) * 100) : 0;
+
+      list.push({
+        className: clsName,
+        roomName: classItem?.ruangLab || `Ruang Kelas ${clsName}`,
+        tingkat: classItem?.tingkat || (clsName.startsWith('VII') ? 'Kelas VII' : clsName.startsWith('VIII') ? 'Kelas VIII' : 'Kelas IX'),
+        waliKelas: classItem?.waliKelas || '-',
+        totalStudents: data.total,
+        inProgressCount: data.inProgress,
+        submittedCount: data.submitted,
+        blockedCount: data.blocked,
+        notStartedCount: data.notStarted,
+        activeCount,
+        participationRate: rate,
+      });
+    });
+
+    list.sort((a, b) => a.className.localeCompare(b.className, undefined, { numeric: true }));
+    return list;
+  }, [classes, students, examSessions]);
+
+  const filteredParticipationList = useMemo(() => {
+    return classParticipationSummary.filter(item => {
+      const matchTingkat = participationTingkatFilter === 'ALL' || item.tingkat.includes(participationTingkatFilter);
+      const matchSearch =
+        item.className.toLowerCase().includes(participationSearch.toLowerCase()) ||
+        item.roomName.toLowerCase().includes(participationSearch.toLowerCase()) ||
+        item.waliKelas.toLowerCase().includes(participationSearch.toLowerCase());
+      return matchTingkat && matchSearch;
+    });
+  }, [classParticipationSummary, participationTingkatFilter, participationSearch]);
+
+  const totalParticipationStudents = classParticipationSummary.reduce((acc, c) => acc + c.totalStudents, 0);
+  const totalParticipating = classParticipationSummary.reduce((acc, c) => acc + c.activeCount, 0);
+  const globalParticipationRate = totalParticipationStudents > 0
+    ? Math.round((totalParticipating / totalParticipationStudents) * 100)
+    : 0;
+  const perfectClassesCount = classParticipationSummary.filter(c => c.participationRate === 100).length;
+  const needAttentionClassesCount = classParticipationSummary.filter(c => c.notStartedCount > 0 || c.blockedCount > 0).length;
 
   const handleCopyToken = (token: string) => {
     navigator.clipboard.writeText(token);
@@ -896,6 +998,396 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                </div>
+
+                {/* =========================================================================
+                    RINGKASAN PARTISIPASI SISWA BERDASARKAN RUANG KELAS
+                   ========================================================================= */}
+                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
+                  {/* Header & Quick Action */}
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="p-1.5 bg-emerald-100 text-emerald-800 rounded-lg">
+                          <Building2 className="w-4 h-4" />
+                        </span>
+                        <h3 className="text-base font-bold text-slate-900">Ringkasan Partisipasi Siswa Berdasarkan Kelas</h3>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-1">
+                        Monitoring tingkat kehadiran dan keikutsertaan ujian siswa di masing-masing ruang kelas
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start md:self-auto">
+                      <button
+                        onClick={() => {
+                          setOpenSections(prev => ({ ...prev, manajemen_ujian: true }));
+                          setActiveTab('konsol_proktor');
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                      >
+                        <Radio className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                        <span>Buka Konsol Proktor</span>
+                        <ArrowRight className="w-3 h-3 text-indigo-500" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Ringkasan Metrik Cepat (Quick Stat Strips) */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
+                    <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-slate-500 uppercase">Partisipasi Total</span>
+                        <span className="text-xs font-bold text-emerald-600">{globalParticipationRate}%</span>
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-lg font-black text-slate-900">{totalParticipating}</span>
+                        <span className="text-xs text-slate-400">/ {totalParticipationStudents} Siswa</span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2 overflow-hidden">
+                        <div
+                          className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
+                          style={{ width: `${globalParticipationRate}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-emerald-800 uppercase">Hadir 100% Lengkap</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-lg font-black text-emerald-900">{perfectClassesCount}</span>
+                        <span className="text-xs text-emerald-700">/ {classParticipationSummary.length} Kelas</span>
+                      </div>
+                      <div className="text-[11px] text-emerald-700 mt-1 font-medium">
+                        Seluruh siswa telah masuk
+                      </div>
+                    </div>
+
+                    <div className="bg-amber-50/70 border border-amber-200/80 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-amber-800 uppercase">Ada Belum Masuk</span>
+                        <Clock className="w-4 h-4 text-amber-600" />
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-lg font-black text-amber-900">{needAttentionClassesCount}</span>
+                        <span className="text-xs text-amber-700">Kelas</span>
+                      </div>
+                      <div className="text-[11px] text-amber-700 mt-1 font-medium">
+                        Perlu dipantau proktor
+                      </div>
+                    </div>
+
+                    <div className="bg-rose-50/70 border border-rose-200/80 rounded-lg p-3">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold text-rose-800 uppercase">Siswa Terkunci</span>
+                        <AlertTriangle className="w-4 h-4 text-rose-600" />
+                      </div>
+                      <div className="mt-1 flex items-baseline gap-1">
+                        <span className="text-lg font-black text-rose-900">
+                          {classParticipationSummary.reduce((acc, c) => acc + c.blockedCount, 0)}
+                        </span>
+                        <span className="text-xs text-rose-700">Siswa</span>
+                      </div>
+                      <div className="text-[11px] text-rose-700 mt-1 font-medium">
+                        Pelanggaran / reset sesi
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Filter & Controls Toolbar */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
+                    <div className="flex items-center gap-2 flex-1">
+                      <div className="relative flex-1 max-w-xs">
+                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                        <input
+                          type="text"
+                          value={participationSearch}
+                          onChange={e => setParticipationSearch(e.target.value)}
+                          placeholder="Cari nama kelas atau wali..."
+                          className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white"
+                        />
+                        {participationSearch && (
+                          <button
+                            onClick={() => setParticipationSearch('')}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Filter Tingkat */}
+                      <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-[11px] font-semibold text-slate-600">
+                        {(['ALL', 'VII', 'VIII', 'IX'] as const).map(t => (
+                          <button
+                            key={t}
+                            onClick={() => setParticipationTingkatFilter(t)}
+                            className={`px-2.5 py-1 rounded-md transition-colors ${
+                              participationTingkatFilter === t
+                                ? 'bg-white text-indigo-700 shadow-2xs'
+                                : 'hover:text-slate-900'
+                            }`}
+                          >
+                            {t === 'ALL' ? 'Semua' : `Kelas ${t}`}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* View Mode Toggle */}
+                    <div className="flex items-center gap-1 self-end sm:self-auto bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                      <button
+                        onClick={() => setParticipationViewMode('table')}
+                        className={`p-1.5 rounded-md text-xs flex items-center gap-1 font-medium transition-colors ${
+                          participationViewMode === 'table'
+                            ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                        title="Tampilan Tabel Rinci"
+                      >
+                        <List className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline text-[11px]">Tabel</span>
+                      </button>
+                      <button
+                        onClick={() => setParticipationViewMode('grid')}
+                        className={`p-1.5 rounded-md text-xs flex items-center gap-1 font-medium transition-colors ${
+                          participationViewMode === 'grid'
+                            ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
+                            : 'text-slate-500 hover:text-slate-800'
+                        }`}
+                        title="Tampilan Kartu Kelas"
+                      >
+                        <LayoutGrid className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline text-[11px]">Kartu</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* CONTENT: TABLE VIEW OR GRID VIEW */}
+                  {filteredParticipationList.length === 0 ? (
+                    <div className="py-8 text-center text-slate-400 text-xs bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
+                      Tidak ada kelas yang sesuai dengan kriteria pencarian "{participationSearch}".
+                    </div>
+                  ) : participationViewMode === 'table' ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                          <tr>
+                            <th className="py-2.5 px-3">Ruang Kelas</th>
+                            <th className="py-2.5 px-3">Wali Kelas</th>
+                            <th className="py-2.5 px-3 min-w-[140px]">Tingkat Partisipasi</th>
+                            <th className="py-2.5 px-3 text-center">Aktif / Ujian</th>
+                            <th className="py-2.5 px-3 text-center">Selesai</th>
+                            <th className="py-2.5 px-3 text-center">Belum Mulai</th>
+                            <th className="py-2.5 px-3 text-center">Terkunci</th>
+                            <th className="py-2.5 px-3 text-center">Total</th>
+                            <th className="py-2.5 px-3 text-right">Aksi Pantau</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredParticipationList.map(item => {
+                            const isComplete = item.participationRate === 100;
+                            return (
+                              <tr key={item.className} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-2.5 px-3">
+                                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
+                                    <span>{item.className}</span>
+                                    {isComplete && (
+                                      <span className="inline-flex items-center px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-semibold rounded">
+                                        Lengkap
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-[11px] text-slate-400 font-medium">{item.roomName}</div>
+                                </td>
+                                <td className="py-2.5 px-3 text-slate-600 font-medium">
+                                  {item.waliKelas}
+                                </td>
+                                <td className="py-2.5 px-3">
+                                  <div className="flex items-center justify-between text-[11px] mb-1">
+                                    <span className="font-bold text-slate-800">{item.participationRate}%</span>
+                                    <span className="text-slate-400">{item.activeCount} / {item.totalStudents} siswa</span>
+                                  </div>
+                                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                    <div
+                                      className={`h-1.5 rounded-full transition-all duration-300 ${
+                                        isComplete
+                                          ? 'bg-emerald-500'
+                                          : item.participationRate >= 75
+                                          ? 'bg-indigo-500'
+                                          : item.participationRate >= 40
+                                          ? 'bg-amber-500'
+                                          : 'bg-rose-500'
+                                      }`}
+                                      style={{ width: `${item.participationRate}%` }}
+                                    />
+                                  </div>
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                    item.inProgressCount > 0 ? 'bg-indigo-100 text-indigo-800' : 'text-slate-400'
+                                  }`}>
+                                    {item.inProgressCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>}
+                                    {item.inProgressCount}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                                    item.submittedCount > 0 ? 'bg-emerald-100 text-emerald-800' : 'text-slate-400'
+                                  }`}>
+                                    {item.submittedCount}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                                    item.notStartedCount > 0 ? 'bg-amber-100 text-amber-800' : 'text-slate-300'
+                                  }`}>
+                                    {item.notStartedCount}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-center">
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
+                                    item.blockedCount > 0 ? 'bg-rose-100 text-rose-800' : 'text-slate-300'
+                                  }`}>
+                                    {item.blockedCount}
+                                  </span>
+                                </td>
+                                <td className="py-2.5 px-3 text-center font-bold text-slate-800">
+                                  {item.totalStudents}
+                                </td>
+                                <td className="py-2.5 px-3 text-right">
+                                  <div className="flex items-center justify-end gap-1.5">
+                                    <button
+                                      onClick={() => {
+                                        setSelectedClassFilter(item.className);
+                                        setOpenSections(prev => ({ ...prev, data_master: true }));
+                                        setActiveTab('siswa');
+                                      }}
+                                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-medium"
+                                      title={`Lihat daftar siswa ${item.className}`}
+                                    >
+                                      Siswa
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setOpenSections(prev => ({ ...prev, manajemen_ujian: true }));
+                                        setActiveTab('konsol_proktor');
+                                      }}
+                                      className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[11px] font-semibold flex items-center gap-1"
+                                      title={`Buka pantauan proktor`}
+                                    >
+                                      Proktor
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    /* GRID VIEW (CARDS) */
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {filteredParticipationList.map(item => {
+                        const isComplete = item.participationRate === 100;
+                        return (
+                          <div
+                            key={item.className}
+                            className={`border rounded-xl p-4 transition-all hover:shadow-xs ${
+                              isComplete
+                                ? 'bg-emerald-50/20 border-emerald-200'
+                                : item.blockedCount > 0
+                                ? 'bg-rose-50/20 border-rose-200'
+                                : 'bg-white border-slate-200'
+                            }`}
+                          >
+                            <div className="flex items-start justify-between mb-2">
+                              <div>
+                                <span className="font-mono font-bold text-base text-slate-900">{item.className}</span>
+                                <div className="text-[11px] text-slate-400 font-medium">{item.roomName}</div>
+                                <div className="text-[10px] text-slate-500 mt-0.5">Wali: {item.waliKelas}</div>
+                              </div>
+                              <div className="text-right">
+                                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-black ${
+                                  isComplete
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : item.participationRate >= 75
+                                    ? 'bg-indigo-100 text-indigo-800'
+                                    : 'bg-amber-100 text-amber-800'
+                                }`}>
+                                  {item.participationRate}%
+                                </span>
+                                <div className="text-[10px] text-slate-400 mt-0.5">Partisipasi</div>
+                              </div>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div className="w-full bg-slate-100 rounded-full h-1.5 my-2.5 overflow-hidden">
+                              <div
+                                className={`h-1.5 rounded-full transition-all duration-300 ${
+                                  isComplete ? 'bg-emerald-500' : 'bg-indigo-500'
+                                }`}
+                                style={{ width: `${item.participationRate}%` }}
+                              />
+                            </div>
+
+                            {/* Mini Metrics 4-grid */}
+                            <div className="grid grid-cols-4 gap-1 text-center py-2 px-1 bg-slate-50/80 rounded-lg text-xs mb-3">
+                              <div>
+                                <div className="text-[10px] text-slate-400 font-medium">Ujian</div>
+                                <div className="font-bold text-indigo-700">{item.inProgressCount}</div>
+                              </div>
+                              <div>
+                                <div className="text-[10px] text-slate-400 font-medium">Selesai</div>
+                                <div className="font-bold text-emerald-700">{item.submittedCount}</div>
+                              </div>
+                              <div>
+                                <div className="text-[10px] text-slate-400 font-medium">Belum</div>
+                                <div className="font-bold text-amber-700">{item.notStartedCount}</div>
+                              </div>
+                              <div>
+                                <div className="text-[10px] text-slate-400 font-medium">Kunci</div>
+                                <div className="font-bold text-rose-700">{item.blockedCount}</div>
+                              </div>
+                            </div>
+
+                            {/* Action footer */}
+                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
+                              <span className="text-slate-500 font-medium">
+                                Total: <strong className="text-slate-800">{item.totalStudents} siswa</strong>
+                              </span>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setSelectedClassFilter(item.className);
+                                    setOpenSections(prev => ({ ...prev, data_master: true }));
+                                    setActiveTab('siswa');
+                                  }}
+                                  className="text-slate-600 hover:text-slate-900 font-medium"
+                                >
+                                  Siswa
+                                </button>
+                                <span className="text-slate-300">•</span>
+                                <button
+                                  onClick={() => {
+                                    setOpenSections(prev => ({ ...prev, manajemen_ujian: true }));
+                                    setActiveTab('konsol_proktor');
+                                  }}
+                                  className="text-indigo-600 hover:text-indigo-800 font-semibold"
+                                >
+                                  Proktor →
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* Sesi Peserta Real-time */}

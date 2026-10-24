@@ -143,7 +143,7 @@ interface CBTContextType {
   resetAllData: () => void;
 }
 
-export const CBT_STORAGE_VERSION = 'v12_cbt_ahmad_fauzi_fixed';
+export const CBT_STORAGE_VERSION = 'v14_single_exam_test';
 
 // Generate pre-loaded 800 students simulation dataset for instant results
 const DEFAULT_800_DATA = generate800StudentsData('exam-mat-01');
@@ -173,6 +173,8 @@ if (typeof window !== 'undefined') {
       localStorage.removeItem('educbt_curr_user');
       localStorage.removeItem('educbt_sim_800');
       localStorage.removeItem('educbt_school');
+      localStorage.removeItem('educbt_submitted_ids');
+      localStorage.removeItem('educbt_known_session_ids');
       // Ensure user starts at Login Page so students/teachers/admin see login menu
       localStorage.removeItem('educbt_auth');
       localStorage.setItem('educbt_version', CBT_STORAGE_VERSION);

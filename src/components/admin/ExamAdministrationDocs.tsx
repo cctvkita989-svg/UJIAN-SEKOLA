@@ -14,9 +14,9 @@ import {
 import { Exam, User } from '../../types/cbt';
 
 export const ExamAdministrationDocs: React.FC = () => {
-  const { exams, users, schoolProfile, classes, subjects } = useCBT();
+  const { exams, users, schoolProfile, classes, subjects, examSessions } = useCBT();
 
-  const [activeDocType, setActiveDocType] = useState<'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja'>('kartu_peserta');
+  const [activeDocType, setActiveDocType] = useState<'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai'>('daftar_nilai');
   const [selectedClass, setSelectedClass] = useState<string>('VII-1');
   const [selectedExamId, setSelectedExamId] = useState<string>(exams[0]?.id || '');
 
@@ -42,7 +42,7 @@ export const ExamAdministrationDocs: React.FC = () => {
               <h3 className="text-lg font-bold text-slate-900">Dokumen Administrasi Ujian Resmi</h3>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Cetak berkas fisik siap pakai (Kartu Ujian Barcode, Daftar Hadir Peserta, Berita Acara Pelaksanaan, & Label Meja).
+              Cetak berkas fisik siap pakai (Daftar Nilai Siswa Per Kelas Siap Bagikan ke Orang Tua, Kartu Ujian Barcode, Daftar Hadir, Berita Acara, & Label Meja).
             </p>
           </div>
 
@@ -57,6 +57,17 @@ export const ExamAdministrationDocs: React.FC = () => {
 
         {/* DOC TYPE SELECTOR TABS */}
         <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+          <button
+            onClick={() => setActiveDocType('daftar_nilai')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+              activeDocType === 'daftar_nilai'
+                ? 'bg-indigo-600 text-white font-bold shadow-xs'
+                : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
+            }`}
+          >
+            <FileText className="w-3.5 h-3.5" />
+            <span>Daftar Nilai Siswa Per Kelas (PDF Ortu)</span>
+          </button>
           <button
             onClick={() => setActiveDocType('kartu_peserta')}
             className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
@@ -138,6 +149,306 @@ export const ExamAdministrationDocs: React.FC = () => {
           PRINTABLE DOCUMENT AREA (Styled specifically for standard A4 Paper)
          ========================================================================= */}
       <div className="bg-white border border-slate-300 rounded-xl p-8 shadow-sm font-sans text-slate-900 print:border-none print:shadow-none print:p-0">
+
+        {/* 0. DAFTAR NILAI RESMI SISWA PER KELAS / PER RUANG (SIAP CETAK / PDF ORANG TUA) */}
+        {activeDocType === 'daftar_nilai' && (() => {
+          const kkm = selectedExam?.kkm || 75;
+          const classSessions = filteredStudents.map(student => {
+            const session = examSessions.find(s => s.studentId === student.id && s.examId === selectedExam?.id)
+              || examSessions.find(s => s.studentId === student.id);
+            return {
+              student,
+              session,
+              attendanceStatus: session?.attendanceStatus || 'cbt',
+              score: session?.score ?? 0,
+              isSubmitted: session?.status === 'submitted' || session?.attendanceStatus === 'tertulis'
+            };
+          });
+
+          // Metrics calculation
+          const cbtCount = classSessions.filter(cs => cs.attendanceStatus === 'cbt').length;
+          const writtenCount = classSessions.filter(cs => cs.attendanceStatus === 'tertulis').length;
+          const sickCount = classSessions.filter(cs => cs.attendanceStatus === 'sakit').length;
+          const permitCount = classSessions.filter(cs => cs.attendanceStatus === 'izin').length;
+          const absentCount = classSessions.filter(cs => cs.attendanceStatus === 'absen').length;
+
+          const scoredSessions = classSessions.filter(cs => cs.attendanceStatus === 'cbt' || cs.attendanceStatus === 'tertulis');
+          const scores = scoredSessions.map(cs => cs.score);
+          const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
+          const minScore = scores.length > 0 ? Math.min(...scores) : 0;
+          const avgScore = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '0';
+          const passedCount = scores.filter(sc => sc >= kkm).length;
+          const passPct = scores.length > 0 ? Math.round((passedCount / scores.length) * 100) : 0;
+
+          return (
+            <div className="space-y-6">
+              <div className="text-center print:hidden pb-3 border-b border-slate-200">
+                <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full">
+                  Pratinjau Format Daftar Nilai Kelas Resmi (Siap Dicetak & Dibagikan ke Orang Tua / Wali Siswa)
+                </span>
+              </div>
+
+              {/* KOP SURAT RESMI */}
+              <div className="border-b-4 border-double border-slate-900 pb-3 text-center space-y-1">
+                <div className="flex items-center justify-between">
+                  <div className="w-16 h-16 rounded-xl bg-slate-900 text-white flex items-center justify-center font-bold text-xl shrink-0">
+                    CBT
+                  </div>
+                  <div className="flex-1 px-4">
+                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                      PEMERINTAH DAERAH / KEMENTERIAN AGAMA REPUBLIK INDONESIA
+                    </div>
+                    <div className="text-lg font-black text-slate-950 uppercase tracking-wide leading-tight">
+                      {schoolProfile.name}
+                    </div>
+                    <div className="text-[11px] text-slate-600 font-medium">
+                      NPSN: {schoolProfile.npsn || '10293847'} • {schoolProfile.address || 'Jl. Pendidikan No. 01, Wilayah Terakreditasi'}
+                    </div>
+                    <div className="text-[10px] text-slate-500 font-mono">
+                      Website: cbt.sekolah.sch.id • Email: cbt@{schoolProfile.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'sekolah'}.sch.id
+                    </div>
+                  </div>
+                  <div className="w-16 h-16 rounded-xl border-2 border-slate-900 flex flex-col items-center justify-center font-mono text-[10px] font-bold text-slate-800 shrink-0">
+                    <span>KELAS</span>
+                    <span className="text-base font-black text-indigo-700">{selectedClass}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* JUDUL DOKUMEN & IDENTITAS PENILAIAN */}
+              <div className="text-center space-y-0.5">
+                <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide underline decoration-slate-400">
+                  DAFTAR NILAI & HASIL EVALUASI SISWA PER RUANG KELAS
+                </h2>
+                <p className="text-xs font-semibold text-slate-700">
+                  {selectedExam?.title || 'PENILAIAN AKHIR SEMESTER (PAS) GANJIL'} • TAHUN PELAJARAN {schoolProfile.academicYear} ({schoolProfile.semester})
+                </p>
+              </div>
+
+              {/* META GRID INFORMASI */}
+              <div className="grid grid-cols-2 gap-4 text-xs font-medium border border-slate-300 rounded-lg p-3 bg-slate-50/50">
+                <div className="space-y-1">
+                  <div className="flex">
+                    <span className="w-32 text-slate-500">Mata Pelajaran</span>
+                    <span className="font-bold text-slate-900">: {selectedExam?.subject}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-slate-500">Rombongan Belajar</span>
+                    <span className="font-bold text-slate-900">: Kelas {selectedClass}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-slate-500">Guru Mata Pelajaran</span>
+                    <span className="font-bold text-slate-900">: {selectedExam?.teacherName || 'Ibu Guru Pengampu, S.Pd'}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex">
+                    <span className="w-32 text-slate-500">Kriteria Ketuntasan (KKM)</span>
+                    <span className="font-mono font-bold text-slate-900">: {kkm}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-slate-500">Tanggal Pelaksanaan</span>
+                    <span className="font-bold text-slate-900">: {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-32 text-slate-500">Waktu & Durasi</span>
+                    <span className="font-bold text-slate-900">: {selectedExam?.startTime} - {selectedExam?.endTime} WIB ({selectedExam?.durationMinutes} Menit)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* TABEL NILAI PESERTA */}
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs border border-slate-300 border-collapse">
+                  <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                    <tr>
+                      <th className="py-2 px-2 border-r border-slate-300 text-center w-8">No</th>
+                      <th className="py-2 px-3 border-r border-slate-300 w-28">NISN</th>
+                      <th className="py-2 px-3 border-r border-slate-300">Nama Lengkap Siswa</th>
+                      <th className="py-2 px-2 border-r border-slate-300 text-center w-12">L/P</th>
+                      <th className="py-2 px-3 border-r border-slate-300 text-center w-36">Metode & Kehadiran</th>
+                      <th className="py-2 px-2 border-r border-slate-300 text-center w-20">Nilai Akhir</th>
+                      <th className="py-2 px-3 border-r border-slate-300 text-center w-28">Ketuntasan KKM</th>
+                      <th className="py-2 px-3 border-slate-300">Keterangan / Catatan</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {filteredStudents.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="py-6 text-center text-slate-400">
+                          Tidak ada siswa yang terdaftar di kelas {selectedClass}.
+                        </td>
+                      </tr>
+                    ) : (
+                      classSessions.map((item, idx) => {
+                        const { student, session, attendanceStatus, score } = item;
+                        const isPassed = score >= kkm;
+
+                        let statusLabel = '💻 CBT Online';
+                        let statusColor = 'text-slate-800';
+                        if (attendanceStatus === 'tertulis') {
+                          statusLabel = '📝 Ujian Tertulis';
+                          statusColor = 'text-purple-800 font-semibold';
+                        } else if (attendanceStatus === 'sakit') {
+                          statusLabel = '🤒 Sakit';
+                          statusColor = 'text-amber-800 font-semibold';
+                        } else if (attendanceStatus === 'izin') {
+                          statusLabel = '✉️ Izin Resmi';
+                          statusColor = 'text-sky-800 font-semibold';
+                        } else if (attendanceStatus === 'absen') {
+                          statusLabel = '❌ Absen / Alpa';
+                          statusColor = 'text-rose-800 font-semibold';
+                        }
+
+                        let kkmLabel = isPassed ? 'TUNTAS' : 'REMEDIAL';
+                        let kkmClass = isPassed ? 'font-bold text-emerald-800' : 'font-bold text-rose-800';
+
+                        if (attendanceStatus === 'sakit' || attendanceStatus === 'izin') {
+                          kkmLabel = 'SUSULAN';
+                          kkmClass = 'font-semibold text-amber-800';
+                        } else if (attendanceStatus === 'absen') {
+                          kkmLabel = 'TIDAK HADIR';
+                          kkmClass = 'font-semibold text-rose-700';
+                        }
+
+                        return (
+                          <tr key={student.id} className="hover:bg-slate-50/70 transition-colors">
+                            <td className="py-2 px-2 border-r border-slate-300 text-center font-mono text-slate-500">
+                              {idx + 1}
+                            </td>
+                            <td className="py-2 px-3 border-r border-slate-300 font-mono text-slate-700">
+                              {student.nisn || '-'}
+                            </td>
+                            <td className="py-2 px-3 border-r border-slate-300 font-bold text-slate-900">
+                              {student.name}
+                            </td>
+                            <td className="py-2 px-2 border-r border-slate-300 text-center font-mono text-slate-600">
+                              {idx % 2 === 0 ? 'L' : 'P'}
+                            </td>
+                            <td className={`py-2 px-3 border-r border-slate-300 text-center ${statusColor}`}>
+                              {statusLabel}
+                            </td>
+                            <td className="py-2 px-2 border-r border-slate-300 text-center font-mono font-black text-sm">
+                              {attendanceStatus === 'sakit' || attendanceStatus === 'izin' || attendanceStatus === 'absen' ? (
+                                <span className="text-slate-400 font-normal">-</span>
+                              ) : (
+                                <span className={score >= kkm ? 'text-slate-900' : 'text-rose-700 font-bold'}>
+                                  {score}
+                                </span>
+                              )}
+                            </td>
+                            <td className={`py-2 px-3 border-r border-slate-300 text-center text-[11px] ${kkmClass}`}>
+                              {kkmLabel}
+                            </td>
+                            <td className="py-2 px-3 border-slate-300 text-slate-600 text-[11px]">
+                              {session?.attendanceNotes || (
+                                attendanceStatus === 'sakit'
+                                  ? 'Menunggu jadwal ujian susulan'
+                                  : attendanceStatus === 'izin'
+                                  ? 'Izin terkonfirmasi pihak sekolah'
+                                  : attendanceStatus === 'absen'
+                                  ? 'Belum hadir tanpa keterangan'
+                                  : isPassed
+                                  ? 'Tuntas Kriteria Ketuntasan Minimal'
+                                  : 'Mengikuti program bimbingan remedial'
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* REKAPITULASI STATISTIK KELAS */}
+              <div className="border border-slate-300 rounded-lg p-3 bg-slate-50/50 space-y-2 text-xs">
+                <div className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1">
+                  Rekapitulasi Kehadiran & Nilai Kelas {selectedClass}
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-slate-700">
+                  <div>
+                    <span className="text-slate-500">Jumlah Siswa:</span>{' '}
+                    <strong className="font-mono">{filteredStudents.length} Siswa</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Hadir CBT:</span>{' '}
+                    <strong className="font-mono text-emerald-700">{cbtCount} Siswa</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Ujian Tertulis:</span>{' '}
+                    <strong className="font-mono text-purple-700">{writtenCount} Siswa</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Sakit / Izin / Absen:</span>{' '}
+                    <strong className="font-mono text-amber-700">{sickCount + permitCount + absentCount} Siswa</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Nilai Tertinggi:</span>{' '}
+                    <strong className="font-mono text-slate-900">{maxScore}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Nilai Terendah:</span>{' '}
+                    <strong className="font-mono text-slate-900">{minScore}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Rata-rata Nilai:</span>{' '}
+                    <strong className="font-mono text-indigo-700">{avgScore}</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500">Ketuntasan KKM:</span>{' '}
+                    <strong className="font-mono text-emerald-800">{passPct}% ({passedCount} Siswa)</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* LEMBAR TANDA TANGAN 3 KOLOM RESMI */}
+              <div className="grid grid-cols-3 gap-6 pt-6 text-xs font-medium text-center">
+                <div className="space-y-12">
+                  <div>
+                    Pengawas Ruang Kelas,
+                  </div>
+                  <div>
+                    <div className="font-bold underline text-slate-900">Budi Santoso, S.Kom</div>
+                    <div className="font-mono text-slate-500 text-[10px]">NIP. 198509122010011015</div>
+                  </div>
+                </div>
+
+                <div className="space-y-12">
+                  <div>
+                    Guru Mata Pelajaran,
+                  </div>
+                  <div>
+                    <div className="font-bold underline text-slate-900">{selectedExam?.teacherName || 'Ibu Sri Wahyuni, S.Pd'}</div>
+                    <div className="font-mono text-slate-500 text-[10px]">NIP. 198007202005012009</div>
+                  </div>
+                </div>
+
+                <div className="space-y-12">
+                  <div>
+                    Mengetahui,<br />
+                    Kepala Sekolah,
+                  </div>
+                  <div>
+                    <div className="font-bold underline text-slate-900">Drs. H. Mulyadi, M.Pd</div>
+                    <div className="font-mono text-slate-500 text-[10px]">NIP. 197405121999031002</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="print:hidden p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-800 flex items-center justify-between">
+                <span>💡 Klik tombol <strong>Cetak Dokumen Sekarang</strong> di bagian atas untuk mencetak atau menyimpan dokumen ini sebagai file PDF.</span>
+                <button
+                  onClick={handlePrint}
+                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold cursor-pointer"
+                >
+                  Print / Simpan PDF
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* 1. KARTU PESERTA UJIAN (GRID 2x2 PER A4 SHEET) */}
         {activeDocType === 'kartu_peserta' && (

@@ -1007,9 +1007,9 @@ export const CBTExamRoom: React.FC = () => {
 
       {/* 5. QUESTION NUMBER DRAWER / MODAL */}
       {isQuestionListOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-xl my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+            <div className="shrink-0 px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div>
                 <h3 className="font-bold text-slate-900 text-sm">Daftar Nomor Soal Ujian</h3>
                 <p className="text-xs text-slate-500">Klik salah satu nomor untuk melompat langsung ke soal tersebut</p>
@@ -1022,7 +1022,7 @@ export const CBTExamRoom: React.FC = () => {
               </button>
             </div>
 
-            <div className="p-6 max-h-[60vh] overflow-y-auto">
+            <div className="p-6 flex-1 overflow-y-auto">
               <div className="grid grid-cols-5 sm:grid-cols-6 md:grid-cols-8 gap-2.5">
                 {examQuestions.map((q, idx) => {
                   const ans = session.answers[q.id];
@@ -1079,8 +1079,8 @@ export const CBTExamRoom: React.FC = () => {
 
       {/* 6. CONFIRM SUBMISSION MODAL */}
       {isConfirmSubmitOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-md my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4">
             <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto text-emerald-600">
               <CheckCircle className="w-6 h-6" />
             </div>
@@ -1159,8 +1159,8 @@ export const CBTExamRoom: React.FC = () => {
 
       {/* 7. ANTI-CHEAT VIOLATION POPUP WARNING */}
       {showViolationAlert && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border-2 border-rose-500 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 text-center space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-md my-auto bg-white rounded-2xl shadow-2xl border-2 border-rose-500 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150 p-6 text-center space-y-4">
             <div className="w-14 h-14 bg-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">
               <AlertTriangle className="w-7 h-7" />
             </div>
@@ -1190,8 +1190,8 @@ export const CBTExamRoom: React.FC = () => {
 
       {/* 8. AUDIO SENSOR INFO & TEST MODAL */}
       {showAudioInfoModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-xs">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4 text-slate-800">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/70 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-md my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-150 p-6 space-y-4 text-slate-800">
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
                 <div className="w-8 h-8 rounded-lg bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600">
@@ -1303,8 +1303,8 @@ export const CBTExamRoom: React.FC = () => {
 
       {/* 9. AUDIO VIOLATION ALERT MODAL (TERDETEKSI BERBISIK / BICARA) */}
       {audioIncidentWarning && audioIncidentWarning.show && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xs animate-in fade-in duration-200">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border-2 border-rose-500 overflow-hidden p-6 text-center space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/80 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
+          <div className="relative w-full max-w-md my-auto bg-white rounded-2xl shadow-2xl border-2 border-rose-500 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-y-auto p-6 text-center space-y-4">
             <div className="relative w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">
               <Mic className="w-8 h-8 animate-pulse" />
               <span className="absolute -top-1 -right-1 flex h-4 w-4">

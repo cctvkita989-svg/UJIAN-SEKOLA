@@ -85,6 +85,8 @@ export interface StudentAnswer {
   savedAt: string;
 }
 
+export type AttendanceStatus = 'cbt' | 'tertulis' | 'absen' | 'izin' | 'sakit';
+
 export interface ExamSession {
   id: string;
   examId: string;
@@ -97,6 +99,8 @@ export interface ExamSession {
   finishedAt?: string;
   remainingSeconds: number;
   status: 'not_started' | 'in_progress' | 'submitted' | 'blocked';
+  attendanceStatus?: AttendanceStatus;
+  attendanceNotes?: string;
   answers: Record<string, StudentAnswer>; // questionId -> answer
   score?: number;
   correctCount?: number;

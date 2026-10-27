@@ -68,7 +68,7 @@ import { ExamAdministrationDocs } from './ExamAdministrationDocs';
 import { StudentAnswerDetailModal } from './StudentAnswerDetailModal';
 import { ImportStudentsBulkModal } from './ImportStudentsBulkModal';
 import { QuestionEditorModal } from '../guru/QuestionEditorModal';
-import { User, Exam, ExamSession, Question } from '../../types/cbt';
+import { User, Exam, ExamSession, Question, AttendanceStatus } from '../../types/cbt';
 
 export type AdminTab =
   // MENU UTAMA
@@ -114,6 +114,9 @@ export const AdminDashboard: React.FC = () => {
     updateAudioProctoringSettings,
     resetStudentSession,
     unlockStudent,
+    extendStudentTime,
+    forceSubmitStudentSession,
+    updateStudentAttendance,
     deleteUser,
     generateNewToken,
     toggleTokenActive,
@@ -152,6 +155,22 @@ export const AdminDashboard: React.FC = () => {
   const [isExamScheduleModalOpen, setIsExamScheduleModalOpen] = useState(false);
   const [editingExamSchedule, setEditingExamSchedule] = useState<Exam | null>(null);
   const [isImportBulkOpen, setIsImportBulkOpen] = useState(false);
+  const [selectedProctorExamId, setSelectedProctorExamId] = useState<string>('');
+
+  // Interactive Modal: Status Peserta (Siapa Saja yang Mengerjakan, Terkunci, Mengumpulkan, Belum Mulai)
+  const [statusListModal, setStatusListModal] = useState<{
+    isOpen: boolean;
+    filterType: 'all' | 'in_progress' | 'blocked' | 'submitted' | 'not_started' | 'special';
+    title: string;
+    description: string;
+  } | null>(null);
+  const [statusModalSearch, setStatusModalSearch] = useState<string>('');
+  const [statusModalClass, setStatusModalClass] = useState<string>('ALL');
+  const [statusModalPage, setStatusModalPage] = useState<number>(1);
+  const [statusAttendanceEditingStudent, setStatusAttendanceEditingStudent] = useState<User | null>(null);
+  const [statusAttendanceChoice, setStatusAttendanceChoice] = useState<AttendanceStatus>('cbt');
+  const [statusAttendanceScore, setStatusAttendanceScore] = useState<number>(75);
+  const [statusAttendanceNotes, setStatusAttendanceNotes] = useState<string>('');
 
   // Question Editor state for Admin
   const [isQuestionEditorOpen, setIsQuestionEditorOpen] = useState(false);
@@ -366,6 +385,64 @@ export const AdminDashboard: React.FC = () => {
   const ongoingExams = exams.filter(e => e.status === 'ongoing');
   const activeSessionsCount = examSessions.filter(s => s.status === 'in_progress').length;
   const lockedSessionsCount = examSessions.filter(s => s.status === 'blocked').length;
+
+  // Real-time student status mapping and categorization
+  const studentStatusData = useMemo(() => {
+    return students.map(st => {
+      const ses = examSessions.find(s => s.studentId === st.id);
+      const isBlocked = ses?.status === 'blocked' || st.statusLogin === 'terkunci';
+      const isSpecial = ses?.attendanceStatus && ses.attendanceStatus !== 'cbt';
+      const isInProgress = ses?.status === 'in_progress';
+      const isSubmitted = ses?.status === 'submitted';
+
+      let statusKey: 'in_progress' | 'blocked' | 'submitted' | 'not_started' | 'special' = 'not_started';
+      let statusLabel = 'Belum Memulai';
+      let statusBadge = 'bg-slate-100 text-slate-700 border-slate-200';
+
+      if (isBlocked) {
+        statusKey = 'blocked';
+        statusLabel = 'Terkunci';
+        statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+      } else if (isSpecial) {
+        statusKey = 'special';
+        if (ses?.attendanceStatus === 'tertulis') {
+          statusLabel = `Tertulis (${ses.score ?? 0})`;
+          statusBadge = 'bg-purple-100 text-purple-800 border-purple-300';
+        } else if (ses?.attendanceStatus === 'sakit') {
+          statusLabel = 'Sakit';
+          statusBadge = 'bg-amber-100 text-amber-800 border-amber-300';
+        } else if (ses?.attendanceStatus === 'izin') {
+          statusLabel = 'Izin';
+          statusBadge = 'bg-sky-100 text-sky-800 border-sky-300';
+        } else {
+          statusLabel = 'Absen / Alpa';
+          statusBadge = 'bg-rose-100 text-rose-800 border-rose-300';
+        }
+      } else if (isInProgress) {
+        statusKey = 'in_progress';
+        statusLabel = 'Sedang Mengerjakan';
+        statusBadge = 'bg-emerald-100 text-emerald-800 border-emerald-300';
+      } else if (isSubmitted) {
+        statusKey = 'submitted';
+        statusLabel = `Selesai (${ses?.score ?? 0})`;
+        statusBadge = 'bg-blue-100 text-blue-800 border-blue-300';
+      }
+
+      return {
+        student: st,
+        session: ses,
+        statusKey,
+        statusLabel,
+        statusBadge,
+      };
+    });
+  }, [students, examSessions]);
+
+  const inProgressStudentsCount = useMemo(() => studentStatusData.filter(d => d.statusKey === 'in_progress').length, [studentStatusData]);
+  const blockedStudentsCount = useMemo(() => studentStatusData.filter(d => d.statusKey === 'blocked').length, [studentStatusData]);
+  const submittedStudentsCount = useMemo(() => studentStatusData.filter(d => d.statusKey === 'submitted').length, [studentStatusData]);
+  const notStartedStudentsCount = useMemo(() => studentStatusData.filter(d => d.statusKey === 'not_started').length, [studentStatusData]);
+  const specialStudentsCount = useMemo(() => studentStatusData.filter(d => d.statusKey === 'special').length, [studentStatusData]);
 
   // State for Class Participation Summary in Dashboard
   const [participationSearch, setParticipationSearch] = useState<string>('');
@@ -1001,393 +1078,191 @@ export const AdminDashboard: React.FC = () => {
                 </div>
 
                 {/* =========================================================================
-                    RINGKASAN PARTISIPASI SISWA BERDASARKAN RUANG KELAS
+                    RINGKASAN STATUS RUANG UJIAN & KONSOL PROKTOR TERPADU
                    ========================================================================= */}
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-                  {/* Header & Quick Action */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-5">
+                <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className="p-1.5 bg-emerald-100 text-emerald-800 rounded-lg">
-                          <Building2 className="w-4 h-4" />
+                        <span className="p-1.5 bg-rose-100 text-rose-800 rounded-lg">
+                          <Radio className="w-4 h-4 text-rose-600 animate-pulse" />
                         </span>
-                        <h3 className="text-base font-bold text-slate-900">Ringkasan Partisipasi Siswa Berdasarkan Kelas</h3>
+                        <h3 className="text-base font-bold text-slate-900">Pengawasan Ruang Ujian & Live Proktor</h3>
                       </div>
-                      <p className="text-xs text-slate-500 mt-1">
-                        Monitoring tingkat kehadiran dan keikutsertaan ujian siswa di masing-masing ruang kelas
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Pengawasan langsung ruang ujian terpadu, denah meja, sensor suara/bisikan, dan pencatatan kehadiran (CBT / Tertulis / Izin / Sakit / Absen).
                       </p>
                     </div>
 
-                    <div className="flex items-center gap-2 self-start md:self-auto">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
                           setOpenSections(prev => ({ ...prev, manajemen_ujian: true }));
+                          setSelectedProctorExamId(ongoingExams[0]?.id || exams[0]?.id || '');
                           setActiveTab('konsol_proktor');
                         }}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold transition-colors shadow-2xs"
+                        className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow-xs cursor-pointer transition-colors"
                       >
-                        <Radio className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
-                        <span>Buka Konsol Proktor</span>
-                        <ArrowRight className="w-3 h-3 text-indigo-500" />
+                        <Radio className="w-3.5 h-3.5 animate-pulse" />
+                        <span>Buka Konsol Proktor Ruang Ujian</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   </div>
 
-                  {/* Ringkasan Metrik Cepat (Quick Stat Strips) */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5">
-                    <div className="bg-slate-50 border border-slate-200/80 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-slate-500 uppercase">Partisipasi Total</span>
-                        <span className="text-xs font-bold text-emerald-600">{globalParticipationRate}%</span>
-                      </div>
-                      <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-lg font-black text-slate-900">{totalParticipating}</span>
-                        <span className="text-xs text-slate-400">/ {totalParticipationStudents} Siswa</span>
-                      </div>
-                      <div className="w-full bg-slate-200 rounded-full h-1.5 mt-2 overflow-hidden">
-                        <div
-                          className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
-                          style={{ width: `${globalParticipationRate}%` }}
-                        />
-                      </div>
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2.5">
+                      <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                        <Users className="w-4 h-4 text-indigo-600" />
+                        <span>Status Peserta Real-Time (Klik salah satu kartu untuk melihat siapa saja):</span>
+                      </span>
+                      <span className="text-[11px] text-slate-500 font-medium">
+                        Total Terdaftar: <strong className="text-slate-800 font-mono">{students.length} Siswa</strong>
+                      </span>
                     </div>
 
-                    <div className="bg-emerald-50/70 border border-emerald-200/80 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-emerald-800 uppercase">Hadir 100% Lengkap</span>
-                        <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                      </div>
-                      <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-lg font-black text-emerald-900">{perfectClassesCount}</span>
-                        <span className="text-xs text-emerald-700">/ {classParticipationSummary.length} Kelas</span>
-                      </div>
-                      <div className="text-[11px] text-emerald-700 mt-1 font-medium">
-                        Seluruh siswa telah masuk
-                      </div>
-                    </div>
-
-                    <div className="bg-amber-50/70 border border-amber-200/80 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-amber-800 uppercase">Ada Belum Masuk</span>
-                        <Clock className="w-4 h-4 text-amber-600" />
-                      </div>
-                      <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-lg font-black text-amber-900">{needAttentionClassesCount}</span>
-                        <span className="text-xs text-amber-700">Kelas</span>
-                      </div>
-                      <div className="text-[11px] text-amber-700 mt-1 font-medium">
-                        Perlu dipantau proktor
-                      </div>
-                    </div>
-
-                    <div className="bg-rose-50/70 border border-rose-200/80 rounded-lg p-3">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[11px] font-semibold text-rose-800 uppercase">Siswa Terkunci</span>
-                        <AlertTriangle className="w-4 h-4 text-rose-600" />
-                      </div>
-                      <div className="mt-1 flex items-baseline gap-1">
-                        <span className="text-lg font-black text-rose-900">
-                          {classParticipationSummary.reduce((acc, c) => acc + c.blockedCount, 0)}
-                        </span>
-                        <span className="text-xs text-rose-700">Siswa</span>
-                      </div>
-                      <div className="text-[11px] text-rose-700 mt-1 font-medium">
-                        Pelanggaran / reset sesi
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Filter & Controls Toolbar */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-100">
-                    <div className="flex items-center gap-2 flex-1">
-                      <div className="relative flex-1 max-w-xs">
-                        <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                        <input
-                          type="text"
-                          value={participationSearch}
-                          onChange={e => setParticipationSearch(e.target.value)}
-                          placeholder="Cari nama kelas atau wali..."
-                          className="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:bg-white"
-                        />
-                        {participationSearch && (
-                          <button
-                            onClick={() => setParticipationSearch('')}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
-                          >
-                            ×
-                          </button>
-                        )}
-                      </div>
-
-                      {/* Filter Tingkat */}
-                      <div className="flex items-center bg-slate-100 p-0.5 rounded-lg text-[11px] font-semibold text-slate-600">
-                        {(['ALL', 'VII', 'VIII', 'IX'] as const).map(t => (
-                          <button
-                            key={t}
-                            onClick={() => setParticipationTingkatFilter(t)}
-                            className={`px-2.5 py-1 rounded-md transition-colors ${
-                              participationTingkatFilter === t
-                                ? 'bg-white text-indigo-700 shadow-2xs'
-                                : 'hover:text-slate-900'
-                            }`}
-                          >
-                            {t === 'ALL' ? 'Semua' : `Kelas ${t}`}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* View Mode Toggle */}
-                    <div className="flex items-center gap-1 self-end sm:self-auto bg-slate-100 p-0.5 rounded-lg border border-slate-200">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 text-xs">
+                      {/* 1. SEDANG MENGERJAKAN */}
                       <button
-                        onClick={() => setParticipationViewMode('table')}
-                        className={`p-1.5 rounded-md text-xs flex items-center gap-1 font-medium transition-colors ${
-                          participationViewMode === 'table'
-                            ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
-                            : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                        title="Tampilan Tabel Rinci"
+                        type="button"
+                        onClick={() => {
+                          setStatusModalSearch('');
+                          setStatusModalClass('ALL');
+                          setStatusModalPage(1);
+                          setStatusListModal({
+                            isOpen: true,
+                            filterType: 'in_progress',
+                            title: 'Daftar Siswa Sedang Mengerjakan',
+                            description: 'Siswa yang saat ini aktif mengerjakan lembar ujian di ruang kelas / lab CBT.',
+                          });
+                        }}
+                        className="p-3 bg-emerald-50/70 hover:bg-emerald-100 border-2 border-emerald-300 hover:border-emerald-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group"
+                        title="Klik untuk melihat siapa saja siswa yang sedang mengerjakan"
                       >
-                        <List className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline text-[11px]">Tabel</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-emerald-800 uppercase font-black tracking-wider flex items-center gap-1">
+                            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                            Mengerjakan
+                          </span>
+                          <span className="text-[10px] text-emerald-600 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                        </div>
+                        <div className="text-2xl font-black font-mono text-emerald-800 mt-1">{inProgressStudentsCount}</div>
+                        <div className="text-[10px] text-emerald-700 mt-0.5 font-medium">Siswa aktif mengerjakan</div>
                       </button>
+
+                      {/* 2. TERKUNCI PELANGGARAN */}
                       <button
-                        onClick={() => setParticipationViewMode('grid')}
-                        className={`p-1.5 rounded-md text-xs flex items-center gap-1 font-medium transition-colors ${
-                          participationViewMode === 'grid'
-                            ? 'bg-white text-indigo-700 shadow-2xs font-semibold'
-                            : 'text-slate-500 hover:text-slate-800'
-                        }`}
-                        title="Tampilan Kartu Kelas"
+                        type="button"
+                        onClick={() => {
+                          setStatusModalSearch('');
+                          setStatusModalClass('ALL');
+                          setStatusModalPage(1);
+                          setStatusListModal({
+                            isOpen: true,
+                            filterType: 'blocked',
+                            title: 'Daftar Siswa Terkunci (Pelanggaran / Pindah Tab)',
+                            description: 'Siswa yang layarnya terkunci karena tab blur atau batas kecurangan. Anda dapat membuka kuncinya langsung di sini.',
+                          });
+                        }}
+                        className="p-3 bg-rose-50/70 hover:bg-rose-100 border-2 border-rose-300 hover:border-rose-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group"
+                        title="Klik untuk melihat siapa saja siswa yang terkunci dan buka kuncinya"
                       >
-                        <LayoutGrid className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline text-[11px]">Kartu</span>
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-rose-800 uppercase font-black tracking-wider flex items-center gap-1">
+                            <AlertTriangle className="w-3 h-3 text-rose-600 animate-pulse" />
+                            Terkunci
+                          </span>
+                          <span className="text-[10px] text-rose-600 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                        </div>
+                        <div className="text-2xl font-black font-mono text-rose-800 mt-1">{blockedStudentsCount}</div>
+                        <div className="text-[10px] text-rose-700 mt-0.5 font-medium">Perlu dibuka kuncinya</div>
+                      </button>
+
+                      {/* 3. SUDAH MENGUMPULKAN */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStatusModalSearch('');
+                          setStatusModalClass('ALL');
+                          setStatusModalPage(1);
+                          setStatusListModal({
+                            isOpen: true,
+                            filterType: 'submitted',
+                            title: 'Daftar Siswa Sudah Mengumpulkan (Selesai)',
+                            description: 'Siswa yang telah selesai mengumpulkan jawaban beserta perolehan nilai sementaranya.',
+                          });
+                        }}
+                        className="p-3 bg-blue-50/70 hover:bg-blue-100 border-2 border-blue-300 hover:border-blue-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group"
+                        title="Klik untuk melihat siapa saja siswa yang sudah mengumpulkan"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-blue-800 uppercase font-black tracking-wider flex items-center gap-1">
+                            <CheckCircle2 className="w-3 h-3 text-blue-600" />
+                            Mengumpulkan
+                          </span>
+                          <span className="text-[10px] text-blue-600 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                        </div>
+                        <div className="text-2xl font-black font-mono text-blue-800 mt-1">{submittedStudentsCount}</div>
+                        <div className="text-[10px] text-blue-700 mt-0.5 font-medium">Sudah submit nilai</div>
+                      </button>
+
+                      {/* 4. BELUM MEMULAI */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStatusModalSearch('');
+                          setStatusModalClass('ALL');
+                          setStatusModalPage(1);
+                          setStatusListModal({
+                            isOpen: true,
+                            filterType: 'not_started',
+                            title: 'Daftar Siswa Belum Memulai Ujian',
+                            description: 'Siswa yang belum login atau belum memasukkan token ujian untuk sesi ini.',
+                          });
+                        }}
+                        className="p-3 bg-slate-50/80 hover:bg-slate-100 border-2 border-slate-300 hover:border-slate-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group"
+                        title="Klik untuk melihat siapa saja siswa yang belum mulai"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-slate-700 uppercase font-black tracking-wider flex items-center gap-1">
+                            <Clock className="w-3 h-3 text-slate-500" />
+                            Belum Mulai
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                        </div>
+                        <div className="text-2xl font-black font-mono text-slate-800 mt-1">{notStartedStudentsCount}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5 font-medium">Belum aktif ujian</div>
+                      </button>
+
+                      {/* 5. UJIAN TERTULIS / KHUSUS */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setStatusModalSearch('');
+                          setStatusModalClass('ALL');
+                          setStatusModalPage(1);
+                          setStatusListModal({
+                            isOpen: true,
+                            filterType: 'special',
+                            title: 'Daftar Siswa Ujian Tertulis, Sakit, Izin, & Absen',
+                            description: 'Siswa dengan metode ujian kertas fisik manual atau berhalangan hadir dengan surat izin.',
+                          });
+                        }}
+                        className="p-3 bg-purple-50/70 hover:bg-purple-100 border-2 border-purple-300 hover:border-purple-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group col-span-2 sm:col-span-1"
+                        title="Klik untuk melihat siapa saja siswa ujian tertulis / sakit / izin / absen"
+                      >
+                        <div className="flex items-center justify-between">
+                          <span className="text-[10px] text-purple-800 uppercase font-black tracking-wider flex items-center gap-1">
+                            <FileText className="w-3 h-3 text-purple-600" />
+                            Tertulis / Izin
+                          </span>
+                          <span className="text-[10px] text-purple-600 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                        </div>
+                        <div className="text-2xl font-black font-mono text-purple-800 mt-1">{specialStudentsCount}</div>
+                        <div className="text-[10px] text-purple-700 mt-0.5 font-medium">Manual / Izin / Sakit</div>
                       </button>
                     </div>
                   </div>
-
-                  {/* CONTENT: TABLE VIEW OR GRID VIEW */}
-                  {filteredParticipationList.length === 0 ? (
-                    <div className="py-8 text-center text-slate-400 text-xs bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-                      Tidak ada kelas yang sesuai dengan kriteria pencarian "{participationSearch}".
-                    </div>
-                  ) : participationViewMode === 'table' ? (
-                    <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
-                        <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
-                          <tr>
-                            <th className="py-2.5 px-3">Ruang Kelas</th>
-                            <th className="py-2.5 px-3">Wali Kelas</th>
-                            <th className="py-2.5 px-3 min-w-[140px]">Tingkat Partisipasi</th>
-                            <th className="py-2.5 px-3 text-center">Aktif / Ujian</th>
-                            <th className="py-2.5 px-3 text-center">Selesai</th>
-                            <th className="py-2.5 px-3 text-center">Belum Mulai</th>
-                            <th className="py-2.5 px-3 text-center">Terkunci</th>
-                            <th className="py-2.5 px-3 text-center">Total</th>
-                            <th className="py-2.5 px-3 text-right">Aksi Pantau</th>
-                          </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100">
-                          {filteredParticipationList.map(item => {
-                            const isComplete = item.participationRate === 100;
-                            return (
-                              <tr key={item.className} className="hover:bg-slate-50/80 transition-colors">
-                                <td className="py-2.5 px-3">
-                                  <div className="font-bold text-slate-900 flex items-center gap-1.5">
-                                    <span>{item.className}</span>
-                                    {isComplete && (
-                                      <span className="inline-flex items-center px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[10px] font-semibold rounded">
-                                        Lengkap
-                                      </span>
-                                    )}
-                                  </div>
-                                  <div className="text-[11px] text-slate-400 font-medium">{item.roomName}</div>
-                                </td>
-                                <td className="py-2.5 px-3 text-slate-600 font-medium">
-                                  {item.waliKelas}
-                                </td>
-                                <td className="py-2.5 px-3">
-                                  <div className="flex items-center justify-between text-[11px] mb-1">
-                                    <span className="font-bold text-slate-800">{item.participationRate}%</span>
-                                    <span className="text-slate-400">{item.activeCount} / {item.totalStudents} siswa</span>
-                                  </div>
-                                  <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                    <div
-                                      className={`h-1.5 rounded-full transition-all duration-300 ${
-                                        isComplete
-                                          ? 'bg-emerald-500'
-                                          : item.participationRate >= 75
-                                          ? 'bg-indigo-500'
-                                          : item.participationRate >= 40
-                                          ? 'bg-amber-500'
-                                          : 'bg-rose-500'
-                                      }`}
-                                      style={{ width: `${item.participationRate}%` }}
-                                    />
-                                  </div>
-                                </td>
-                                <td className="py-2.5 px-3 text-center">
-                                  <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                                    item.inProgressCount > 0 ? 'bg-indigo-100 text-indigo-800' : 'text-slate-400'
-                                  }`}>
-                                    {item.inProgressCount > 0 && <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>}
-                                    {item.inProgressCount}
-                                  </span>
-                                </td>
-                                <td className="py-2.5 px-3 text-center">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                                    item.submittedCount > 0 ? 'bg-emerald-100 text-emerald-800' : 'text-slate-400'
-                                  }`}>
-                                    {item.submittedCount}
-                                  </span>
-                                </td>
-                                <td className="py-2.5 px-3 text-center">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                                    item.notStartedCount > 0 ? 'bg-amber-100 text-amber-800' : 'text-slate-300'
-                                  }`}>
-                                    {item.notStartedCount}
-                                  </span>
-                                </td>
-                                <td className="py-2.5 px-3 text-center">
-                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                                    item.blockedCount > 0 ? 'bg-rose-100 text-rose-800' : 'text-slate-300'
-                                  }`}>
-                                    {item.blockedCount}
-                                  </span>
-                                </td>
-                                <td className="py-2.5 px-3 text-center font-bold text-slate-800">
-                                  {item.totalStudents}
-                                </td>
-                                <td className="py-2.5 px-3 text-right">
-                                  <div className="flex items-center justify-end gap-1.5">
-                                    <button
-                                      onClick={() => {
-                                        setSelectedClassFilter(item.className);
-                                        setOpenSections(prev => ({ ...prev, data_master: true }));
-                                        setActiveTab('siswa');
-                                      }}
-                                      className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-[11px] font-medium"
-                                      title={`Lihat daftar siswa ${item.className}`}
-                                    >
-                                      Siswa
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setOpenSections(prev => ({ ...prev, manajemen_ujian: true }));
-                                        setActiveTab('konsol_proktor');
-                                      }}
-                                      className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[11px] font-semibold flex items-center gap-1"
-                                      title={`Buka pantauan proktor`}
-                                    >
-                                      Proktor
-                                    </button>
-                                  </div>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    /* GRID VIEW (CARDS) */
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                      {filteredParticipationList.map(item => {
-                        const isComplete = item.participationRate === 100;
-                        return (
-                          <div
-                            key={item.className}
-                            className={`border rounded-xl p-4 transition-all hover:shadow-xs ${
-                              isComplete
-                                ? 'bg-emerald-50/20 border-emerald-200'
-                                : item.blockedCount > 0
-                                ? 'bg-rose-50/20 border-rose-200'
-                                : 'bg-white border-slate-200'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between mb-2">
-                              <div>
-                                <span className="font-mono font-bold text-base text-slate-900">{item.className}</span>
-                                <div className="text-[11px] text-slate-400 font-medium">{item.roomName}</div>
-                                <div className="text-[10px] text-slate-500 mt-0.5">Wali: {item.waliKelas}</div>
-                              </div>
-                              <div className="text-right">
-                                <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-black ${
-                                  isComplete
-                                    ? 'bg-emerald-100 text-emerald-800'
-                                    : item.participationRate >= 75
-                                    ? 'bg-indigo-100 text-indigo-800'
-                                    : 'bg-amber-100 text-amber-800'
-                                }`}>
-                                  {item.participationRate}%
-                                </span>
-                                <div className="text-[10px] text-slate-400 mt-0.5">Partisipasi</div>
-                              </div>
-                            </div>
-
-                            {/* Progress bar */}
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 my-2.5 overflow-hidden">
-                              <div
-                                className={`h-1.5 rounded-full transition-all duration-300 ${
-                                  isComplete ? 'bg-emerald-500' : 'bg-indigo-500'
-                                }`}
-                                style={{ width: `${item.participationRate}%` }}
-                              />
-                            </div>
-
-                            {/* Mini Metrics 4-grid */}
-                            <div className="grid grid-cols-4 gap-1 text-center py-2 px-1 bg-slate-50/80 rounded-lg text-xs mb-3">
-                              <div>
-                                <div className="text-[10px] text-slate-400 font-medium">Ujian</div>
-                                <div className="font-bold text-indigo-700">{item.inProgressCount}</div>
-                              </div>
-                              <div>
-                                <div className="text-[10px] text-slate-400 font-medium">Selesai</div>
-                                <div className="font-bold text-emerald-700">{item.submittedCount}</div>
-                              </div>
-                              <div>
-                                <div className="text-[10px] text-slate-400 font-medium">Belum</div>
-                                <div className="font-bold text-amber-700">{item.notStartedCount}</div>
-                              </div>
-                              <div>
-                                <div className="text-[10px] text-slate-400 font-medium">Kunci</div>
-                                <div className="font-bold text-rose-700">{item.blockedCount}</div>
-                              </div>
-                            </div>
-
-                            {/* Action footer */}
-                            <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
-                              <span className="text-slate-500 font-medium">
-                                Total: <strong className="text-slate-800">{item.totalStudents} siswa</strong>
-                              </span>
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    setSelectedClassFilter(item.className);
-                                    setOpenSections(prev => ({ ...prev, data_master: true }));
-                                    setActiveTab('siswa');
-                                  }}
-                                  className="text-slate-600 hover:text-slate-900 font-medium"
-                                >
-                                  Siswa
-                                </button>
-                                <span className="text-slate-300">•</span>
-                                <button
-                                  onClick={() => {
-                                    setOpenSections(prev => ({ ...prev, manajemen_ujian: true }));
-                                    setActiveTab('konsol_proktor');
-                                  }}
-                                  className="text-indigo-600 hover:text-indigo-800 font-semibold"
-                                >
-                                  Proktor →
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
                 </div>
 
                 {/* Sesi Peserta Real-time */}
@@ -2170,6 +2045,20 @@ export const AdminDashboard: React.FC = () => {
                           {copiedToken === exam.token ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
                         </button>
                       </div>
+
+                      {/* Live Proktor & Ruang Kelas Langsung */}
+                      <button
+                        onClick={() => {
+                          setSelectedProctorExamId(exam.id);
+                          setOpenSections(prev => ({ ...prev, manajemen_ujian: true }));
+                          setActiveTab('konsol_proktor');
+                        }}
+                        className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-colors shadow-xs"
+                        title="Buka Ruang Pengawasan & Konsol Proktor Langsung untuk Ujian Ini"
+                      >
+                        <Radio className="w-3.5 h-3.5 text-white animate-pulse" />
+                        <span>Live Proktor</span>
+                      </button>
 
                       {/* Ganti / Ubah Jadwal */}
                       <button
@@ -2956,6 +2845,18 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="flex flex-wrap items-center gap-2">
                     <button
+                      onClick={() => {
+                        setSelectedProctorExamId(exam.id);
+                        setOpenSections(prev => ({ ...prev, manajemen_ujian: true }));
+                        setActiveTab('konsol_proktor');
+                      }}
+                      className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                      title="Buka Ruang Pengawasan & Konsol Proktor Langsung untuk Ujian Ini"
+                    >
+                      <Radio className="w-3.5 h-3.5 text-white animate-pulse" />
+                      <span>Live Proktor & Ruang Kelas</span>
+                    </button>
+                    <button
                       onClick={() => handleOpenEditSchedule(exam)}
                       className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
                       title="Ubah jam, durasi, atau pengaturan paket ini"
@@ -3250,6 +3151,19 @@ export const AdminDashboard: React.FC = () => {
                         title="Unduh seluruh baris data peserta ke file CSV"
                       >
                         <FileDown className="w-4 h-4" /> Export CSV ({totalCount})
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setOpenSections(prev => ({ ...prev, nilai_laporan: true }));
+                          setActiveTab('dokumen_ujian');
+                        }}
+                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                        title="Buka Dokumen Resmi untuk mencetak Nilai Per Ruang Kelas Siap Dibagikan ke Orang Tua Siswa"
+                      >
+                        <Printer className="w-4 h-4" />
+                        <span>Cetak Nilai Per Kelas (PDF)</span>
                       </button>
                     </>
                   )}
@@ -4163,7 +4077,10 @@ export const AdminDashboard: React.FC = () => {
             18B. KONSOL PROKTOR & PENGAWASAN REAL-TIME
            ========================================================================= */}
         {activeTab === 'konsol_proktor' && (
-          <ProctorConsole />
+          <ProctorConsole
+            initialExamId={selectedProctorExamId || ongoingExams[0]?.id || exams[0]?.id}
+            onBackToExams={() => setActiveTab('ujian')}
+          />
         )}
 
         {/* =========================================================================
@@ -4571,8 +4488,8 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL KONFIRMASI HAPUS SINGLE JADWAL */}
       {examToDelete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md my-auto bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 max-h-[calc(100vh-2rem)] overflow-y-auto">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
                 <Trash2 className="w-5 h-5" />
@@ -4623,9 +4540,9 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL KONFIRMASI HAPUS MASSAL JADWAL (PTS, US, BULK, DLL) */}
       {bulkDeleteConfig && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center gap-3 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+            <div className="flex items-center gap-3 mb-4 shrink-0">
               <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
                 <Trash2 className="w-5 h-5" />
               </div>
@@ -4635,11 +4552,11 @@ export const AdminDashboard: React.FC = () => {
               </div>
             </div>
 
-            <p className="text-xs text-slate-600 mb-3 leading-relaxed">
+            <p className="text-xs text-slate-600 mb-3 leading-relaxed shrink-0">
               {bulkDeleteConfig.description}
             </p>
 
-            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl max-h-48 overflow-y-auto mb-5 space-y-1.5">
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex-1 overflow-y-auto mb-5 space-y-1.5 min-h-[100px] max-h-48">
               <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
                 Daftar Jadwal yang Akan Dihapus ({bulkDeleteConfig.examIds.length}):
               </div>
@@ -4655,7 +4572,7 @@ export const AdminDashboard: React.FC = () => {
                 ))}
             </div>
 
-            <div className="flex items-center justify-end gap-2.5">
+            <div className="flex items-center justify-end gap-2.5 shrink-0 pt-2 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setBulkDeleteConfig(null)}
@@ -4678,11 +4595,11 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL RESET PASSWORD PENGGUNA (SISWA / GURU / ADMIN) */}
       {userToResetPassword && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md my-auto bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-slate-100 shrink-0">
               <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
                   <KeyRound className="w-5 h-5" />
                 </div>
                 <div>
@@ -4694,71 +4611,73 @@ export const AdminDashboard: React.FC = () => {
               </div>
               <button
                 onClick={() => setUserToResetPassword(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer hover:bg-slate-100"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5 mb-4">
-              <div className="flex justify-between">
-                <span className="text-slate-500">Nama Lengkap:</span>
-                <span className="font-bold text-slate-900">{userToResetPassword.name}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-500">Username Login:</span>
-                <span className="font-mono font-bold text-indigo-700">{userToResetPassword.username}</span>
-              </div>
-              {userToResetPassword.nisn && (
+            <div className="flex-1 overflow-y-auto space-y-4">
+              <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="text-slate-500">No. NISN:</span>
-                  <span className="font-mono text-slate-700">{userToResetPassword.nisn}</span>
+                  <span className="text-slate-500">Nama Lengkap:</span>
+                  <span className="font-bold text-slate-900">{userToResetPassword.name}</span>
                 </div>
-              )}
-            </div>
-
-            <div className="space-y-3 mb-5">
-              <label className="block text-xs font-semibold text-slate-700">
-                Password Baru:
-              </label>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newPasswordInput}
-                  onChange={e => setNewPasswordInput(e.target.value)}
-                  placeholder="Masukkan password baru"
-                  className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-lg outline-none font-mono focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNewPasswordInput(
-                      userToResetPassword.role === 'admin'
-                        ? 'admin123'
-                        : userToResetPassword.role === 'guru'
-                        ? 'guru123'
-                        : 'siswa123'
-                    );
-                  }}
-                  className="px-2.5 py-2 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shrink-0 cursor-pointer"
-                  title="Kembalikan ke password default"
-                >
-                  Default
-                </button>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Username Login:</span>
+                  <span className="font-mono font-bold text-indigo-700">{userToResetPassword.username}</span>
+                </div>
+                {userToResetPassword.nisn && (
+                  <div className="flex justify-between">
+                    <span className="text-slate-500">No. NISN:</span>
+                    <span className="font-mono text-slate-700">{userToResetPassword.nisn}</span>
+                  </div>
+                )}
               </div>
-              <p className="text-[11px] text-slate-400">
-                Default standar:{' '}
-                <span className="font-mono font-bold text-slate-600">
-                  {userToResetPassword.role === 'admin'
-                    ? 'admin123'
-                    : userToResetPassword.role === 'guru'
-                    ? 'guru123'
-                    : 'siswa123'}
-                </span>
-              </p>
+
+              <div className="space-y-3">
+                <label className="block text-xs font-semibold text-slate-700">
+                  Password Baru:
+                </label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={newPasswordInput}
+                    onChange={e => setNewPasswordInput(e.target.value)}
+                    placeholder="Masukkan password baru"
+                    className="w-full px-3.5 py-2 text-xs border border-slate-300 rounded-lg outline-none font-mono focus:border-indigo-600 focus:ring-1 focus:ring-indigo-600 bg-white"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setNewPasswordInput(
+                        userToResetPassword.role === 'admin'
+                          ? 'admin123'
+                          : userToResetPassword.role === 'guru'
+                          ? 'guru123'
+                          : 'siswa123'
+                      );
+                    }}
+                    className="px-2.5 py-2 text-[11px] font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg shrink-0 cursor-pointer"
+                    title="Kembalikan ke password default"
+                  >
+                    Default
+                  </button>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Default standar:{' '}
+                  <span className="font-mono font-bold text-slate-600">
+                    {userToResetPassword.role === 'admin'
+                      ? 'admin123'
+                      : userToResetPassword.role === 'guru'
+                      ? 'guru123'
+                      : 'siswa123'}
+                  </span>
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center justify-end gap-2.5">
+            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100 shrink-0">
               <button
                 type="button"
                 onClick={() => setUserToResetPassword(null)}
@@ -4786,9 +4705,9 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL KONFIRMASI RESET MASSAL SISWA */}
       {isBatchResetModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
-            <div className="flex items-center gap-3 mb-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md my-auto bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+            <div className="flex items-center gap-3 mb-4 shrink-0">
               <div className="w-10 h-10 rounded-xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0">
                 <KeyRound className="w-5 h-5" />
               </div>
@@ -4829,6 +4748,592 @@ export const AdminDashboard: React.FC = () => {
               >
                 <KeyRound className="w-3.5 h-3.5" />
                 Ya, Reset Semua Siswa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL INTERAKTIF: DAFTAR SIAPA SAJA YANG MENGERJAKAN, TERKUNCI, MENGUMPULKAN, BELUM MULAI */}
+      {statusListModal && statusListModal.isOpen && (() => {
+        const currentFilter = statusListModal.filterType;
+        const filteredList = studentStatusData.filter(item => {
+          // Status filter
+          if (currentFilter !== 'all' && item.statusKey !== currentFilter) return false;
+
+          // Class filter
+          if (statusModalClass !== 'ALL' && item.student.kelas !== statusModalClass) return false;
+
+          // Search query
+          if (statusModalSearch.trim()) {
+            const q = statusModalSearch.toLowerCase();
+            const matchName = item.student.name.toLowerCase().includes(q);
+            const matchNisn = item.student.nisn ? item.student.nisn.includes(q) : false;
+            const matchClass = item.student.kelas ? item.student.kelas.toLowerCase().includes(q) : false;
+            if (!matchName && !matchNisn && !matchClass) return false;
+          }
+
+          return true;
+        });
+
+        const perPage = 20;
+        const totalPages = Math.max(1, Math.ceil(filteredList.length / perPage));
+        const page = Math.min(statusModalPage, totalPages);
+        const startIndex = (page - 1) * perPage;
+        const paginatedList = filteredList.slice(startIndex, startIndex + perPage);
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 md:p-6 overflow-y-auto animate-in fade-in duration-200">
+            <div className="relative w-full max-w-4xl my-auto bg-white rounded-2xl max-h-[calc(100vh-2rem)] sm:max-h-[90vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+              {/* Header Modal */}
+              <div className="shrink-0 p-4 sm:p-5 border-b border-slate-200 flex items-start justify-between bg-slate-50/80">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold shrink-0">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                      <span>{statusListModal.title}</span>
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                        {filteredList.length} Siswa
+                      </span>
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">{statusListModal.description}</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setStatusListModal(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/70 transition-colors cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Status Tab Switcher within Modal */}
+              <div className="shrink-0 px-4 sm:px-5 pt-2.5 sm:pt-3 border-b border-slate-200 bg-white flex items-center gap-1.5 overflow-x-auto text-xs scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusModalPage(1);
+                    setStatusListModal(prev => prev ? { ...prev, filterType: 'all', title: 'Daftar Seluruh Peserta Ujian', description: 'Monitoring seluruh peserta ujian dari semua status kehadiran.' } : null);
+                  }}
+                  className={`px-3 py-2 rounded-t-lg font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap ${
+                    currentFilter === 'all'
+                      ? 'border-indigo-600 text-indigo-700 bg-indigo-50/40'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  Semua ({students.length})
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusModalPage(1);
+                    setStatusListModal(prev => prev ? { ...prev, filterType: 'in_progress', title: 'Daftar Siswa Sedang Mengerjakan', description: 'Peserta yang sedang aktif mengerjakan soal di ruang kelas/lab ujian CBT.' } : null);
+                  }}
+                  className={`px-3 py-2 rounded-t-lg font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    currentFilter === 'in_progress'
+                      ? 'border-emerald-600 text-emerald-800 bg-emerald-50/50'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span>Sedang Mengerjakan ({inProgressStudentsCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusModalPage(1);
+                    setStatusListModal(prev => prev ? { ...prev, filterType: 'blocked', title: 'Daftar Siswa Terkunci (Pelanggaran / Pindah Tab)', description: 'Siswa yang terkunci karena keluar aplikasi atau batas peringatan.' } : null);
+                  }}
+                  className={`px-3 py-2 rounded-t-lg font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    currentFilter === 'blocked'
+                      ? 'border-rose-600 text-rose-800 bg-rose-50/50'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Terkunci ({blockedStudentsCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusModalPage(1);
+                    setStatusListModal(prev => prev ? { ...prev, filterType: 'submitted', title: 'Daftar Siswa Sudah Mengumpulkan (Selesai)', description: 'Peserta yang telah mengumpulkan lembar jawaban.' } : null);
+                  }}
+                  className={`px-3 py-2 rounded-t-lg font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    currentFilter === 'submitted'
+                      ? 'border-blue-600 text-blue-800 bg-blue-50/50'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <CheckCircle2 className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Mengumpulkan ({submittedStudentsCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusModalPage(1);
+                    setStatusListModal(prev => prev ? { ...prev, filterType: 'not_started', title: 'Daftar Siswa Belum Memulai Ujian', description: 'Siswa yang belum login atau belum memasukkan token ujian.' } : null);
+                  }}
+                  className={`px-3 py-2 rounded-t-lg font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    currentFilter === 'not_started'
+                      ? 'border-slate-600 text-slate-900 bg-slate-100/60'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Belum Mulai ({notStartedStudentsCount})</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStatusModalPage(1);
+                    setStatusListModal(prev => prev ? { ...prev, filterType: 'special', title: 'Daftar Siswa Ujian Tertulis, Sakit, Izin, & Absen', description: 'Peserta ujian metode kertas manual atau izin khusus.' } : null);
+                  }}
+                  className={`px-3 py-2 rounded-t-lg font-bold border-b-2 transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+                    currentFilter === 'special'
+                      ? 'border-purple-600 text-purple-800 bg-purple-50/50'
+                      : 'border-transparent text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  <FileText className="w-3.5 h-3.5 text-purple-600" />
+                  <span>Tertulis / Izin ({specialStudentsCount})</span>
+                </button>
+              </div>
+
+              {/* Filter & Search Bar */}
+              <div className="p-4 bg-slate-50/60 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Cari nama, NISN, atau kelas..."
+                      value={statusModalSearch}
+                      onChange={e => {
+                        setStatusModalSearch(e.target.value);
+                        setStatusModalPage(1);
+                      }}
+                      className="pl-8 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg w-56 sm:w-64 bg-white outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                  </div>
+
+                  <select
+                    value={statusModalClass}
+                    onChange={e => {
+                      setStatusModalClass(e.target.value);
+                      setStatusModalPage(1);
+                    }}
+                    className="py-1.5 px-3 text-xs border border-slate-300 rounded-lg bg-white font-medium outline-none focus:ring-2 focus:ring-indigo-500"
+                  >
+                    <option value="ALL">Semua Ruang Kelas ({classes.length})</option>
+                    {classes.map(c => (
+                      <option key={c.id} value={c.name}>
+                        Kelas {c.name} ({c.tingkat})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="text-slate-500 text-[11px] font-mono">
+                  Menampilkan <strong className="text-slate-800">{paginatedList.length}</strong> dari <strong className="text-slate-800">{filteredList.length}</strong> siswa
+                </div>
+              </div>
+
+              {/* Table List */}
+              <div className="overflow-y-auto overflow-x-auto flex-1 p-0">
+                <table className="w-full text-left text-xs border-collapse">
+                  <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 z-10">
+                    <tr>
+                      <th className="py-2.5 px-3 text-center w-10">No</th>
+                      <th className="py-2.5 px-3">Nama Siswa & NISN</th>
+                      <th className="py-2.5 px-3">Ruang Kelas</th>
+                      <th className="py-2.5 px-3">Status Ujian</th>
+                      <th className="py-2.5 px-3">Waktu / Nilai</th>
+                      <th className="py-2.5 px-3">Pelanggaran</th>
+                      <th className="py-2.5 px-3 text-right">Aksi Langsung</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {paginatedList.length === 0 ? (
+                      <tr>
+                        <td colSpan={7} className="py-10 text-center text-slate-400">
+                          Tidak ada siswa yang sesuai dengan filter atau pencarian ini.
+                        </td>
+                      </tr>
+                    ) : (
+                      paginatedList.map((item, idx) => {
+                        const { student, session, statusKey, statusLabel, statusBadge } = item;
+                        const isBlocked = statusKey === 'blocked';
+                        const isInProgress = statusKey === 'in_progress';
+                        const isSubmitted = statusKey === 'submitted';
+
+                        const minsLeft = session ? Math.floor(session.remainingSeconds / 60) : 0;
+
+                        return (
+                          <tr key={student.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-2.5 px-3 text-center font-mono text-slate-400">
+                              {startIndex + idx + 1}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <div className="font-bold text-slate-900">{student.name}</div>
+                              <div className="text-[10px] text-slate-400 font-mono">
+                                NISN: {student.nisn || '-'} · User: {student.username}
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className="font-semibold text-slate-700">Kelas {student.kelas}</span>
+                              <span className="block text-[10px] text-slate-400">{student.ruangUjian || `Ruang Kelas ${student.kelas}`}</span>
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${statusBadge}`}>
+                                {isBlocked && <AlertTriangle className="w-3 h-3 text-rose-600 shrink-0" />}
+                                {isInProgress && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 animate-pulse" />}
+                                {isSubmitted && <CheckCircle2 className="w-3 h-3 text-blue-600 shrink-0" />}
+                                <span>{statusLabel}</span>
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 font-mono">
+                              {isInProgress ? (
+                                <span className="text-emerald-700 font-bold">Sisa {minsLeft}m</span>
+                              ) : isSubmitted || session?.attendanceStatus === 'tertulis' ? (
+                                <span className="text-indigo-700 font-bold">Skor: {session?.score ?? 0}</span>
+                              ) : (
+                                <span className="text-slate-400">-</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-[11px]">
+                              {session && session.violationsCount > 0 ? (
+                                <span className="text-rose-600 font-bold">{session.violationsCount}x tab blur</span>
+                              ) : (
+                                <span className="text-slate-400">0x tab</span>
+                              )}
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                {isBlocked && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      unlockStudent(student.id);
+                                      showScheduleToast(`Akun siswa ${student.name} berhasil dibuka kuncinya.`);
+                                    }}
+                                    className="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                                    title="Buka kunci agar siswa dapat melanjutkan ujian"
+                                  >
+                                    <Unlock className="w-3 h-3" />
+                                    <span>Buka Kunci</span>
+                                  </button>
+                                )}
+
+                                {isInProgress && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        extendStudentTime(student.id, 10);
+                                        showScheduleToast(`Waktu ujian ${student.name} ditambah +10 menit.`);
+                                      }}
+                                      className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[11px] font-bold border border-indigo-200 cursor-pointer"
+                                      title="Tambah 10 menit pengerjaan"
+                                    >
+                                      +10m
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        forceSubmitStudentSession(student.id);
+                                        showScheduleToast(`Sesi ujian ${student.name} dikumpulkan.`);
+                                      }}
+                                      className="px-2 py-1 bg-slate-100 hover:bg-rose-50 hover:text-rose-700 text-slate-700 rounded text-[11px] font-semibold border border-slate-200 cursor-pointer"
+                                      title="Kumpulkan lembar jawaban paksa"
+                                    >
+                                      Kumpulkan
+                                    </button>
+                                  </>
+                                )}
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setStatusAttendanceEditingStudent(student);
+                                    setStatusAttendanceChoice(session?.attendanceStatus || 'cbt');
+                                    setStatusAttendanceScore(session?.score ?? 75);
+                                    setStatusAttendanceNotes(session?.attendanceNotes || '');
+                                  }}
+                                  className="px-2 py-1 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-700 text-slate-600 rounded text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
+                                  title="Ubah Status (Tertulis / Sakit / Izin / Absen)"
+                                >
+                                  <Edit2 className="w-3 h-3" />
+                                  <span>Status</span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    resetStudentSession(student.id);
+                                    showScheduleToast(`Sesi siswa ${student.name} berhasil direset.`);
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded cursor-pointer"
+                                  title="Reset sesi ujian"
+                                >
+                                  <RotateCcw className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+
+              {/* Modal Pagination Footer */}
+              <div className="p-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-600">
+                <div>
+                  Halaman <span className="font-bold font-mono text-slate-900">{page}</span> dari{' '}
+                  <span className="font-bold font-mono text-slate-900">{totalPages}</span> ({filteredList.length} total)
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setStatusModalPage(prev => Math.max(1, prev - 1))}
+                    disabled={page <= 1}
+                    className="px-3 py-1 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer font-medium"
+                  >
+                    Sebelumnya
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusModalPage(prev => Math.min(totalPages, prev + 1))}
+                    disabled={page >= totalPages}
+                    className="px-3 py-1 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer font-medium"
+                  >
+                    Berikutnya
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setStatusListModal(null)}
+                    className="ml-2 px-4 py-1.5 bg-slate-900 text-white rounded-lg font-bold hover:bg-slate-800 cursor-pointer"
+                  >
+                    Tutup
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* MODAL EDIT STATUS KEHADIRAN & UJIAN TERTULIS DARI MODAL STATUS */}
+      {statusAttendanceEditingStudent && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden">
+            {/* Header: Fixed / Shrink-0 */}
+            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between bg-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold shrink-0">
+                  <CheckCircle2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Ubah Status Kehadiran Siswa</h3>
+                  <p className="text-xs text-slate-500">
+                    {statusAttendanceEditingStudent.name} (Kelas {statusAttendanceEditingStudent.kelas} · NISN: {statusAttendanceEditingStudent.nisn || '-'})
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStatusAttendanceEditingStudent(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body: Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+              <label className="text-xs font-bold text-slate-700 block">Pilih Status Kehadiran:</label>
+
+              {/* Pilihan CBT */}
+              <label
+                onClick={() => setStatusAttendanceChoice('cbt')}
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  statusAttendanceChoice === 'cbt'
+                    ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20'
+                    : 'border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="modal_att_choice"
+                  checked={statusAttendanceChoice === 'cbt'}
+                  onChange={() => setStatusAttendanceChoice('cbt')}
+                  className="mt-0.5 text-indigo-600 cursor-pointer"
+                />
+                <div>
+                  <div className="font-bold text-xs text-slate-900">💻 Ujian Online CBT (Normal)</div>
+                  <div className="text-[11px] text-slate-500">Mengerjakan ujian di komputer/HP secara online di aplikasi CBT.</div>
+                </div>
+              </label>
+
+              {/* Pilihan Tertulis */}
+              <label
+                onClick={() => setStatusAttendanceChoice('tertulis')}
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  statusAttendanceChoice === 'tertulis'
+                    ? 'border-purple-600 bg-purple-50/50 ring-2 ring-purple-500/20'
+                    : 'border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="modal_att_choice"
+                  checked={statusAttendanceChoice === 'tertulis'}
+                  onChange={() => setStatusAttendanceChoice('tertulis')}
+                  className="mt-0.5 text-purple-600 cursor-pointer"
+                />
+                <div className="flex-1">
+                  <div className="font-bold text-xs text-purple-900">📝 Ujian Tertulis (Manual Paper)</div>
+                  <div className="text-[11px] text-purple-700">Mengerjakan lembar fisik kertas karena kendala perangkat gawai.</div>
+                </div>
+              </label>
+
+              {statusAttendanceChoice === 'tertulis' && (
+                <div className="ml-6 p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
+                  <label className="text-xs font-bold text-purple-900 flex items-center justify-between">
+                    <span>Input Nilai Lembar Jawaban Tertulis:</span>
+                    <span className="font-mono text-purple-700">{statusAttendanceScore} / 100</span>
+                  </label>
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={statusAttendanceScore}
+                      onChange={e => setStatusAttendanceScore(Math.min(100, Math.max(0, Number(e.target.value))))}
+                      className="w-24 px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-sm font-bold font-mono text-slate-900 text-center outline-none focus:ring-2 focus:ring-purple-500"
+                    />
+                    <span className="text-xs text-purple-600">Nilai akan langsung masuk ke rekap nilai kelas & leger.</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Pilihan Sakit */}
+              <label
+                onClick={() => setStatusAttendanceChoice('sakit')}
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  statusAttendanceChoice === 'sakit'
+                    ? 'border-amber-600 bg-amber-50/50 ring-2 ring-amber-500/20'
+                    : 'border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="modal_att_choice"
+                  checked={statusAttendanceChoice === 'sakit'}
+                  onChange={() => setStatusAttendanceChoice('sakit')}
+                  className="mt-0.5 text-amber-600 cursor-pointer"
+                />
+                <div>
+                  <div className="font-bold text-xs text-amber-900">🤒 Sakit (Surat Dokter / Izin)</div>
+                  <div className="text-[11px] text-amber-700">Tidak hadir karena sakit, berhak mengikuti jadwal ujian susulan.</div>
+                </div>
+              </label>
+
+              {/* Pilihan Izin */}
+              <label
+                onClick={() => setStatusAttendanceChoice('izin')}
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  statusAttendanceChoice === 'izin'
+                    ? 'border-sky-600 bg-sky-50/50 ring-2 ring-sky-500/20'
+                    : 'border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="modal_att_choice"
+                  checked={statusAttendanceChoice === 'izin'}
+                  onChange={() => setStatusAttendanceChoice('izin')}
+                  className="mt-0.5 text-sky-600 cursor-pointer"
+                />
+                <div>
+                  <div className="font-bold text-xs text-sky-900">✉️ Izin Resmi</div>
+                  <div className="text-[11px] text-sky-700">Mendapat izin resmi dari madrasah/sekolah.</div>
+                </div>
+              </label>
+
+              {/* Pilihan Absen */}
+              <label
+                onClick={() => setStatusAttendanceChoice('absen')}
+                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                  statusAttendanceChoice === 'absen'
+                    ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-500/20'
+                    : 'border-slate-200 hover:bg-slate-50'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="modal_att_choice"
+                  checked={statusAttendanceChoice === 'absen'}
+                  onChange={() => setStatusAttendanceChoice('absen')}
+                  className="mt-0.5 text-rose-600 cursor-pointer"
+                />
+                <div>
+                  <div className="font-bold text-xs text-rose-900">❌ Absen / Alpa (Tanpa Keterangan)</div>
+                  <div className="text-[11px] text-rose-700">Siswa tidak hadir tanpa konfirmasi pihak sekolah.</div>
+                </div>
+              </label>
+
+              <div className="pt-2">
+                <label className="text-xs font-semibold text-slate-700 block mb-1">Catatan Proktor (Opsional):</label>
+                <input
+                  type="text"
+                  placeholder="Misal: Surat dokter terlampir, mengerjakan di ruang guru"
+                  value={statusAttendanceNotes}
+                  onChange={e => setStatusAttendanceNotes(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                />
+              </div>
+            </div>
+
+            {/* Footer: Fixed / Shrink-0 */}
+            <div className="shrink-0 p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setStatusAttendanceEditingStudent(null)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (statusAttendanceEditingStudent) {
+                    updateStudentAttendance(
+                      statusAttendanceEditingStudent.id,
+                      statusAttendanceChoice,
+                      statusAttendanceChoice === 'tertulis' ? statusAttendanceScore : undefined,
+                      statusAttendanceNotes
+                    );
+                    showScheduleToast(`Status kehadiran siswa ${statusAttendanceEditingStudent.name} berhasil diperbarui.`);
+                    setStatusAttendanceEditingStudent(null);
+                  }
+                }}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+              >
+                <Check className="w-4 h-4" />
+                <span>Simpan Status</span>
               </button>
             </div>
           </div>

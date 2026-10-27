@@ -23,9 +23,9 @@ export const RoleSwitcherModal: React.FC<RoleSwitcherModalProps> = ({ isOpen, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs">
-      <div className="relative w-full max-w-2xl bg-[#fdfdfc] rounded-2xl shadow-xl border border-stone-200/90 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-        <div className="px-6 py-4 border-b border-stone-200/80 flex items-center justify-between">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-2xl my-auto bg-[#fdfdfc] rounded-2xl shadow-xl border border-stone-200/90 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+        <div className="shrink-0 px-6 py-4 border-b border-stone-200/80 flex items-center justify-between">
           <div>
             <h2 className="text-lg font-bold text-stone-900">Simulasi Masuk & Ganti Peran</h2>
             <p className="text-xs text-stone-500 mt-0.5">
@@ -40,7 +40,7 @@ export const RoleSwitcherModal: React.FC<RoleSwitcherModalProps> = ({ isOpen, on
           </button>
         </div>
 
-        <div className="p-6 max-h-[75vh] overflow-y-auto space-y-6">
+        <div className="flex-1 overflow-y-auto p-6 space-y-6">
           {/* Section 1: Admin */}
           <div>
             <div className="flex items-center gap-2 mb-2.5">
@@ -170,7 +170,7 @@ export const RoleSwitcherModal: React.FC<RoleSwitcherModalProps> = ({ isOpen, on
           </div>
         </div>
 
-        <div className="px-6 py-3 bg-stone-50 border-t border-stone-200 flex justify-end">
+        <div className="shrink-0 px-6 py-3.5 bg-stone-50 border-t border-stone-200 flex justify-end">
           <button
             onClick={onClose}
             className="px-4 py-2 text-xs font-semibold text-stone-700 bg-white border border-stone-200/90 rounded-lg hover:bg-stone-100 transition-colors cursor-pointer"

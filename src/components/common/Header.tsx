@@ -89,8 +89,8 @@ export const Header: React.FC<HeaderProps> = ({ onOpenRoleSwitcher }) => {
           <div className="flex items-center gap-2">
             <button
               onClick={onOpenRoleSwitcher}
-              className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
-              title="Ganti akun peran untuk simulasi pengujian"
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 hover:text-stone-900 bg-stone-100 hover:bg-stone-200/80 rounded-lg transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              title="Ganti akun peran untuk simulasi pengujian (Admin / Guru / Siswa)"
             >
               <ArrowRightLeft className="w-3.5 h-3.5 text-stone-500" />
               <span>Ganti Akun</span>

@@ -131,10 +131,10 @@ export const ImportStudentsBulkModal: React.FC<ImportStudentsBulkModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-2xl my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="bg-slate-900 text-white p-5 flex items-center justify-between">
+        <div className="shrink-0 bg-slate-900 text-white p-5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-indigo-500/20 text-indigo-400 rounded-xl border border-indigo-500/30">
               <UploadCloud className="w-5 h-5" />
@@ -154,9 +154,10 @@ export const ImportStudentsBulkModal: React.FC<ImportStudentsBulkModalProps> = (
           </button>
         </div>
 
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
         {/* Success Alert */}
         {importSuccessCount !== null && (
-          <div className="m-5 p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-xs text-emerald-800">
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center gap-3 text-xs text-emerald-800">
             <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
             <div className="flex-1">
               <span className="font-bold">Berhasil Mengimpor {importSuccessCount} Siswa!</span> Data telah tersimpan ke dalam sistem CBT dan langsung siap mengikuti ujian serentak.
@@ -268,9 +269,10 @@ export const ImportStudentsBulkModal: React.FC<ImportStudentsBulkModalProps> = (
             </div>
           )}
         </div>
+        </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+        <div className="shrink-0 p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
           <button
             onClick={onClose}
             className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-xl text-xs font-semibold cursor-pointer"

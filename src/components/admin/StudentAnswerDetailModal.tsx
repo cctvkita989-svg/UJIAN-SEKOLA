@@ -21,10 +21,10 @@ export const StudentAnswerDetailModal: React.FC<StudentAnswerDetailModalProps> =
   const isPassed = (session.score ?? 0) >= kkm;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+      <div className="relative w-full max-w-3xl my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[92vh] animate-in fade-in zoom-in-95 duration-150">
         {/* Header */}
-        <div className="bg-slate-900 text-white p-5 flex items-start justify-between">
+        <div className="shrink-0 bg-slate-900 text-white p-5 flex items-start justify-between">
           <div>
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
@@ -52,7 +52,7 @@ export const StudentAnswerDetailModal: React.FC<StudentAnswerDetailModalProps> =
         </div>
 
         {/* Quick Summary Strip */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 border-b border-slate-200 text-xs">
+        <div className="shrink-0 grid grid-cols-2 sm:grid-cols-4 gap-3 p-4 bg-slate-50 border-b border-slate-200 text-xs">
           <div className="p-3 bg-white rounded-xl border border-slate-200">
             <span className="text-slate-400 font-medium block text-[10px] uppercase">Skor Akhir</span>
             <span className="text-2xl font-bold font-mono text-indigo-600">{session.score ?? 0}</span>
@@ -96,7 +96,7 @@ export const StudentAnswerDetailModal: React.FC<StudentAnswerDetailModalProps> =
         </div>
 
         {/* Detailed Question Answers List */}
-        <div className="p-5 max-h-[60vh] overflow-y-auto space-y-4">
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           <div className="flex items-center justify-between text-xs font-bold text-slate-600 border-b border-slate-200 pb-2">
             <span>Rincian Analisis Jawaban Per Butir Soal</span>
             <span>Kunci & Poin</span>
@@ -187,7 +187,7 @@ export const StudentAnswerDetailModal: React.FC<StudentAnswerDetailModalProps> =
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+        <div className="shrink-0 p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
           <button
             onClick={onClose}
             className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold cursor-pointer transition-colors"

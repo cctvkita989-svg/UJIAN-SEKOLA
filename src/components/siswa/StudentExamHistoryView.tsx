@@ -775,10 +775,10 @@ export const StudentExamHistoryView: React.FC = () => {
       {/* MODAL 2: CETAK BUKTI HASIL UJIAN (OFFICIAL RECEIPT / CERT)   */}
       {/* ============================================================ */}
       {receiptModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-xs overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-stone-200 overflow-hidden my-8 print:m-0 print:border-none print:shadow-none">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-stone-900/60 backdrop-blur-xs overflow-y-auto">
+          <div className="relative w-full max-w-2xl my-auto bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[92vh] print:m-0 print:border-none print:shadow-none print:max-h-none">
             {/* Action Bar (Hidden on print) */}
-            <div className="p-4 bg-stone-900 text-white flex items-center justify-between print:hidden">
+            <div className="shrink-0 p-4 bg-stone-900 text-white flex items-center justify-between print:hidden">
               <div className="flex items-center gap-2">
                 <Printer className="w-4 h-4 text-emerald-400" />
                 <span className="text-xs font-bold tracking-tight">Pratinjau Lembar Bukti Hasil Asesmen CBT</span>
@@ -801,7 +801,7 @@ export const StudentExamHistoryView: React.FC = () => {
             </div>
 
             {/* Official Printable Certificate Document */}
-            <div className="p-8 sm:p-10 space-y-6 text-stone-900 bg-white">
+            <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-6 text-stone-900 bg-white print:overflow-visible">
               {/* School Header / Kop Surat */}
               <div className="border-b-2 border-stone-900 pb-4 text-center space-y-1">
                 <h4 className="text-xs uppercase tracking-widest text-stone-600 font-semibold">
@@ -940,7 +940,7 @@ export const StudentExamHistoryView: React.FC = () => {
             </div>
 
             {/* Footer close */}
-            <div className="p-4 bg-stone-50 border-t border-stone-200 text-right print:hidden">
+            <div className="shrink-0 p-4 bg-stone-50 border-t border-stone-200 text-right print:hidden">
               <button
                 onClick={() => setReceiptModalItem(null)}
                 className="px-4 py-2 bg-stone-900 text-white text-xs font-semibold rounded-lg hover:bg-stone-800 cursor-pointer"

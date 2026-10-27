@@ -160,10 +160,10 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-2xl border border-stone-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh]">
         {/* Header */}
-        <div className="px-6 py-4.5 bg-stone-900 text-white flex items-center justify-between border-b border-stone-800">
+        <div className="shrink-0 px-6 py-4.5 bg-stone-900 text-white flex items-center justify-between border-b border-stone-800">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center justify-center">
               <KeyRound className="w-5 h-5" />
@@ -185,7 +185,7 @@ export const ResetPasswordModal: React.FC<ResetPasswordModalProps> = ({
         </div>
 
         {/* Tab Selection */}
-        <div className="grid grid-cols-2 p-2 bg-stone-100/80 border-b border-stone-200 gap-1.5 text-xs font-semibold">
+        <div className="shrink-0 grid grid-cols-2 p-2 bg-stone-100/80 border-b border-stone-200 gap-1.5 text-xs font-semibold">
           <button
             type="button"
             onClick={() => {

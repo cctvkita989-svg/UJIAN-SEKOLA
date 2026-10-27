@@ -1193,10 +1193,10 @@ export const SiswaDashboard: React.FC = () => {
         const isPassed = selectedAnswerReviewGrade.score >= kkm;
 
         return (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-            <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col animate-in zoom-in-95 duration-150">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+            <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] animate-in zoom-in-95 duration-150">
               {/* Header */}
-              <div className="bg-slate-900 text-white p-4 flex items-center justify-between">
+              <div className="shrink-0 bg-slate-900 text-white p-4 flex items-center justify-between">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-mono font-bold text-indigo-300">
@@ -1302,7 +1302,7 @@ export const SiswaDashboard: React.FC = () => {
               </div>
 
               {/* Footer */}
-              <div className="p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs">
+              <div className="shrink-0 p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs">
                 <span className="text-slate-500 font-medium">
                   {schoolProfile.name} · Hasil Resmi Asesmen CBT
                 </span>

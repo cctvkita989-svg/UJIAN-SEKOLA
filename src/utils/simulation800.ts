@@ -128,7 +128,10 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     '< 60 (E)': 0,
   };
 
-  for (let i = 0; i < 800; i++) {
+  // 793 simulated students + 7 original students = EXACTLY 800 students
+  const TOTAL_SIMULATED = 793;
+
+  for (let i = 0; i < TOTAL_SIMULATED; i++) {
     const isMale = i % 2 === 0;
     const firstList = isMale ? FIRST_NAMES_MALE : FIRST_NAMES_FEMALE;
     const firstName = firstList[i % firstList.length];
@@ -137,7 +140,7 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     const fullName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
 
     const studentId = `usr-sim-siswa-${String(i + 1).padStart(4, '0')}`;
-    const nisn = `006819${String(1000 + i).slice(0, 4)}`;
+    const nisn = `006819${String(1001 + i).slice(0, 4)}`;
     const studentClass = CLASSES[i % CLASSES.length];
     const labRoom = `Ruang Kelas ${studentClass}`;
     const religion = RELIGIONS[i % RELIGIONS.length];
@@ -147,35 +150,46 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     const sessionName = `Sesi ${sessionNum} (${sessionNum === 1 ? '07.30 - 09.00' : sessionNum === 2 ? '09.30 - 11.00' : '11.30 - 13.00'})`;
     const noPeserta = `U-24-${studentClass.replace('-', '')}-${String((i % 35) + 1).padStart(3, '0')}`;
 
-    const score = scoreTargets[i];
-    totalScoreSum += score;
-    if (score >= 75) passedCount++;
+    const targetFinalScore = scoreTargets[i % scoreTargets.length];
+    totalScoreSum += targetFinalScore;
+    if (targetFinalScore >= 75) passedCount++;
 
-    if (score >= 90) scoreDistribution['90 - 100 (A)']++;
-    else if (score >= 80) scoreDistribution['80 - 89 (B)']++;
-    else if (score >= 70) scoreDistribution['70 - 79 (C)']++;
-    else if (score >= 60) scoreDistribution['60 - 69 (D)']++;
+    if (targetFinalScore >= 90) scoreDistribution['90 - 100 (A)']++;
+    else if (targetFinalScore >= 80) scoreDistribution['80 - 89 (B)']++;
+    else if (targetFinalScore >= 70) scoreDistribution['70 - 79 (C)']++;
+    else if (targetFinalScore >= 60) scoreDistribution['60 - 69 (D)']++;
     else scoreDistribution['< 60 (E)']++;
 
-    // Violations simulation (realistic: ~90% zero, ~7% 1x, ~2% 2x, ~1% 3x/terkunci)
+    // Realistic live ongoing exam statuses:
+    // ~68% in_progress (actively taking the exam, questions partially answered, timer ticking)
+    // ~23% submitted (finished early, all answers submitted)
+    // ~6% not_started (logged in, waiting for token/instruction)
+    // ~3% blocked (tab switch violation or noise violation, waiting for proctor unlock)
     let violations = 0;
-    let status: 'submitted' | 'in_progress' | 'blocked' = 'submitted';
-    let statusLogin: 'online' | 'offline' | 'ujian' | 'terkunci' = 'offline';
+    let status: 'submitted' | 'in_progress' | 'blocked' | 'not_started' = 'in_progress';
+    let statusLogin: 'online' | 'offline' | 'ujian' | 'terkunci' = 'ujian';
 
-    if (i % 120 === 119) {
+    if (i % 35 === 34) {
+      // Blocked / Locked
       violations = 3;
       status = 'blocked';
       statusLogin = 'terkunci';
-    } else if (i % 45 === 44) {
-      violations = 2;
-    } else if (i % 14 === 13) {
-      violations = 1;
-    }
-
-    // A few students still currently in progress (e.g. Sesi 3)
-    if (sessionNum === 3 && i >= 780 && status !== 'blocked') {
+    } else if (i % 18 === 17) {
+      // Not yet started
+      violations = 0;
+      status = 'not_started';
+      statusLogin = 'online';
+    } else if (i % 4 === 0) {
+      // Submitted early
+      status = 'submitted';
+      statusLogin = 'offline';
+      if (i % 14 === 13) violations = 1;
+    } else {
+      // In progress (active right now)
       status = 'in_progress';
       statusLogin = 'ujian';
+      if (i % 35 === 33) violations = 2;
+      else if (i % 12 === 11) violations = 1;
     }
 
     const user: User = {
@@ -196,20 +210,10 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     };
     users.push(user);
 
-    // Build Student Answers for the 10 questions to match exact target score
-    // 10 questions = 10 pts each.
-    // score 100 => 10 correct
-    // score 90 => 9 correct, 1 wrong
-    // score 80 => 8 correct, 2 wrong
-    // score 70 => 7 correct, 3 wrong
-    // score 60 => 6 correct, 4 wrong
-    // score 50 => 5 correct, 5 wrong
-    // score 40 => 4 correct, 6 wrong
-    const correctCount = Math.round(score / 10);
+    // Build Student Answers for the 10 questions
+    const correctCount = Math.round(targetFinalScore / 10);
     const wrongCount = 10 - correctCount;
 
-    // Determine which questions this student gets wrong
-    // distribute wrong indices so not all students miss the same question
     const wrongQuestionIndices = new Set<number>();
     let seed = (i * 7 + 3);
     while (wrongQuestionIndices.size < wrongCount) {
@@ -222,13 +226,22 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     const baseHour = sessionNum === 1 ? 7 : sessionNum === 2 ? 9 : 11;
     const baseMin = 32 + (i % 15);
 
-    QUESTION_IDS.forEach((qId, qIndex) => {
+    // Number of questions answered so far based on status
+    const numAnswered =
+      status === 'not_started'
+        ? 0
+        : status === 'blocked'
+        ? 1 + (i % 2)
+        : status === 'in_progress'
+        ? Math.min(9, 4 + (i % 6))
+        : 10;
+
+    QUESTION_IDS.slice(0, numAnswered).forEach((qId, qIndex) => {
       const qConfig = EXAM_KEY[qId];
       const isCorrect = !wrongQuestionIndices.has(qIndex);
       let selectedOption = qConfig.correct;
 
       if (!isCorrect) {
-        // Pick an alternate wrong option
         const wrongOpts = qConfig.options.filter(opt => opt !== qConfig.correct);
         selectedOption = wrongOpts[i % wrongOpts.length] || 'A';
       }
@@ -249,6 +262,50 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     const finishMin = 25 + (i % 30);
     const finishSec = (i * 23) % 60;
 
+    // Remaining seconds
+    const remainingSeconds =
+      status === 'submitted'
+        ? 0
+        : status === 'not_started'
+        ? 5400
+        : status === 'blocked'
+        ? 3420
+        : 2200 + ((i * 29) % 2600); // 36 - 80 menit tersisa
+
+    // Decibel and incident noise detection
+    const isRoomVII1 = studentClass === 'VII-1';
+    const isRoomVIII2 = studentClass === 'VIII-2';
+    const currentAudioLevel = isRoomVII1
+      ? 48 + (i % 18) // VII-1 is noisy: 48 - 65 dB
+      : isRoomVIII2
+      ? 38 + (i % 14) // VIII-2 is moderate: 38 - 51 dB
+      : 22 + (i % 12); // Other rooms quiet: 22 - 33 dB
+
+    const audioViolationsCount =
+      violations > 0
+        ? violations
+        : isRoomVII1 && i % 4 === 0
+        ? 1
+        : 0;
+
+    const lastAudioIncidentAt =
+      (violations > 0 || (isRoomVII1 && i % 4 === 0))
+        ? `08:${String(10 + (i % 35)).padStart(2, '0')} (${isRoomVII1 ? '56 dB' : '48 dB'})`
+        : undefined;
+
+    let lastActiveText = 'Selesai Mengumpulkan';
+    if (status === 'blocked') {
+      lastActiveText = violations > 1 ? 'Terkunci (Terdeteksi Berbisik > 3x)' : 'Terkunci (Pindah Tab > 3x)';
+    } else if (status === 'not_started') {
+      lastActiveText = 'Belum Mulai (Menunggu Token)';
+    } else if (status === 'in_progress') {
+      if (isRoomVII1 && i % 4 === 0) {
+        lastActiveText = 'Peringatan Suara/Bisik (56 dB)';
+      } else {
+        lastActiveText = `Aktif (Mengerjakan Soal No. ${numAnswered + 1})`;
+      }
+    }
+
     const session: ExamSession = {
       id: `ses-sim-${String(i + 1).padStart(4, '0')}`,
       examId: examId,
@@ -257,19 +314,19 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
       studentNisn: nisn,
       studentClass: studentClass,
       studentRoom: labRoom,
-      startedAt: `${String(baseHour).padStart(2, '0')}:30:00`,
+      startedAt: status === 'not_started' ? '-' : `${String(baseHour).padStart(2, '0')}:30:00`,
       finishedAt: status === 'submitted' ? `${String(finishHour).padStart(2, '0')}:${String(finishMin).padStart(2, '0')}:${String(finishSec).padStart(2, '0')}` : undefined,
-      remainingSeconds: status === 'submitted' ? 0 : 1800,
+      remainingSeconds: remainingSeconds,
       status: status,
       answers: answers,
-      score: score,
-      correctCount: correctCount,
-      wrongCount: wrongCount,
+      score: status === 'submitted' ? targetFinalScore : undefined,
+      correctCount: status === 'submitted' ? correctCount : 0,
+      wrongCount: status === 'submitted' ? wrongCount : 0,
       violationsCount: violations,
-      audioViolationsCount: violations > 0 ? violations : (studentClass === 'VII-1' && i % 5 === 0 ? 1 : 0),
-      currentAudioLevel: studentClass === 'VII-1' ? (48 + (i % 16)) : studentClass === 'VIII-2' ? (40 + (i % 12)) : (24 + (i % 10)),
-      lastAudioIncidentAt: (violations > 0 || (studentClass === 'VII-1' && i % 5 === 0)) ? `${String(baseHour).padStart(2, '0')}:${String(baseMin + 7).padStart(2, '0')} (${studentClass === 'VII-1' ? 52 : 46} dB)` : undefined,
-      lastActive: status === 'blocked' ? (violations > 1 ? 'Terkunci (Terdeteksi Berbisik)' : 'Terkunci (Pindah Tab > 3x)') : status === 'in_progress' ? (studentClass === 'VII-1' && i % 5 === 0 ? 'Peringatan Suara/Bisik' : 'Aktif (Mengerjakan)') : 'Selesai Mengumpulkan',
+      audioViolationsCount: audioViolationsCount,
+      currentAudioLevel: currentAudioLevel,
+      lastAudioIncidentAt: lastAudioIncidentAt,
+      lastActive: lastActiveText,
     };
 
     sessions.push(session);

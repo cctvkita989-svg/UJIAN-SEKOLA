@@ -22,11 +22,24 @@ import {
   Flame,
   BellRing,
   Building2,
-  Megaphone
+  Megaphone,
+  ArrowLeft,
+  ClipboardCheck,
+  Edit3,
+  Copy,
+  Check,
+  RotateCcw,
+  FileText,
+  X
 } from 'lucide-react';
-import { ExamSession, User } from '../../types/cbt';
+import { ExamSession, User, AttendanceStatus } from '../../types/cbt';
 
-export const ProctorConsole: React.FC = () => {
+export interface ProctorConsoleProps {
+  initialExamId?: string;
+  onBackToExams?: () => void;
+}
+
+export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, onBackToExams }) => {
   const {
     users,
     exams,
@@ -38,13 +51,22 @@ export const ProctorConsole: React.FC = () => {
     resetStudentSession,
     extendStudentTime,
     forceSubmitStudentSession,
+    updateStudentAttendance,
     schoolProfile,
     updateAudioProctoringSettings,
     disciplineNotes,
+    generateNewToken,
   } = useCBT();
 
   const [selectedClass, setSelectedClass] = useState<string>('ALL');
-  const [selectedExamFilter, setSelectedExamFilter] = useState<string>('ALL');
+  const [selectedExamFilter, setSelectedExamFilter] = useState<string>(initialExamId || exams[0]?.id || 'ALL');
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+
+  // Attendance Status Modal state (Ujian Tertulis, Sakit, Izin, Absen, CBT)
+  const [attendanceModalStudent, setAttendanceModalStudent] = useState<User | null>(null);
+  const [attendanceChoice, setAttendanceChoice] = useState<AttendanceStatus>('cbt');
+  const [attendanceManualScore, setAttendanceManualScore] = useState<number>(75);
+  const [attendanceNotes, setAttendanceNotes] = useState<string>('');
   const [searchStudent, setSearchStudent] = useState<string>('');
   const [broadcastInput, setBroadcastInput] = useState<string>('');
   const [broadcastTarget, setBroadcastTarget] = useState<string>('ALL');
@@ -192,17 +214,130 @@ export const ProctorConsole: React.FC = () => {
     setBroadcastInput('');
   };
 
+  const handleCopyToken = (t: string) => {
+    navigator.clipboard.writeText(t);
+    setCopiedToken(t);
+    setTimeout(() => setCopiedToken(null), 2000);
+  };
+
   return (
     <div className="space-y-6">
-      {/* HEADER SECTION */}
+      {/* EXAM PICKER & STATUS STRIP (Mempermudah proktor saat ada multiple ujian dalam 1 hari) */}
+      <div className="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white rounded-2xl p-5 shadow-sm border border-slate-800">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="space-y-1.5 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              {onBackToExams && (
+                <button
+                  type="button"
+                  onClick={onBackToExams}
+                  className="px-2.5 py-1 bg-white/10 hover:bg-white/20 text-white rounded-lg text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                  title="Kembali ke Daftar Paket Ujian"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Paket Ujian</span>
+                </button>
+              )}
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+                Live Proctoring Terpadu Paket Ujian
+              </span>
+            </div>
+
+            {/* Exam selector dropdown */}
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <span className="text-xs text-slate-300 font-medium">Pilih Jadwal Ujian:</span>
+              <select
+                value={selectedExamFilter}
+                onChange={e => setSelectedExamFilter(e.target.value)}
+                className="py-1.5 px-3 bg-white text-slate-900 text-xs font-bold rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-xs cursor-pointer max-w-md"
+              >
+                {exams.map(ex => (
+                  <option key={ex.id} value={ex.id}>
+                    {ex.title} ({ex.subject} - {ex.gradeLevel})
+                  </option>
+                ))}
+                <option value="ALL">Semua Paket Ujian</option>
+              </select>
+            </div>
+
+            {(() => {
+              const activeExam = exams.find(e => e.id === selectedExamFilter) || exams[0];
+              if (!activeExam) return null;
+              return (
+                <div className="text-xs text-slate-300 flex flex-wrap items-center gap-3 pt-0.5">
+                  <span>Guru/Pengawas: <strong className="text-white">{activeExam.teacherName}</strong></span>
+                  <span>•</span>
+                  <span>Jam: <strong className="text-white">{activeExam.startTime} - {activeExam.endTime} ({activeExam.durationMinutes} menit)</strong></span>
+                  <span>•</span>
+                  <span>KKM: <strong className="text-white">{activeExam.kkm}</strong></span>
+                  {activeExam.requiredAgama && (
+                    <>
+                      <span>•</span>
+                      <span className="text-amber-300 font-semibold">Khusus: {activeExam.requiredAgama}</span>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Active Token Box & Quick Action */}
+          {(() => {
+            const activeExam = exams.find(e => e.id === selectedExamFilter) || exams[0];
+            if (!activeExam) return null;
+            return (
+              <div className="bg-white/10 backdrop-blur-md rounded-xl p-3 border border-white/15 flex items-center gap-4 self-start lg:self-auto shrink-0">
+                <div className="text-left">
+                  <div className="text-[10px] text-indigo-200 uppercase font-semibold">Token Akses</div>
+                  <div className="font-mono font-black text-xl text-amber-300 tracking-wider">
+                    {activeExam.token}
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={() => handleCopyToken(activeExam.token)}
+                    className="px-2.5 py-1 bg-white text-slate-900 hover:bg-slate-100 rounded-md text-[11px] font-bold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                    title="Salin Token Ujian"
+                  >
+                    {copiedToken === activeExam.token ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-600" />
+                        <span>Tersalin</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Salin</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => generateNewToken(activeExam.id)}
+                    className="px-2.5 py-1 bg-white/15 hover:bg-white/25 text-white rounded-md text-[10px] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                    title="Generate Token Baru"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Ganti</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      </div>
+
+      {/* SUB-TABS & QUICK CONTROLS */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
-              <h3 className="text-lg font-bold text-slate-900">Konsol Proktor & Pengawasan Real-Time</h3>
+              <h3 className="text-lg font-bold text-slate-900">Ruang Pengawasan CBT Real-Time</h3>
               <span className="px-2 py-0.5 bg-indigo-50 text-indigo-700 text-[11px] font-bold rounded-full border border-indigo-100">
-                Live Proctoring
+                Live Console
               </span>
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
@@ -475,6 +610,22 @@ export const ProctorConsole: React.FC = () => {
                 statusBorder = 'border-amber-300 bg-amber-50/40 hover:border-amber-400';
                 statusTag = 'bg-amber-500 text-white';
                 statusLabel = `${session?.violationsCount}x Peringatan`;
+              } else if (session?.attendanceStatus === 'tertulis') {
+                statusBorder = 'border-purple-300 bg-purple-50/40 hover:border-purple-400';
+                statusTag = 'bg-purple-600 text-white';
+                statusLabel = `Tertulis (${session?.score ?? 0})`;
+              } else if (session?.attendanceStatus === 'sakit') {
+                statusBorder = 'border-amber-300 bg-amber-50/40 hover:border-amber-400';
+                statusTag = 'bg-amber-600 text-white';
+                statusLabel = 'Sakit';
+              } else if (session?.attendanceStatus === 'izin') {
+                statusBorder = 'border-sky-300 bg-sky-50/40 hover:border-sky-400';
+                statusTag = 'bg-sky-600 text-white';
+                statusLabel = 'Izin';
+              } else if (session?.attendanceStatus === 'absen') {
+                statusBorder = 'border-rose-300 bg-rose-50/40 hover:border-rose-400';
+                statusTag = 'bg-rose-700 text-white';
+                statusLabel = 'Absen / Alpa';
               } else if (isInProgress) {
                 statusBorder = 'border-emerald-300 bg-emerald-50/30 hover:border-emerald-400';
                 statusTag = 'bg-emerald-600 text-white';
@@ -565,14 +716,14 @@ export const ProctorConsole: React.FC = () => {
                     {isBlocked ? (
                       <button
                         onClick={() => unlockStudent(student.id)}
-                        className="w-full py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold rounded flex items-center justify-center gap-1 cursor-pointer transition-colors"
+                        className="flex-1 py-1 bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold rounded flex items-center justify-center gap-1 cursor-pointer transition-colors"
                         title="Buka Kunci Akun Siswa"
                       >
                         <Unlock className="w-3 h-3" />
                         <span>Buka Kunci</span>
                       </button>
                     ) : isInProgress ? (
-                      <div className="flex items-center gap-1 w-full">
+                      <div className="flex items-center gap-1 flex-1">
                         <button
                           onClick={() => extendStudentTime(student.id, 10)}
                           className="flex-1 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-bold rounded border border-indigo-200 transition-colors cursor-pointer"
@@ -591,12 +742,25 @@ export const ProctorConsole: React.FC = () => {
                     ) : (
                       <button
                         onClick={() => resetStudentSession(student.id)}
-                        className="w-full py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-semibold rounded transition-colors cursor-pointer"
+                        className="flex-1 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 text-[10px] font-semibold rounded transition-colors cursor-pointer"
                         title="Reset sesi pengerjaan ujian"
                       >
                         Reset Sesi
                       </button>
                     )}
+                    <button
+                      onClick={() => {
+                        setAttendanceModalStudent(student);
+                        setAttendanceChoice(session?.attendanceStatus || 'cbt');
+                        setAttendanceManualScore(session?.score ?? 75);
+                        setAttendanceNotes(session?.attendanceNotes || '');
+                      }}
+                      className="py-1 px-2 bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 text-[10px] font-semibold rounded transition-colors cursor-pointer flex items-center gap-1"
+                      title="Ubah Status Kehadiran (Ujian Tertulis / Sakit / Izin / Absen)"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Status</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -774,6 +938,19 @@ export const ProctorConsole: React.FC = () => {
                               </button>
                             </>
                           )}
+                          <button
+                            onClick={() => {
+                              setAttendanceModalStudent(st);
+                              setAttendanceChoice(session?.attendanceStatus || 'cbt');
+                              setAttendanceManualScore(session?.score ?? 75);
+                              setAttendanceNotes(session?.attendanceNotes || '');
+                            }}
+                            className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-semibold rounded border border-indigo-200 cursor-pointer flex items-center gap-1"
+                            title="Ubah Status Kehadiran (Tertulis / Sakit / Izin / Absen)"
+                          >
+                            <Edit3 className="w-3 h-3" />
+                            <span>Status</span>
+                          </button>
                           <button
                             onClick={() => resetStudentSession(st.id)}
                             className="px-2 py-1 text-slate-400 hover:text-slate-700 text-[10px] rounded hover:bg-slate-100 cursor-pointer"
@@ -1466,6 +1643,217 @@ export const ProctorConsole: React.FC = () => {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODAL STATUS KEHADIRAN & UJIAN TERTULIS */}
+      {attendanceModalStudent && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
+          <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden">
+            {/* Header: Fixed / Shrink-0 */}
+            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between bg-white">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
+                  <ClipboardCheck className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-slate-900 text-base">Catat Status Kehadiran & Ujian</h3>
+                  <p className="text-xs text-slate-500">
+                    {attendanceModalStudent.name} (Kelas {attendanceModalStudent.kelas || '-'} · NISN: {attendanceModalStudent.nisn || '-'})
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setAttendanceModalStudent(null)}
+                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Body: Scrollable */}
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+              <label className="text-xs font-bold text-slate-700 block">Pilih Status Kehadiran Siswa:</label>
+
+              <div className="grid grid-cols-1 gap-2.5">
+                {/* Opsi CBT */}
+                <label
+                  onClick={() => setAttendanceChoice('cbt')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    attendanceChoice === 'cbt'
+                      ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="attendance_status"
+                    checked={attendanceChoice === 'cbt'}
+                    onChange={() => setAttendanceChoice('cbt')}
+                    className="mt-0.5 text-indigo-600 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-bold text-xs text-slate-900">💻 Ujian Online CBT (Normal)</div>
+                    <div className="text-[11px] text-slate-500">Mengerjakan ujian di komputer/HP melalui aplikasi CBT daring sekolah.</div>
+                  </div>
+                </label>
+
+                {/* Opsi Tertulis */}
+                <label
+                  onClick={() => setAttendanceChoice('tertulis')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    attendanceChoice === 'tertulis'
+                      ? 'border-purple-600 bg-purple-50/50 ring-2 ring-purple-500/20'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="attendance_status"
+                    checked={attendanceChoice === 'tertulis'}
+                    onChange={() => setAttendanceChoice('tertulis')}
+                    className="mt-0.5 text-purple-600 cursor-pointer"
+                  />
+                  <div className="flex-1">
+                    <div className="font-bold text-xs text-purple-900">📝 Ujian Tertulis (Manual Paper)</div>
+                    <div className="text-[11px] text-purple-700">Mengerjakan lembar soal & LJK kertas fisik karena kendala gawai/kebijakan.</div>
+                  </div>
+                </label>
+
+                {/* Input Nilai jika Ujian Tertulis */}
+                {attendanceChoice === 'tertulis' && (
+                  <div className="ml-6 p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
+                    <label className="text-xs font-bold text-purple-900 flex items-center justify-between">
+                      <span>Input Nilai Lembar Jawaban Tertulis:</span>
+                      <span className="font-mono text-purple-700">{attendanceManualScore} / 100</span>
+                    </label>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={attendanceManualScore}
+                        onChange={e => setAttendanceManualScore(Math.min(100, Math.max(0, Number(e.target.value))))}
+                        className="w-24 px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-sm font-bold font-mono text-slate-900 text-center outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                      <span className="text-xs text-purple-600">
+                        Nilai akan langsung masuk ke daftar leger nilai dan rekap nilai per kelas.
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Opsi Sakit */}
+                <label
+                  onClick={() => setAttendanceChoice('sakit')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    attendanceChoice === 'sakit'
+                      ? 'border-amber-600 bg-amber-50/50 ring-2 ring-amber-500/20'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="attendance_status"
+                    checked={attendanceChoice === 'sakit'}
+                    onChange={() => setAttendanceChoice('sakit')}
+                    className="mt-0.5 text-amber-600 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-bold text-xs text-amber-900">🤒 Sakit (Surat Dokter / Izin Orang Tua)</div>
+                    <div className="text-[11px] text-amber-700">Tidak hadir karena sakit, berhak mengikuti jadwal ujian susulan.</div>
+                  </div>
+                </label>
+
+                {/* Opsi Izin */}
+                <label
+                  onClick={() => setAttendanceChoice('izin')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    attendanceChoice === 'izin'
+                      ? 'border-sky-600 bg-sky-50/50 ring-2 ring-sky-500/20'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="attendance_status"
+                    checked={attendanceChoice === 'izin'}
+                    onChange={() => setAttendanceChoice('izin')}
+                    className="mt-0.5 text-sky-600 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-bold text-xs text-sky-900">✉️ Izin Resmi</div>
+                    <div className="text-[11px] text-sky-700">Mendapat izin resmi dari madrasah/sekolah untuk kepentingan keluarga/lomba.</div>
+                  </div>
+                </label>
+
+                {/* Opsi Absen / Alpa */}
+                <label
+                  onClick={() => setAttendanceChoice('absen')}
+                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
+                    attendanceChoice === 'absen'
+                      ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-500/20'
+                      : 'border-slate-200 hover:bg-slate-50'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="attendance_status"
+                    checked={attendanceChoice === 'absen'}
+                    onChange={() => setAttendanceChoice('absen')}
+                    className="mt-0.5 text-rose-600 cursor-pointer"
+                  />
+                  <div>
+                    <div className="font-bold text-xs text-rose-900">❌ Absen / Alpa (Tanpa Keterangan)</div>
+                    <div className="text-[11px] text-rose-700">Siswa tidak hadir tanpa kabar pada sesi ujian ini.</div>
+                  </div>
+                </label>
+              </div>
+
+              {/* Catatan Tambahan */}
+              <div className="pt-2">
+                <label className="text-xs font-semibold text-slate-700 block mb-1">
+                  Catatan Proktor / Alasan (Opsional):
+                </label>
+                <input
+                  type="text"
+                  placeholder="Misal: Surat dokter terlampir, lembar soal tertulis diperiksa Pak Budi"
+                  value={attendanceNotes}
+                  onChange={e => setAttendanceNotes(e.target.value)}
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
+                />
+              </div>
+            </div>
+
+            {/* Footer: Fixed / Shrink-0 */}
+            <div className="shrink-0 p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setAttendanceModalStudent(null)}
+                className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (attendanceModalStudent) {
+                    updateStudentAttendance(
+                      attendanceModalStudent.id,
+                      attendanceChoice,
+                      attendanceChoice === 'tertulis' ? attendanceManualScore : undefined,
+                      attendanceNotes
+                    );
+                    setAttendanceModalStudent(null);
+                  }
+                }}
+                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
+              >
+                <Check className="w-4 h-4" />
+                <span>Simpan Status</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

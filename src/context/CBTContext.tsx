@@ -13,6 +13,7 @@ import {
   SubjectItem,
   ExamTypeCategory,
   ProctorBroadcastMessage,
+  AttendanceStatus,
 } from '../types/cbt';
 import {
   INITIAL_USERS,
@@ -59,6 +60,7 @@ interface CBTContextType {
   deleteUser: (userId: string) => void;
   resetStudentSession: (studentId: string) => void;
   unlockStudent: (studentId: string) => void;
+  updateStudentAttendance: (studentId: string, attendanceStatus: AttendanceStatus, manualScore?: number, notes?: string) => void;
   extendStudentTime: (studentId: string, additionalMinutes: number) => void;
   forceSubmitStudentSession: (studentId: string) => void;
   broadcastMessages: ProctorBroadcastMessage[];
@@ -143,7 +145,7 @@ interface CBTContextType {
   resetAllData: () => void;
 }
 
-export const CBT_STORAGE_VERSION = 'v14_single_exam_test';
+export const CBT_STORAGE_VERSION = 'v16_proctor_attendance_pdf';
 
 // Generate pre-loaded 800 students simulation dataset for instant results
 const DEFAULT_800_DATA = generate800StudentsData('exam-mat-01');
@@ -1066,6 +1068,58 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
   };
 
+  const updateStudentAttendance = (
+    studentId: string,
+    attendanceStatus: AttendanceStatus,
+    manualScore?: number,
+    notes?: string
+  ) => {
+    setUsers(prev =>
+      prev.map(u => {
+        if (u.id === studentId) {
+          const loginState =
+            attendanceStatus === 'cbt'
+              ? 'ujian'
+              : attendanceStatus === 'tertulis'
+              ? 'online'
+              : 'offline';
+          return { ...u, statusLogin: loginState };
+        }
+        return u;
+      })
+    );
+    setExamSessions(prev =>
+      prev.map(s => {
+        if (s.studentId === studentId) {
+          const newStatus =
+            attendanceStatus === 'cbt'
+              ? 'in_progress'
+              : attendanceStatus === 'tertulis'
+              ? 'submitted'
+              : 'not_started';
+          return {
+            ...s,
+            attendanceStatus,
+            attendanceNotes: notes || (attendanceStatus === 'tertulis' ? 'Ujian Tertulis (Manual)' : attendanceStatus.toUpperCase()),
+            status: newStatus,
+            score: attendanceStatus === 'tertulis' ? (manualScore ?? s.score ?? 75) : (attendanceStatus === 'cbt' ? s.score : 0),
+            lastActive:
+              attendanceStatus === 'tertulis'
+                ? `Ujian Tertulis (Nilai: ${manualScore ?? 75})`
+                : attendanceStatus === 'sakit'
+                ? 'Status: Sakit (Dispensasi)'
+                : attendanceStatus === 'izin'
+                ? 'Status: Izin Resmi'
+                : attendanceStatus === 'absen'
+                ? 'Status: Absen / Alpa'
+                : 'Ujian CBT Online',
+          };
+        }
+        return s;
+      })
+    );
+  };
+
   const extendStudentTime = (studentId: string, additionalMinutes: number) => {
     const additionalSeconds = additionalMinutes * 60;
     setExamSessions(prev =>
@@ -1913,6 +1967,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteUser,
         resetStudentSession,
         unlockStudent,
+        updateStudentAttendance,
         extendStudentTime,
         forceSubmitStudentSession,
         broadcastMessages,

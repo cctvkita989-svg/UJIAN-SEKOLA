@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCBT } from '../../context/CBTContext';
 import {
   Printer,
@@ -9,16 +9,59 @@ import {
   School,
   CheckCircle2,
   QrCode,
-  Download
+  Download,
+  X,
+  AlertCircle,
+  FileCheck
 } from 'lucide-react';
 import { Exam, User } from '../../types/cbt';
 
-export const ExamAdministrationDocs: React.FC = () => {
+export interface ExamAdministrationDocsProps {
+  initialDocType?: 'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai';
+  initialExamId?: string;
+  initialClass?: string;
+  onDocTypeChange?: (type: 'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai') => void;
+}
+
+export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
+  initialDocType = 'daftar_nilai',
+  initialExamId,
+  initialClass,
+  onDocTypeChange
+}) => {
   const { exams, users, schoolProfile, classes, subjects, examSessions } = useCBT();
 
-  const [activeDocType, setActiveDocType] = useState<'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai'>('daftar_nilai');
-  const [selectedClass, setSelectedClass] = useState<string>('VII-1');
-  const [selectedExamId, setSelectedExamId] = useState<string>(exams[0]?.id || '');
+  const [activeDocType, setActiveDocType] = useState<'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai'>(initialDocType);
+  const [selectedClass, setSelectedClass] = useState<string>(initialClass || (classes[0]?.name ? classes[0].name : 'VII-1'));
+  const [selectedExamId, setSelectedExamId] = useState<string>(initialExamId || exams[0]?.id || '');
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'info' | 'error' } | null>(null);
+  const [isProcessingPrint, setIsProcessingPrint] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (initialDocType) {
+      setActiveDocType(initialDocType);
+    }
+  }, [initialDocType]);
+
+  useEffect(() => {
+    if (initialExamId) {
+      setSelectedExamId(initialExamId);
+    }
+  }, [initialExamId]);
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 7000);
+      return () => clearTimeout(timer);
+    }
+  }, [toast]);
+
+  const handleDocTypeChange = (type: 'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai') => {
+    setActiveDocType(type);
+    if (onDocTypeChange) {
+      onDocTypeChange(type);
+    }
+  };
 
   const students = users.filter(u => u.role === 'siswa');
   const filteredStudents = selectedClass === 'ALL'
@@ -27,12 +70,269 @@ export const ExamAdministrationDocs: React.FC = () => {
 
   const selectedExam = exams.find(e => e.id === selectedExamId) || exams[0];
 
+  const classSessions = filteredStudents.map(student => {
+    const session = examSessions.find(s => s.studentId === student.id && s.examId === selectedExam?.id)
+      || examSessions.find(s => s.studentId === student.id);
+    return {
+      student,
+      session,
+      attendanceStatus: session?.attendanceStatus || 'cbt',
+      score: session?.score ?? 0,
+      isSubmitted: session?.status === 'submitted' || session?.attendanceStatus === 'tertulis'
+    };
+  });
+
+  // Metrics calculation: Jumlah Siswa, Hadir CBT, Ujian Tertulis, Sakit/Izin, Absen
+  const cbtCount = classSessions.filter(cs => cs.attendanceStatus === 'cbt').length;
+  const writtenCount = classSessions.filter(cs => cs.attendanceStatus === 'tertulis').length;
+  const sickCount = classSessions.filter(cs => cs.attendanceStatus === 'sakit').length;
+  const permitCount = classSessions.filter(cs => cs.attendanceStatus === 'izin').length;
+  const absentCount = classSessions.filter(cs => cs.attendanceStatus === 'absen').length;
+
+  const getDocumentTitle = () => {
+    const cleanExam = (selectedExam?.subject || 'Mapel').replace(/[^a-zA-Z0-9]/g, '_');
+    switch (activeDocType) {
+      case 'daftar_nilai':
+        return `Daftar_Nilai_Kelas_${selectedClass}_${cleanExam}`;
+      case 'kartu_peserta':
+        return `Kartu_Peserta_Ujian_Kelas_${selectedClass}`;
+      case 'daftar_hadir':
+        return `Daftar_Hadir_Ujian_Kelas_${selectedClass}_${cleanExam}`;
+      case 'berita_acara':
+        return `Berita_Acara_Ujian_${cleanExam}`;
+      case 'nomor_meja':
+        return `Nomor_Meja_Ruang_Kelas_${selectedClass}`;
+      default:
+        return 'Dokumen_Administrasi_Ujian';
+    }
+  };
+
+  const handleDownloadHtml = () => {
+    const docElement = document.getElementById('printable-exam-document');
+    if (!docElement) {
+      setToast({ message: 'Elemen dokumen tidak ditemukan.', type: 'error' });
+      return;
+    }
+
+    const title = getDocumentTitle();
+    const htmlContent = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${title.replace(/_/g, ' ')} - ${schoolProfile.name}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page {
+      size: A4 portrait;
+      margin: 10mm 10mm;
+    }
+    body {
+      background-color: #ffffff;
+      color: #0f172a;
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      padding: 24px;
+    }
+    @media print {
+      body { padding: 0 !important; }
+      .print\\:hidden { display: none !important; }
+      .no-print { display: none !important; }
+    }
+    .print-banner-info {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      padding: 14px 18px;
+      border-radius: 10px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+      color: #1e40af;
+    }
+    .print-banner-info button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 9px 18px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .print-banner-info button:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="print-banner-info print:hidden no-print">
+    <div>
+      <strong style="font-size: 14px; display: block; margin-bottom: 3px;">📄 Dokumen Administrasi Ujian Resmi Siap Cetak</strong>
+      <span style="color: #3b82f6; font-size: 12px;">Tekan tombol cetak di sebelah kanan atau gunakan pintasan <code>Ctrl + P</code> pada keyboard untuk mencetak langsung atau simpan sebagai PDF.</span>
+    </div>
+    <button onclick="window.print()">🖨️ Cetak / Simpan PDF Sekarang</button>
+  </div>
+
+  <div style="max-width: 960px; margin: 0 auto;">
+    ${docElement.innerHTML}
+  </div>
+
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() {
+        try {
+          window.print();
+        } catch(e) {}
+      }, 500);
+    });
+  </script>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title}.html`;
+    document.body.appendChild(link);
+    link.click();
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 1200);
+
+    setToast({
+      message: `File dokumen "${title}.html" berhasil diunduh. Anda dapat langsung membukanya di browser apa pun untuk mencetak atau menyimpan sebagai PDF.`,
+      type: 'success'
+    });
+  };
+
   const handlePrint = () => {
-    window.print();
+    setIsProcessingPrint(true);
+    const docElement = document.getElementById('printable-exam-document');
+    if (!docElement) {
+      setToast({ message: 'Elemen dokumen tidak ditemukan untuk dicetak.', type: 'error' });
+      setIsProcessingPrint(false);
+      return;
+    }
+
+    let printTriggered = false;
+
+    // Strategy 1: Create isolated hidden iframe to bypass parent sandbox modals restriction
+    try {
+      const existingFrame = document.getElementById('print-execution-frame');
+      if (existingFrame) existingFrame.remove();
+
+      const iframe = document.createElement('iframe');
+      iframe.id = 'print-execution-frame';
+      iframe.style.position = 'fixed';
+      iframe.style.right = '0';
+      iframe.style.bottom = '0';
+      iframe.style.width = '0';
+      iframe.style.height = '0';
+      iframe.style.border = 'none';
+      iframe.style.visibility = 'hidden';
+      document.body.appendChild(iframe);
+
+      const iframeDoc = iframe.contentWindow?.document;
+      if (iframeDoc) {
+        iframeDoc.open();
+        iframeDoc.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>${getDocumentTitle().replace(/_/g, ' ')}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page { size: A4 portrait; margin: 10mm; }
+    body { font-family: sans-serif; margin: 0; padding: 12px; color: #0f172a; background: #fff; }
+    @media print {
+      body { padding: 0 !important; }
+      .print\\:hidden { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  ${docElement.innerHTML}
+</body>
+</html>`);
+        iframeDoc.close();
+
+        setTimeout(() => {
+          try {
+            iframe.contentWindow?.focus();
+            iframe.contentWindow?.print();
+            printTriggered = true;
+          } catch (iframeErr) {
+            console.warn('Iframe printing blocked by browser:', iframeErr);
+          }
+        }, 400);
+      }
+    } catch (err) {
+      console.warn('Error setting up print iframe:', err);
+    }
+
+    // Strategy 2: Direct window.print() inside try/catch
+    try {
+      window.print();
+      printTriggered = true;
+    } catch (topErr) {
+      console.warn('Direct window.print() restricted in iframe sandbox:', topErr);
+    }
+
+    setIsProcessingPrint(false);
+
+    // Provide user feedback and safety fallback
+    if (printTriggered) {
+      setToast({
+        message: 'Dialog cetak dibuka. Pilih printer fisik Anda atau opsi "Save as PDF" untuk menyimpan berkas resmi.',
+        type: 'info'
+      });
+    } else {
+      // If browser sandboxing strictly prevents modal print dialogs, automatically download the ready-to-print HTML/PDF
+      handleDownloadHtml();
+      setToast({
+        message: 'Browser membatasi dialog cetak di dalam pratinjau. Dokumen resmi (.html siap cetak & simpan PDF) telah otomatis diunduh!',
+        type: 'info'
+      });
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* TOAST FEEDBACK NOTIFICATION */}
+      {toast && (
+        <div
+          className={`p-4 rounded-xl text-xs font-semibold flex items-center justify-between gap-3 shadow-md animate-in fade-in duration-200 border ${
+            toast.type === 'success'
+              ? 'bg-emerald-50 text-emerald-900 border-emerald-300'
+              : toast.type === 'error'
+              ? 'bg-rose-50 text-rose-900 border-rose-300'
+              : 'bg-indigo-50 text-indigo-900 border-indigo-300'
+          }`}
+        >
+          <div className="flex items-center gap-2.5">
+            {toast.type === 'success' ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            ) : toast.type === 'error' ? (
+              <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            ) : (
+              <FileCheck className="w-5 h-5 text-indigo-600 shrink-0" />
+            )}
+            <span className="leading-relaxed">{toast.message}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setToast(null)}
+            className="p-1 rounded-lg hover:bg-black/5 text-slate-500 hover:text-slate-800 cursor-pointer"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {/* SCREEN CONTROLS (Hidden during printing via print:hidden) */}
       <div className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs print:hidden space-y-4">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -46,20 +346,35 @@ export const ExamAdministrationDocs: React.FC = () => {
             </p>
           </div>
 
-          <button
-            onClick={handlePrint}
-            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-xs transition-colors cursor-pointer"
-          >
-            <Printer className="w-4 h-4" />
-            <span>Cetak Dokumen Sekarang (PDF / Print)</span>
-          </button>
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+            <button
+              type="button"
+              onClick={handlePrint}
+              disabled={isProcessingPrint}
+              className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-95"
+              title="Kirim ke printer atau simpan sebagai PDF"
+            >
+              <Printer className="w-4 h-4" />
+              <span>{isProcessingPrint ? 'Menyiapkan...' : 'Cetak Dokumen Sekarang (PDF / Print)'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDownloadHtml}
+              className="w-full sm:w-auto px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-95"
+              title="Unduh file dokumen mandiri (format HTML/PDF) siap cetak di laptop/PC lain"
+            >
+              <Download className="w-4 h-4" />
+              <span>Unduh File Siap Cetak (HTML / PDF)</span>
+            </button>
+          </div>
         </div>
 
         {/* DOC TYPE SELECTOR TABS */}
-        <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 overflow-x-auto pb-1.5 scrollbar-none -mx-1 px-1">
           <button
-            onClick={() => setActiveDocType('daftar_nilai')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 ${
+            onClick={() => handleDocTypeChange('daftar_nilai')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap shrink-0 ${
               activeDocType === 'daftar_nilai'
                 ? 'bg-indigo-600 text-white font-bold shadow-xs'
                 : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100'
@@ -69,8 +384,8 @@ export const ExamAdministrationDocs: React.FC = () => {
             <span>Daftar Nilai Siswa Per Kelas (PDF Ortu)</span>
           </button>
           <button
-            onClick={() => setActiveDocType('kartu_peserta')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+            onClick={() => handleDocTypeChange('kartu_peserta')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeDocType === 'kartu_peserta'
                 ? 'bg-slate-900 text-white font-bold'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -79,8 +394,8 @@ export const ExamAdministrationDocs: React.FC = () => {
             Kartu Peserta Ujian (A4 4-in-1)
           </button>
           <button
-            onClick={() => setActiveDocType('daftar_hadir')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+            onClick={() => handleDocTypeChange('daftar_hadir')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeDocType === 'daftar_hadir'
                 ? 'bg-slate-900 text-white font-bold'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -89,8 +404,8 @@ export const ExamAdministrationDocs: React.FC = () => {
             Daftar Hadir Ruang Ujian
           </button>
           <button
-            onClick={() => setActiveDocType('berita_acara')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+            onClick={() => handleDocTypeChange('berita_acara')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeDocType === 'berita_acara'
                 ? 'bg-slate-900 text-white font-bold'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -99,8 +414,8 @@ export const ExamAdministrationDocs: React.FC = () => {
             Berita Acara Pelaksanaan (BAP)
           </button>
           <button
-            onClick={() => setActiveDocType('nomor_meja')}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+            onClick={() => handleDocTypeChange('nomor_meja')}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer whitespace-nowrap shrink-0 ${
               activeDocType === 'nomor_meja'
                 ? 'bg-slate-900 text-white font-bold'
                 : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
@@ -148,40 +463,12 @@ export const ExamAdministrationDocs: React.FC = () => {
       {/* =========================================================================
           PRINTABLE DOCUMENT AREA (Styled specifically for standard A4 Paper)
          ========================================================================= */}
-      <div className="bg-white border border-slate-300 rounded-xl p-8 shadow-sm font-sans text-slate-900 print:border-none print:shadow-none print:p-0">
+      <div className="overflow-x-auto -mx-1 sm:mx-0">
+        <div id="printable-exam-document" className="bg-white border border-slate-300 rounded-xl p-4 sm:p-8 min-w-[620px] sm:min-w-0 shadow-sm font-sans text-slate-900 print:border-none print:shadow-none print:p-0 print:min-w-0">
 
         {/* 0. DAFTAR NILAI RESMI SISWA PER KELAS / PER RUANG (SIAP CETAK / PDF ORANG TUA) */}
-        {activeDocType === 'daftar_nilai' && (() => {
-          const kkm = selectedExam?.kkm || 75;
-          const classSessions = filteredStudents.map(student => {
-            const session = examSessions.find(s => s.studentId === student.id && s.examId === selectedExam?.id)
-              || examSessions.find(s => s.studentId === student.id);
-            return {
-              student,
-              session,
-              attendanceStatus: session?.attendanceStatus || 'cbt',
-              score: session?.score ?? 0,
-              isSubmitted: session?.status === 'submitted' || session?.attendanceStatus === 'tertulis'
-            };
-          });
-
-          // Metrics calculation
-          const cbtCount = classSessions.filter(cs => cs.attendanceStatus === 'cbt').length;
-          const writtenCount = classSessions.filter(cs => cs.attendanceStatus === 'tertulis').length;
-          const sickCount = classSessions.filter(cs => cs.attendanceStatus === 'sakit').length;
-          const permitCount = classSessions.filter(cs => cs.attendanceStatus === 'izin').length;
-          const absentCount = classSessions.filter(cs => cs.attendanceStatus === 'absen').length;
-
-          const scoredSessions = classSessions.filter(cs => cs.attendanceStatus === 'cbt' || cs.attendanceStatus === 'tertulis');
-          const scores = scoredSessions.map(cs => cs.score);
-          const maxScore = scores.length > 0 ? Math.max(...scores) : 0;
-          const minScore = scores.length > 0 ? Math.min(...scores) : 0;
-          const avgScore = scores.length > 0 ? (scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : '0';
-          const passedCount = scores.filter(sc => sc >= kkm).length;
-          const passPct = scores.length > 0 ? Math.round((passedCount / scores.length) * 100) : 0;
-
-          return (
-            <div className="space-y-6">
+        {activeDocType === 'daftar_nilai' && (
+          <div className="space-y-6">
               <div className="text-center print:hidden pb-3 border-b border-slate-200">
                 <span className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full">
                   Pratinjau Format Daftar Nilai Kelas Resmi (Siap Dicetak & Dibagikan ke Orang Tua / Wali Siswa)
@@ -244,10 +531,6 @@ export const ExamAdministrationDocs: React.FC = () => {
 
                 <div className="space-y-1">
                   <div className="flex">
-                    <span className="w-32 text-slate-500">Kriteria Ketuntasan (KKM)</span>
-                    <span className="font-mono font-bold text-slate-900">: {kkm}</span>
-                  </div>
-                  <div className="flex">
                     <span className="w-32 text-slate-500">Tanggal Pelaksanaan</span>
                     <span className="font-bold text-slate-900">: {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
                   </div>
@@ -258,34 +541,31 @@ export const ExamAdministrationDocs: React.FC = () => {
                 </div>
               </div>
 
-              {/* TABEL NILAI PESERTA */}
+              {/* TABEL NILAI PESERTA (Tanpa Kolom KKM/Remedial dan Tanpa Kolom Catatan) */}
               <div className="overflow-x-auto">
                 <table className="w-full text-left text-xs border border-slate-300 border-collapse">
                   <thead className="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
                     <tr>
-                      <th className="py-2 px-2 border-r border-slate-300 text-center w-8">No</th>
-                      <th className="py-2 px-3 border-r border-slate-300 w-28">NISN</th>
-                      <th className="py-2 px-3 border-r border-slate-300">Nama Lengkap Siswa</th>
-                      <th className="py-2 px-2 border-r border-slate-300 text-center w-12">L/P</th>
-                      <th className="py-2 px-3 border-r border-slate-300 text-center w-36">Metode & Kehadiran</th>
-                      <th className="py-2 px-2 border-r border-slate-300 text-center w-20">Nilai Akhir</th>
-                      <th className="py-2 px-3 border-r border-slate-300 text-center w-28">Ketuntasan KKM</th>
-                      <th className="py-2 px-3 border-slate-300">Keterangan / Catatan</th>
+                      <th className="py-2.5 px-2 border-r border-slate-300 text-center w-10">No</th>
+                      <th className="py-2.5 px-3 border-r border-slate-300 w-32">NISN</th>
+                      <th className="py-2.5 px-3 border-r border-slate-300">Nama Lengkap Siswa</th>
+                      <th className="py-2.5 px-2 border-r border-slate-300 text-center w-12">L/P</th>
+                      <th className="py-2.5 px-3 border-r border-slate-300 text-center w-40">Status Kehadiran</th>
+                      <th className="py-2.5 px-3 border-slate-300 text-center w-28">Nilai Akhir</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
                     {filteredStudents.length === 0 ? (
                       <tr>
-                        <td colSpan={8} className="py-6 text-center text-slate-400">
+                        <td colSpan={6} className="py-6 text-center text-slate-400">
                           Tidak ada siswa yang terdaftar di kelas {selectedClass}.
                         </td>
                       </tr>
                     ) : (
                       classSessions.map((item, idx) => {
-                        const { student, session, attendanceStatus, score } = item;
-                        const isPassed = score >= kkm;
+                        const { student, attendanceStatus, score } = item;
 
-                        let statusLabel = '💻 CBT Online';
+                        let statusLabel = '💻 Hadir CBT';
                         let statusColor = 'text-slate-800';
                         if (attendanceStatus === 'tertulis') {
                           statusLabel = '📝 Ujian Tertulis';
@@ -299,17 +579,6 @@ export const ExamAdministrationDocs: React.FC = () => {
                         } else if (attendanceStatus === 'absen') {
                           statusLabel = '❌ Absen / Alpa';
                           statusColor = 'text-rose-800 font-semibold';
-                        }
-
-                        let kkmLabel = isPassed ? 'TUNTAS' : 'REMEDIAL';
-                        let kkmClass = isPassed ? 'font-bold text-emerald-800' : 'font-bold text-rose-800';
-
-                        if (attendanceStatus === 'sakit' || attendanceStatus === 'izin') {
-                          kkmLabel = 'SUSULAN';
-                          kkmClass = 'font-semibold text-amber-800';
-                        } else if (attendanceStatus === 'absen') {
-                          kkmLabel = 'TIDAK HADIR';
-                          kkmClass = 'font-semibold text-rose-700';
                         }
 
                         return (
@@ -329,29 +598,11 @@ export const ExamAdministrationDocs: React.FC = () => {
                             <td className={`py-2 px-3 border-r border-slate-300 text-center ${statusColor}`}>
                               {statusLabel}
                             </td>
-                            <td className="py-2 px-2 border-r border-slate-300 text-center font-mono font-black text-sm">
+                            <td className="py-2 px-3 border-slate-300 text-center font-mono font-bold text-sm text-slate-900">
                               {attendanceStatus === 'sakit' || attendanceStatus === 'izin' || attendanceStatus === 'absen' ? (
                                 <span className="text-slate-400 font-normal">-</span>
                               ) : (
-                                <span className={score >= kkm ? 'text-slate-900' : 'text-rose-700 font-bold'}>
-                                  {score}
-                                </span>
-                              )}
-                            </td>
-                            <td className={`py-2 px-3 border-r border-slate-300 text-center text-[11px] ${kkmClass}`}>
-                              {kkmLabel}
-                            </td>
-                            <td className="py-2 px-3 border-slate-300 text-slate-600 text-[11px]">
-                              {session?.attendanceNotes || (
-                                attendanceStatus === 'sakit'
-                                  ? 'Menunggu jadwal ujian susulan'
-                                  : attendanceStatus === 'izin'
-                                  ? 'Izin terkonfirmasi pihak sekolah'
-                                  : attendanceStatus === 'absen'
-                                  ? 'Belum hadir tanpa keterangan'
-                                  : isPassed
-                                  ? 'Tuntas Kriteria Ketuntasan Minimal'
-                                  : 'Mengikuti program bimbingan remedial'
+                                <span>{score}</span>
                               )}
                             </td>
                           </tr>
@@ -362,43 +613,32 @@ export const ExamAdministrationDocs: React.FC = () => {
                 </table>
               </div>
 
-              {/* REKAPITULASI STATISTIK KELAS */}
-              <div className="border border-slate-300 rounded-lg p-3 bg-slate-50/50 space-y-2 text-xs">
-                <div className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1">
-                  Rekapitulasi Kehadiran & Nilai Kelas {selectedClass}
+              {/* REKAPITULASI HASIL & STATUS KEHADIRAN (Hanya Jumlah Siswa, Hadir CBT, Ujian Tertulis, Sakit/Izin, Absen) */}
+              <div className="border border-slate-300 rounded-lg p-3.5 bg-slate-50/50 space-y-2 text-xs">
+                <div className="font-bold text-slate-900 uppercase tracking-wider text-[11px] border-b border-slate-200 pb-1.5 flex items-center justify-between">
+                  <span>Rekapitulasi Kehadiran Peserta Ujian Kelas {selectedClass}</span>
+                  <span className="text-slate-500 font-normal normal-case text-[11px]">Metode Pengerjaan & Status Kehadiran</span>
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-slate-700">
-                  <div>
-                    <span className="text-slate-500">Jumlah Siswa:</span>{' '}
-                    <strong className="font-mono">{filteredStudents.length} Siswa</strong>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 text-slate-700 pt-1">
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
+                    <span className="text-slate-500 block text-[10px] font-semibold uppercase">Jumlah Siswa</span>
+                    <strong className="font-mono text-sm text-slate-900">{filteredStudents.length} Siswa</strong>
                   </div>
-                  <div>
-                    <span className="text-slate-500">Hadir CBT:</span>{' '}
-                    <strong className="font-mono text-emerald-700">{cbtCount} Siswa</strong>
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
+                    <span className="text-slate-500 block text-[10px] font-semibold uppercase">Hadir Ujian CBT</span>
+                    <strong className="font-mono text-sm text-emerald-700">{cbtCount} Siswa</strong>
                   </div>
-                  <div>
-                    <span className="text-slate-500">Ujian Tertulis:</span>{' '}
-                    <strong className="font-mono text-purple-700">{writtenCount} Siswa</strong>
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
+                    <span className="text-slate-500 block text-[10px] font-semibold uppercase">Ujian Tertulis</span>
+                    <strong className="font-mono text-sm text-purple-700">{writtenCount} Siswa</strong>
                   </div>
-                  <div>
-                    <span className="text-slate-500">Sakit / Izin / Absen:</span>{' '}
-                    <strong className="font-mono text-amber-700">{sickCount + permitCount + absentCount} Siswa</strong>
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
+                    <span className="text-slate-500 block text-[10px] font-semibold uppercase">Sakit / Izin</span>
+                    <strong className="font-mono text-sm text-amber-700">{sickCount + permitCount} Siswa</strong>
                   </div>
-                  <div>
-                    <span className="text-slate-500">Nilai Tertinggi:</span>{' '}
-                    <strong className="font-mono text-slate-900">{maxScore}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Nilai Terendah:</span>{' '}
-                    <strong className="font-mono text-slate-900">{minScore}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Rata-rata Nilai:</span>{' '}
-                    <strong className="font-mono text-indigo-700">{avgScore}</strong>
-                  </div>
-                  <div>
-                    <span className="text-slate-500">Ketuntasan KKM:</span>{' '}
-                    <strong className="font-mono text-emerald-800">{passPct}% ({passedCount} Siswa)</strong>
+                  <div className="p-2.5 bg-white border border-slate-200 rounded-lg">
+                    <span className="text-slate-500 block text-[10px] font-semibold uppercase">Absen</span>
+                    <strong className="font-mono text-sm text-rose-700">{absentCount} Siswa</strong>
                   </div>
                 </div>
               </div>
@@ -437,18 +677,29 @@ export const ExamAdministrationDocs: React.FC = () => {
                 </div>
               </div>
 
-              <div className="print:hidden p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-800 flex items-center justify-between">
-                <span>💡 Klik tombol <strong>Cetak Dokumen Sekarang</strong> di bagian atas untuk mencetak atau menyimpan dokumen ini sebagai file PDF.</span>
-                <button
-                  onClick={handlePrint}
-                  className="px-3 py-1 bg-indigo-600 hover:bg-indigo-700 text-white rounded font-bold cursor-pointer"
-                >
-                  Print / Simpan PDF
-                </button>
+              <div className="print:hidden p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <span>💡 Gunakan tombol di bawah ini atau di bagian atas untuk mencetak dokumen ke printer atau menyimpan sebagai file PDF.</span>
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handlePrint}
+                    className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-bold cursor-pointer transition-colors flex items-center gap-1.5 active:scale-95"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Cetak Sekarang</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleDownloadHtml}
+                    className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-lg font-bold cursor-pointer transition-colors flex items-center gap-1.5 active:scale-95"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Unduh PDF/HTML</span>
+                  </button>
               </div>
             </div>
-          );
-        })()}
+          </div>
+        )}
 
         {/* 1. KARTU PESERTA UJIAN (GRID 2x2 PER A4 SHEET) */}
         {activeDocType === 'kartu_peserta' && (
@@ -628,10 +879,12 @@ export const ExamAdministrationDocs: React.FC = () => {
             {/* FOOTER PENGAWAS */}
             <div className="grid grid-cols-2 gap-8 pt-8 text-xs font-medium">
               <div>
-                <p>Catatan Kehadiran:</p>
-                <p>• Jumlah Peserta Seharusnya : <strong>{filteredStudents.length}</strong> orang</p>
-                <p>• Jumlah Peserta Hadir : <strong>{filteredStudents.length}</strong> orang</p>
-                <p>• Jumlah Peserta Tidak Hadir : <strong>0</strong> orang</p>
+                <p className="font-bold mb-1">Rekapitulasi Kehadiran Peserta:</p>
+                <p>• Jumlah Siswa : <strong>{filteredStudents.length}</strong> orang</p>
+                <p>• Hadir Ujian CBT : <strong>{cbtCount}</strong> orang</p>
+                <p>• Ujian Tertulis : <strong>{writtenCount}</strong> orang</p>
+                <p>• Sakit / Izin : <strong>{sickCount + permitCount}</strong> orang</p>
+                <p>• Absen / Alpa : <strong>{absentCount}</strong> orang</p>
               </div>
 
               <div className="text-center space-y-12">
@@ -693,9 +946,11 @@ export const ExamAdministrationDocs: React.FC = () => {
 
               <div className="space-y-1">
                 <div className="font-bold">1. Keadaan Peserta Ujian:</div>
-                <p className="pl-4">• Jumlah Peserta Terdaftar : {filteredStudents.length} Orang</p>
-                <p className="pl-4">• Jumlah Peserta Hadir : {filteredStudents.length} Orang</p>
-                <p className="pl-4">• Jumlah Peserta Tidak Hadir : 0 Orang</p>
+                <p className="pl-4">• Jumlah Siswa Terdaftar : <strong>{filteredStudents.length}</strong> Orang</p>
+                <p className="pl-4">• Hadir Ujian CBT : <strong>{cbtCount}</strong> Orang</p>
+                <p className="pl-4">• Ujian Tertulis : <strong>{writtenCount}</strong> Orang</p>
+                <p className="pl-4">• Sakit / Izin : <strong>{sickCount + permitCount}</strong> Orang</p>
+                <p className="pl-4">• Absen / Alpa : <strong>{absentCount}</strong> Orang</p>
               </div>
 
               <div className="space-y-1">
@@ -777,6 +1032,7 @@ export const ExamAdministrationDocs: React.FC = () => {
           </div>
         )}
 
+        </div>
       </div>
     </div>
   );

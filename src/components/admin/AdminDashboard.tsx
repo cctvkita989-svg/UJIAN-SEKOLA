@@ -14,6 +14,7 @@ import {
   FileSpreadsheet,
   BarChart3,
   FileDown,
+  Download,
   Settings,
   Plus,
   Search,
@@ -137,6 +138,8 @@ export const AdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard');
   const [isSidebarOpenMobile, setIsSidebarOpenMobile] = useState(false);
   const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [selectedDocType, setSelectedDocType] = useState<'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai'>('daftar_nilai');
+  const [selectedDocExamId, setSelectedDocExamId] = useState<string>('');
 
   // Modals state
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
@@ -541,9 +544,52 @@ export const AdminDashboard: React.FC = () => {
   const perfectClassesCount = classParticipationSummary.filter(c => c.participationRate === 100).length;
   const needAttentionClassesCount = classParticipationSummary.filter(c => c.notStartedCount > 0 || c.blockedCount > 0).length;
 
+  const fallbackCopyText = (text: string) => {
+    try {
+      const textArea = document.createElement('textarea');
+      textArea.value = text;
+      textArea.style.position = 'fixed';
+      textArea.style.left = '-9999px';
+      textArea.style.top = '0';
+      textArea.setAttribute('readonly', '');
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      return true;
+    } catch (e) {
+      console.warn('Fallback copy failed', e);
+      return false;
+    }
+  };
+
   const handleCopyToken = (token: string) => {
-    navigator.clipboard.writeText(token);
-    setCopiedToken(token);
+    let copied = false;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(token)
+          .then(() => {
+            setCopiedToken(token);
+            showScheduleToast(`Token "${token}" berhasil disalin ke clipboard.`);
+          })
+          .catch(() => {
+            fallbackCopyText(token);
+            setCopiedToken(token);
+            showScheduleToast(`Token "${token}" berhasil disalin ke clipboard.`);
+          });
+        copied = true;
+      }
+    } catch {
+      // ignore and use fallback
+    }
+
+    if (!copied) {
+      fallbackCopyText(token);
+      setCopiedToken(token);
+      showScheduleToast(`Token "${token}" berhasil disalin ke clipboard.`);
+    }
+
     setTimeout(() => setCopiedToken(null), 2500);
   };
 
@@ -566,6 +612,96 @@ export const AdminDashboard: React.FC = () => {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  };
+
+  // Print & Download Leger Nilai
+  const handleDownloadLeger = () => {
+    const el = document.getElementById('printable-leger-matrix');
+    if (!el) return;
+
+    const title = `Leger_Nilai_Kelas_${selectedLegerClass}`;
+    const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>${title} - ${schoolProfile.name}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page { size: A4 landscape; margin: 10mm; }
+    body { font-family: sans-serif; padding: 20px; background: #fff; color: #1e293b; }
+    @media print { body { padding: 0 !important; } }
+  </style>
+</head>
+<body>
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <div style="text-align: center; margin-bottom: 16px; border-bottom: 2px solid #334155; padding-bottom: 10px;">
+      <h2 style="font-size: 16px; font-weight: bold; margin: 0;">LEGER REKAPITULASI NILAI ASESMEN SEMUA MATA PELAJARAN</h2>
+      <p style="font-size: 13px; font-weight: 600; margin: 4px 0 0 0;">${schoolProfile.name} · KELAS ${selectedLegerClass} · TAHUN AJARAN ${schoolProfile.academicYear}</p>
+    </div>
+    ${el.innerHTML}
+  </div>
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() { window.print(); }, 400);
+    });
+  </script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${title}.html`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+
+    showScheduleToast(`File Leger Nilai Kelas ${selectedLegerClass} berhasil diunduh (siap cetak / simpan PDF).`);
+  };
+
+  const handlePrintLeger = () => {
+    const el = document.getElementById('printable-leger-matrix');
+    let printed = false;
+    try {
+      if (el) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow?.document;
+        if (doc) {
+          doc.open();
+          doc.write(`<!DOCTYPE html><html><head><script src="https://cdn.tailwindcss.com"></script><style>@page { size: landscape; }</style></head><body style="padding:15px;">${el.innerHTML}</body></html>`);
+          doc.close();
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+              printed = true;
+            } catch (e) {}
+          }, 350);
+        }
+      }
+    } catch (e) {}
+
+    try {
+      window.print();
+      printed = true;
+    } catch (e) {}
+
+    if (printed) {
+      showScheduleToast('Dialog cetak Leger Kelas dibuka.');
+    } else {
+      handleDownloadLeger();
+    }
   };
 
   // 5 Main Navigation Categories with sub-items
@@ -690,42 +826,71 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f7f6f2] flex flex-col md:flex-row">
-      {/* Mobile Sidebar Toggle Button */}
-      <div className="md:hidden flex items-center justify-between p-4 bg-[#fdfdfc] border-b border-stone-200 sticky top-0 z-40">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 bg-emerald-800 text-white rounded-lg font-bold text-xs">CBT</div>
-          <span className="font-bold text-sm text-stone-800">Administrator Menu</span>
+      {/* Mobile Top Sub-Header & Menu Trigger */}
+      <div className="md:hidden flex items-center justify-between px-3.5 py-2.5 bg-[#fdfdfc]/98 backdrop-blur-xs border-b border-stone-200/90 sticky top-14 sm:top-16 z-30 shadow-2xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="w-6 h-6 rounded-md bg-emerald-800 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+            CBT
+          </div>
+          <div className="min-w-0">
+            <div className="text-[10px] uppercase font-bold text-stone-400 leading-none">
+              {navSections.find(s => s.id === getParentSectionId(activeTab))?.title || 'Menu'}
+            </div>
+            <div className="text-xs font-bold text-stone-800 truncate capitalize mt-0.5">
+              {activeTab.replace(/_/g, ' ')}
+            </div>
+          </div>
         </div>
         <button
-          onClick={() => setIsSidebarOpenMobile(!isSidebarOpenMobile)}
-          className="p-2 text-stone-600 hover:text-stone-900 rounded-lg hover:bg-stone-100"
+          type="button"
+          onClick={() => setIsSidebarOpenMobile(true)}
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
         >
-          {isSidebarOpenMobile ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          <Menu className="w-4 h-4 text-emerald-700" />
+          <span>Menu Navigasi</span>
         </button>
       </div>
 
-      {/* SIDEBAR NAVIGATION */}
+      {/* Mobile Backdrop Overlay */}
+      {isSidebarOpenMobile && (
+        <div
+          className="fixed inset-0 bg-stone-950/50 backdrop-blur-xs z-50 md:hidden animate-in fade-in duration-200"
+          onClick={() => setIsSidebarOpenMobile(false)}
+        />
+      )}
+
+      {/* SIDEBAR NAVIGATION (Desktop: Sticky Sidebar | Mobile: Slide-in Drawer) */}
       <aside
-        className={`${
-          isSidebarOpenMobile ? 'block' : 'hidden'
-        } md:block w-full md:w-64 lg:w-72 bg-[#fcfbf9] border-r border-stone-200/90 shrink-0 md:sticky md:top-0 md:h-screen md:overflow-y-auto z-30 transition-all`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#fcfbf9] shadow-2xl flex flex-col md:static md:w-64 lg:w-72 md:shadow-none md:border-r md:border-stone-200/90 md:shrink-0 md:sticky md:top-14 sm:md:top-16 md:h-[calc(100vh-3.5rem)] sm:md:h-[calc(100vh-4rem)] md:overflow-y-auto transition-transform duration-200 ease-out ${
+          isSidebarOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        } print:hidden`}
       >
-        <div className="p-4 border-b border-stone-200/70 hidden md:flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-emerald-800 text-white flex items-center justify-center font-bold text-base shadow-sm ring-4 ring-emerald-50/60">
-              <ShieldCheck className="w-5 h-5" />
+        <div className="p-3.5 sm:p-4 border-b border-stone-200/70 flex items-center justify-between bg-white shrink-0">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-800 text-white flex items-center justify-center font-bold text-sm shadow-xs ring-2 ring-emerald-50/60">
+              <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <div className="font-bold text-stone-900 text-sm leading-tight">Admin Console</div>
-              <div className="text-[11px] text-stone-500 font-medium">Proktor Pusat Ujian Sekolah</div>
+              <div className="font-bold text-stone-900 text-xs sm:text-sm leading-tight">Admin Console</div>
+              <div className="text-[10px] text-stone-500 font-medium">Proktor Pusat Ujian Sekolah</div>
             </div>
           </div>
-          <span className="text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
-            Online
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className="hidden md:inline-block text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+              Online
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpenMobile(false)}
+              className="md:hidden p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg cursor-pointer"
+              title="Tutup Menu"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        <div className="py-3 px-3 space-y-1.5">
+        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1.5">
           {navSections.map(section => {
             const SectionIcon = section.icon;
             const isSectionActive = getParentSectionId(activeTab) === section.id;
@@ -826,10 +991,10 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Server & School Badge at Sidebar Bottom */}
-        <div className="p-3 m-3 rounded-xl bg-stone-100/70 border border-stone-200 text-xs">
+        <div className="p-3 m-3 rounded-xl bg-stone-100/70 border border-stone-200 text-xs shrink-0">
           <div className="flex items-center gap-2 text-stone-800 font-bold mb-1">
             <Server className="w-3.5 h-3.5 text-emerald-800" />
-            <span>{schoolProfile.name}</span>
+            <span className="truncate">{schoolProfile.name}</span>
           </div>
           <div className="text-[11px] text-stone-500">
             NPSN: {schoolProfile.npsn} • TA {schoolProfile.academicYear}
@@ -838,9 +1003,9 @@ export const AdminDashboard: React.FC = () => {
       </aside>
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 min-w-0 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+      <main className="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 overflow-y-auto">
         {/* Top Header Breadcrumb & Status */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 pb-4 border-b border-stone-200/80">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-stone-200/80 print:hidden">
           <div>
             <div className="flex items-center gap-2 text-xs text-stone-500 font-medium mb-1">
               <span>Admin CBT</span>
@@ -873,7 +1038,7 @@ export const AdminDashboard: React.FC = () => {
           const currentParent = navSections.find(s => s.id === getParentSectionId(activeTab));
           if (!currentParent?.items || currentParent.items.length <= 1) return null;
           return (
-            <div className="mb-6 flex items-center gap-1.5 overflow-x-auto pb-1 border-b border-stone-200/80 scrollbar-none">
+            <div className="mb-4 sm:mb-6 flex items-center gap-1.5 overflow-x-auto pb-2 pt-0.5 border-b border-stone-200/80 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0 print:hidden">
               <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400 shrink-0 mr-1.5">
                 {currentParent.title}:
               </span>
@@ -914,7 +1079,7 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'dashboard' && (
           <div className="space-y-6">
             {/* Quick KPI Cards that link to sections */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <button
                 onClick={() => setActiveTab('total_siswa')}
                 className="text-left p-4 bg-[#fdfdfc] border border-stone-200 rounded-xl hover:border-emerald-600 hover:shadow-xs transition-all cursor-pointer group"
@@ -993,7 +1158,7 @@ export const AdminDashboard: React.FC = () => {
 
               <button
                 onClick={() => setActiveTab('token_ujian')}
-                className="text-left p-4 bg-[#fdfdfc] border border-stone-200 rounded-xl hover:border-emerald-600 hover:shadow-xs transition-all cursor-pointer group"
+                className="text-left p-4 bg-[#fdfdfc] border border-stone-200 rounded-xl hover:border-emerald-600 hover:shadow-xs transition-all cursor-pointer group col-span-2 sm:col-span-1 lg:col-span-1"
               >
                 <div className="flex items-center justify-between text-stone-500 mb-2">
                   <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-emerald-800">
@@ -1281,7 +1446,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div className="overflow-x-auto">
-                    <table className="w-full text-left text-xs">
+                    <table className="w-full text-left text-xs min-w-[550px]">
                       <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                         <tr>
                           <th className="py-2.5 px-3">Nama Siswa</th>
@@ -1527,7 +1692,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[720px]">
                   <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                     <tr>
                       <th className="py-2.5 px-3">No. Peserta</th>
@@ -1686,8 +1851,8 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs">
+            <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-xs">
+              <table className="w-full text-left text-xs min-w-[650px]">
                 <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-4">Kode</th>
@@ -2137,21 +2302,32 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white/10 backdrop-blur-xs p-4 rounded-xl border border-white/20 text-center">
                   <div className="text-[11px] text-indigo-200 uppercase font-semibold mb-1">Token Aktif Saat Ini</div>
                   <div className="text-3xl font-mono font-black tracking-widest text-amber-300">
-                    {ongoingExams[0]?.token || 'PASMAT'}
+                    {ongoingExams[0]?.token || exams[0]?.token || 'PASMAT'}
                   </div>
-                  <div className="mt-2 flex items-center justify-center gap-2">
+                  <div className="mt-2.5 flex items-center justify-center gap-2">
                     <button
-                      onClick={() => handleCopyToken(ongoingExams[0]?.token || 'PASMAT')}
-                      className="px-3 py-1 bg-white text-indigo-900 rounded-md font-bold text-xs hover:bg-indigo-50 flex items-center gap-1"
+                      type="button"
+                      onClick={() => handleCopyToken(ongoingExams[0]?.token || exams[0]?.token || 'PASMAT')}
+                      className="px-3.5 py-1.5 bg-white text-indigo-900 rounded-lg font-bold text-xs hover:bg-indigo-50 flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs active:scale-[0.98]"
                     >
-                      {copiedToken ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                      Salin Token
+                      {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                      <span>{copiedToken ? 'Tersalin!' : 'Salin Token'}</span>
                     </button>
                     <button
-                      onClick={() => ongoingExams[0] && generateNewToken(ongoingExams[0].id)}
-                      className="px-3 py-1 bg-indigo-500/50 text-white rounded-md font-bold text-xs hover:bg-indigo-500/80 flex items-center gap-1"
+                      type="button"
+                      onClick={() => {
+                        const targetExam = ongoingExams[0] || exams[0];
+                        if (targetExam) {
+                          const newToken = generateNewToken(targetExam.id);
+                          showScheduleToast(`Token baru untuk ${targetExam.subject} berhasil dibuat: ${newToken}`);
+                        } else {
+                          showScheduleToast('Token ujian berhasil diperbarui.');
+                        }
+                      }}
+                      className="px-3.5 py-1.5 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs active:scale-[0.98]"
                     >
-                      <RotateCcw className="w-3 h-3" /> Refresh
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>Refresh Token</span>
                     </button>
                   </div>
                 </div>
@@ -2163,33 +2339,55 @@ export const AdminDashboard: React.FC = () => {
               <h4 className="font-bold text-slate-900 text-sm">Status Token Semua Paket Ujian</h4>
               <div className="divide-y divide-slate-100">
                 {exams.map(exam => (
-                  <div key={exam.id} className="py-3 flex items-center justify-between gap-4">
+                  <div key={exam.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <div className="font-bold text-slate-900 text-sm">{exam.subject}</div>
                       <div className="text-xs text-slate-500">
                         {exam.title} • {exam.gradeLevel}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="font-mono font-bold text-sm bg-slate-100 px-3 py-1 rounded text-slate-800">
+                    <div className="flex items-center gap-2.5">
+                      <span className="font-mono font-bold text-sm bg-slate-100 border border-slate-200 px-3 py-1 rounded-lg text-slate-800">
                         {exam.token}
                       </span>
                       <button
-                        onClick={() => toggleTokenActive(exam.id)}
-                        className={`px-3 py-1 text-xs font-bold rounded-lg ${
-                          exam.isTokenActive
-                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
-                            : 'bg-slate-200 text-slate-600 hover:bg-slate-300'
-                        }`}
+                        type="button"
+                        onClick={() => handleCopyToken(exam.token)}
+                        className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors border border-slate-200"
+                        title="Salin Token Ujian Ini"
                       >
-                        {exam.isTokenActive ? 'Aktif' : 'Nonaktif'}
+                        {copiedToken === exam.token ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
                       </button>
                       <button
-                        onClick={() => generateNewToken(exam.id)}
-                        className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded"
+                        type="button"
+                        onClick={() => {
+                          toggleTokenActive(exam.id);
+                          showScheduleToast(`Token ${exam.subject} diubah menjadi ${!exam.isTokenActive ? 'Aktif' : 'Nonaktif'}.`);
+                        }}
+                        className={`px-3 py-1.5 text-xs font-bold rounded-lg cursor-pointer transition-all shadow-2xs active:scale-[0.98] ${
+                          exam.isTokenActive
+                            ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-800 border border-emerald-300'
+                            : 'bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300'
+                        }`}
+                        title="Klik untuk mengaktifkan atau menonaktifkan token ini"
+                      >
+                        {exam.isTokenActive ? '✓ Token Aktif' : '✕ Nonaktif'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newToken = generateNewToken(exam.id);
+                          showScheduleToast(`Token baru untuk ${exam.subject} berhasil digenerate: ${newToken}`);
+                        }}
+                        className="px-2.5 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg flex items-center gap-1 cursor-pointer transition-all active:scale-[0.98]"
                         title="Generate Token Baru"
                       >
-                        <RotateCcw className="w-4 h-4" />
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Acak Baru</span>
                       </button>
                     </div>
                   </div>
@@ -2247,7 +2445,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[680px]">
                   <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                     <tr>
                       <th className="py-3 px-4">Nama Lengkap</th>
@@ -2447,7 +2645,7 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
+                <table className="w-full text-left text-xs min-w-[650px]">
                   <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                     <tr>
                       <th className="py-3 px-4">No. Peserta</th>
@@ -2532,8 +2730,8 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs">
+            <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-xs">
+              <table className="w-full text-left text-xs min-w-[620px]">
                 <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-4">Nama Kelas</th>
@@ -2588,8 +2786,8 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
-              <table className="w-full text-left text-xs">
+            <div className="bg-white border border-slate-200 rounded-xl overflow-x-auto shadow-xs">
+              <table className="w-full text-left text-xs min-w-[650px]">
                 <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                   <tr>
                     <th className="py-3 px-4">Kode Mapel</th>
@@ -2958,19 +3156,36 @@ export const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div className="flex flex-wrap items-center gap-2">
-                      <span className="font-mono font-bold text-xs bg-slate-100 px-2.5 py-1 rounded text-slate-800">
+                      <span className="font-mono font-bold text-xs bg-slate-100 border border-slate-200 px-2.5 py-1 rounded text-slate-800">
                         Token: {exam.token}
                       </span>
                       <button
-                        onClick={() => generateNewToken(exam.id)}
-                        className="px-2.5 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                        type="button"
+                        onClick={() => handleCopyToken(exam.token)}
+                        className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors border border-slate-200 active:scale-95"
+                        title="Salin Token Ujian Ini"
+                      >
+                        {copiedToken === exam.token ? (
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        ) : (
+                          <Copy className="w-3.5 h-3.5" />
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const newToken = generateNewToken(exam.id);
+                          showScheduleToast(`Token baru untuk ${exam.subject} berhasil digenerate: ${newToken}`);
+                        }}
+                        className="px-2.5 py-1 text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg flex items-center gap-1 cursor-pointer transition-all active:scale-[0.98]"
                         title="Acak Token Baru"
                       >
                         <RotateCcw className="w-3 h-3" /> Ganti Token
                       </button>
                       <button
+                        type="button"
                         onClick={() => handleOpenEditSchedule(exam)}
-                        className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 cursor-pointer transition-colors"
+                        className="px-2.5 py-1 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg flex items-center gap-1 cursor-pointer transition-colors active:scale-[0.98]"
                         title="Ganti jam, durasi, atau jadwal ujian"
                       >
                         <Edit2 className="w-3 h-3 text-indigo-600" /> Ganti Jadwal
@@ -3157,9 +3372,11 @@ export const AdminDashboard: React.FC = () => {
                         type="button"
                         onClick={() => {
                           setOpenSections(prev => ({ ...prev, nilai_laporan: true }));
+                          setSelectedDocType('daftar_nilai');
                           setActiveTab('dokumen_ujian');
+                          showScheduleToast('Membuka Dokumen Daftar Nilai Siswa Per Kelas siap cetak & bagikan ke orang tua.');
                         }}
-                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
+                        className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors active:scale-95"
                         title="Buka Dokumen Resmi untuk mencetak Nilai Per Ruang Kelas Siap Dibagikan ke Orang Tua Siswa"
                       >
                         <Printer className="w-4 h-4" />
@@ -3307,7 +3524,7 @@ export const AdminDashboard: React.FC = () => {
               {/* Data Table */}
               <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full text-left text-xs min-w-[850px]">
                     <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                       <tr>
                         <th className="py-3 px-3 text-center w-12">Peringkat</th>
@@ -3692,7 +3909,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
+                      <table className="w-full text-left text-xs min-w-[620px]">
                         <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                           <tr>
                             <th className="py-2.5 px-3 w-16">No. Soal</th>
@@ -3925,12 +4142,23 @@ export const AdminDashboard: React.FC = () => {
                     </select>
                   </div>
 
-                  <button
-                    onClick={() => window.print()}
-                    className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer"
-                  >
-                    <Printer className="w-4 h-4" /> Cetak Leger Kelas
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={handleDownloadLeger}
+                      className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
+                      title="Unduh file Leger format HTML siap cetak/simpan PDF"
+                    >
+                      <Download className="w-4 h-4" /> Unduh Leger (HTML/PDF)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handlePrintLeger}
+                      className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
+                    >
+                      <Printer className="w-4 h-4" /> Cetak Leger Kelas
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -3941,7 +4169,7 @@ export const AdminDashboard: React.FC = () => {
                 const mainSubjects = subjects.slice(0, 8); // Top representative subjects for tabular fit
 
                 return (
-                  <div className="space-y-3">
+                  <div id="printable-leger-matrix" className="space-y-3">
                     <div className="flex items-center justify-between text-xs text-slate-600 font-medium">
                       <span>
                         Daftar Nilai Rombel: <strong className="text-slate-900 font-mono">Kelas {selectedLegerClass}</strong> · TA {schoolProfile.academicYear} ({schoolProfile.semester})
@@ -3952,7 +4180,7 @@ export const AdminDashboard: React.FC = () => {
                     </div>
 
                     <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                      <table className="w-full text-left text-xs border-collapse">
+                      <table className="w-full text-left text-xs border-collapse min-w-[850px]">
                         <thead className="bg-slate-100/80 text-slate-700 font-bold border-b border-slate-200">
                           <tr>
                             <th className="py-2.5 px-3 border-r border-slate-200 text-center w-10">No</th>
@@ -4060,10 +4288,17 @@ export const AdminDashboard: React.FC = () => {
                         <FileDown className="w-4 h-4" /> Download Rekap Nilai (CSV)
                       </button>
                       <button
-                        onClick={() => alert(`Berita Acara untuk ${exam.subject} siap dicetak.`)}
-                        className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                        type="button"
+                        onClick={() => {
+                          setOpenSections(prev => ({ ...prev, nilai_laporan: true }));
+                          setSelectedDocType('berita_acara');
+                          setSelectedDocExamId(exam.id);
+                          setActiveTab('dokumen_ujian');
+                          showScheduleToast(`Membuka Berita Acara Ujian untuk ${exam.subject}.`);
+                        }}
+                        className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer active:scale-[0.99]"
                       >
-                        <Printer className="w-4 h-4" /> Cetak Berita Acara
+                        <Printer className="w-4 h-4 text-indigo-600" /> Cetak Berita Acara
                       </button>
                     </div>
                   </div>
@@ -4087,7 +4322,11 @@ export const AdminDashboard: React.FC = () => {
             18C. DOKUMEN ADMINISTRASI UJIAN RESMI
            ========================================================================= */}
         {activeTab === 'dokumen_ujian' && (
-          <ExamAdministrationDocs />
+          <ExamAdministrationDocs
+            initialDocType={selectedDocType}
+            initialExamId={selectedDocExamId}
+            onDocTypeChange={setSelectedDocType}
+          />
         )}
 
         {/* =========================================================================
@@ -4617,7 +4856,7 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-4">
               <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1.5">
                 <div className="flex justify-between">
                   <span className="text-slate-500">Nama Lengkap:</span>
@@ -4949,8 +5188,8 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               {/* Table List */}
-              <div className="overflow-y-auto overflow-x-auto flex-1 p-0">
-                <table className="w-full text-left text-xs border-collapse">
+              <div className="overflow-y-auto overflow-x-auto flex-1 min-h-0 p-0">
+                <table className="w-full text-left text-xs border-collapse min-w-[650px]">
                   <thead className="bg-slate-100 text-slate-700 font-bold border-b border-slate-200 sticky top-0 z-10">
                     <tr>
                       <th className="py-2.5 px-3 text-center w-10">No</th>
@@ -5137,16 +5376,16 @@ export const AdminDashboard: React.FC = () => {
 
       {/* MODAL EDIT STATUS KEHADIRAN & UJIAN TERTULIS DARI MODAL STATUS */}
       {statusAttendanceEditingStudent && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden">
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] overflow-hidden">
             {/* Header: Fixed / Shrink-0 */}
-            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between bg-white">
+            <div className="shrink-0 p-3.5 sm:p-4 border-b border-slate-100 flex items-start justify-between bg-white">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold shrink-0">
                   <CheckCircle2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="font-bold text-slate-900 text-base">Ubah Status Kehadiran Siswa</h3>
+                  <h3 className="font-bold text-slate-900 text-sm sm:text-base">Ubah Status Kehadiran Siswa</h3>
                   <p className="text-xs text-slate-500">
                     {statusAttendanceEditingStudent.name} (Kelas {statusAttendanceEditingStudent.kelas} · NISN: {statusAttendanceEditingStudent.nisn || '-'})
                   </p>
@@ -5161,8 +5400,8 @@ export const AdminDashboard: React.FC = () => {
               </button>
             </div>
 
-            {/* Body: Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
+            {/* Body: Scrollable with min-h-0 */}
+            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3">
               <label className="text-xs font-bold text-slate-700 block">Pilih Status Kehadiran:</label>
 
               {/* Pilihan CBT */}

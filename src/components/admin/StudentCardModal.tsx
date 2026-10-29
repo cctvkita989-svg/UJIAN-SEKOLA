@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCBT } from '../../context/CBTContext';
-import { X, Printer, QrCode } from 'lucide-react';
+import { X, Printer, QrCode, Download, CheckCircle2 } from 'lucide-react';
 import { User } from '../../types/cbt';
 
 interface StudentCardModalProps {
@@ -10,16 +10,98 @@ interface StudentCardModalProps {
 
 export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onClose }) => {
   const { schoolProfile } = useCBT();
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   if (!student) return null;
 
+  const handleDownload = () => {
+    const cardEl = document.getElementById('printable-student-card');
+    if (!cardEl) return;
+
+    const html = `<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <title>Kartu_Ujian_${student.name.replace(/\s+/g, '_')}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @page { size: A4 portrait; margin: 15mm; }
+    body { font-family: sans-serif; padding: 20px; background: #fff; color: #1e293b; }
+    @media print { body { padding: 0 !important; } }
+  </style>
+</head>
+<body>
+  <div style="max-width: 500px; margin: 20px auto;">
+    ${cardEl.innerHTML}
+  </div>
+  <script>
+    window.addEventListener('load', function() {
+      setTimeout(function() { window.print(); }, 400);
+    });
+  </script>
+</body>
+</html>`;
+
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `Kartu_Ujian_${student.name.replace(/\s+/g, '_')}.html`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 1000);
+
+    setToastMessage('Kartu peserta berhasil diunduh. Buka file untuk langsung mencetak atau simpan PDF.');
+    setTimeout(() => setToastMessage(null), 5000);
+  };
+
   const handlePrint = () => {
-    window.print();
+    const cardEl = document.getElementById('printable-student-card');
+    let printed = false;
+    try {
+      if (cardEl) {
+        const iframe = document.createElement('iframe');
+        iframe.style.position = 'fixed';
+        iframe.style.right = '0';
+        iframe.style.bottom = '0';
+        iframe.style.width = '0';
+        iframe.style.height = '0';
+        iframe.style.border = 'none';
+        document.body.appendChild(iframe);
+        const doc = iframe.contentWindow?.document;
+        if (doc) {
+          doc.open();
+          doc.write(`<!DOCTYPE html><html><head><script src="https://cdn.tailwindcss.com"></script></head><body style="padding:15px;">${cardEl.innerHTML}</body></html>`);
+          doc.close();
+          setTimeout(() => {
+            try {
+              iframe.contentWindow?.focus();
+              iframe.contentWindow?.print();
+              printed = true;
+            } catch (e) {}
+          }, 350);
+        }
+      }
+    } catch (e) {}
+
+    try {
+      window.print();
+      printed = true;
+    } catch (e) {}
+
+    if (printed) {
+      setToastMessage('Dialog cetak kartu dibuka.');
+    } else {
+      handleDownload();
+    }
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
-      <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] animate-in fade-in zoom-in-95 duration-150">
+      <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden flex flex-col max-h-[88vh] animate-in fade-in zoom-in-95 duration-150">
         <div className="shrink-0 px-6 py-4 border-b border-slate-200 flex items-center justify-between no-print bg-slate-50/50">
           <div>
             <h2 className="text-base font-bold text-slate-900">Kartu Peserta Ujian CBT</h2>
@@ -33,8 +115,15 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onC
           </button>
         </div>
 
+        {toastMessage && (
+          <div className="mx-6 mt-3 p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-lg text-xs font-semibold flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
+
         {/* Printable Card Area */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6" id="printable-student-card">
           <div className="border-2 border-slate-800 rounded-lg p-5 bg-white shadow-xs">
             {/* Header Kop */}
             <div className="text-center border-b-2 border-slate-800 pb-3 mb-4">
@@ -127,16 +216,25 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onC
           </div>
         </div>
 
-        <div className="shrink-0 px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2 no-print">
+        <div className="shrink-0 px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-end gap-2 no-print">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="px-4 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer text-center"
           >
             Tutup
           </button>
           <button
+            type="button"
+            onClick={handleDownload}
+            className="flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors shadow-xs cursor-pointer active:scale-95 text-center"
+          >
+            <Download className="w-3.5 h-3.5" />
+            Unduh Kartu (HTML/PDF)
+          </button>
+          <button
+            type="button"
             onClick={handlePrint}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-xs cursor-pointer"
+            className="flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-xs cursor-pointer active:scale-95 text-center"
           >
             <Printer className="w-3.5 h-3.5" />
             Cetak Kartu Peserta

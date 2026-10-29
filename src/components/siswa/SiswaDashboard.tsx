@@ -307,7 +307,7 @@ export const SiswaDashboard: React.FC = () => {
   const upcomingExam = relevantExams.find(e => e.status === 'published' && e.id !== ongoingExam?.id) || relevantExams.find(e => e.id !== ongoingExam?.id);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6">
+    <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-4 sm:space-y-6">
       {/* 1. TOP OFFLINE WARNING BANNER */}
       {!isOnline && (
         <div className="p-3.5 bg-amber-500 text-white rounded-2xl text-xs font-medium flex items-center justify-between shadow-xs animate-in slide-in-from-top-2">
@@ -352,7 +352,7 @@ export const SiswaDashboard: React.FC = () => {
             type="button"
             onClick={handleManualSyncInDashboard}
             disabled={isSyncing}
-            className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-60 shadow-xs transition-colors"
+            className="w-full sm:w-auto justify-center px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold text-xs flex items-center gap-1.5 shrink-0 cursor-pointer disabled:opacity-60 shadow-xs transition-colors"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
             <span>{isSyncing ? 'Menyinkronkan...' : 'Sinkronkan Sekarang'}</span>
@@ -361,14 +361,14 @@ export const SiswaDashboard: React.FC = () => {
       )}
 
       {/* Student Welcome Header Banner */}
-      <div className="bg-[#fdfdfc] border border-stone-200/90 rounded-2xl p-6 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+      <div className="bg-[#fdfdfc] border border-stone-200/90 rounded-2xl p-4 sm:p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1">
             <span className="text-xs font-semibold uppercase tracking-wider text-emerald-800">
               PORTAL ASESMEN SISWA CBT
             </span>
             <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-2xl font-bold tracking-tight text-stone-900">
+              <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-stone-900">
                 {currentUser.name}
               </h1>
               <span className="text-xs font-medium text-stone-500">
@@ -384,7 +384,7 @@ export const SiswaDashboard: React.FC = () => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setIsCardModalOpen(true)}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-stone-700 bg-stone-50 hover:bg-stone-100 border border-stone-200/90 rounded-xl transition-colors shadow-xs cursor-pointer"
+              className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-3.5 py-2 text-xs font-semibold text-stone-700 bg-stone-50 hover:bg-stone-100 border border-stone-200/90 rounded-xl transition-colors shadow-xs cursor-pointer"
             >
               <Printer className="w-4 h-4 text-stone-600" />
               <span>Cetak Kartu Ujian</span>
@@ -400,10 +400,10 @@ export const SiswaDashboard: React.FC = () => {
       </div>
 
       {/* Main Student Navigation Menu Tabs */}
-      <div className="flex border-b border-stone-200 overflow-x-auto gap-2">
+      <div className="flex border-b border-stone-200 overflow-x-auto gap-1 sm:gap-2 scrollbar-none pb-0.5">
         <button
           onClick={() => setActiveTab('ujian')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-1.5 sm:gap-2 pb-2.5 sm:pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === 'ujian'
               ? 'border-emerald-800 text-emerald-800'
               : 'border-transparent text-stone-500 hover:text-stone-900'
@@ -415,7 +415,7 @@ export const SiswaDashboard: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('riwayat')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-1.5 sm:gap-2 pb-2.5 sm:pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === 'riwayat'
               ? 'border-emerald-800 text-emerald-800'
               : 'border-transparent text-stone-500 hover:text-stone-900'
@@ -430,7 +430,7 @@ export const SiswaDashboard: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('nilai')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-1.5 sm:gap-2 pb-2.5 sm:pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === 'nilai'
               ? 'border-emerald-800 text-emerald-800'
               : 'border-transparent text-stone-500 hover:text-stone-900'
@@ -442,7 +442,7 @@ export const SiswaDashboard: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('pengumuman')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-1.5 sm:gap-2 pb-2.5 sm:pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === 'pengumuman'
               ? 'border-indigo-600 text-indigo-600'
               : 'border-transparent text-slate-500 hover:text-slate-900'
@@ -454,7 +454,7 @@ export const SiswaDashboard: React.FC = () => {
 
         <button
           onClick={() => setActiveTab('akun')}
-          className={`flex items-center gap-2 pb-3 px-4 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
+          className={`flex items-center gap-1.5 sm:gap-2 pb-2.5 sm:pb-3 px-3 sm:px-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer shrink-0 ${
             activeTab === 'akun'
               ? 'border-indigo-600 text-indigo-600'
               : 'border-transparent text-slate-500 hover:text-slate-900'

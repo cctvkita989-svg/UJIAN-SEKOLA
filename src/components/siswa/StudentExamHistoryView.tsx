@@ -225,7 +225,11 @@ export const StudentExamHistoryView: React.FC = () => {
   }, [historyItems]);
 
   const handlePrintAllHistory = () => {
-    window.print();
+    try {
+      window.print();
+    } catch (e) {
+      console.warn('window.print error:', e);
+    }
   };
 
   return (
@@ -785,8 +789,15 @@ export const StudentExamHistoryView: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => window.print()}
-                  className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5"
+                  type="button"
+                  onClick={() => {
+                    try {
+                      window.print();
+                    } catch (e) {
+                      console.warn('print error:', e);
+                    }
+                  }}
+                  className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
                 >
                   <Printer className="w-3.5 h-3.5" />
                   <span>Cetak / Simpan PDF</span>

@@ -34,7 +34,7 @@ const MainAppContent: React.FC = () => {
         </main>
       </div>
 
-      <footer className="mt-12 py-6 border-t border-stone-200/80 bg-[#faf9f5] text-center text-xs text-stone-500">
+      <footer className="mt-12 py-6 border-t border-stone-200/80 bg-[#faf9f5] text-center text-xs text-stone-500 print:hidden">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
             <span className="font-semibold text-stone-800">{schoolProfile.name}</span>

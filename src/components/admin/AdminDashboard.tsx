@@ -2236,9 +2236,34 @@ export const AdminDashboard: React.FC = () => {
                           <Clock className="w-3.5 h-3.5 text-indigo-600" />
                           Jam Ujian: {exam.startTime} - {exam.endTime} ({exam.durationMinutes} Menit)
                         </span>
-                        <span className="flex items-center gap-1">
-                          <GraduationCap className="w-3.5 h-3.5 text-slate-400" />
-                          Pengawas/Guru: {exam.teacherName}
+                        <span className="flex items-center gap-1 text-slate-600">
+                          <Layers className="w-3.5 h-3.5 text-blue-600" />
+                          <span className="font-semibold text-slate-700">Kelas Target:</span>{' '}
+                          {exam.targetClasses && exam.targetClasses.length > 0 ? (
+                            <span className="inline-flex items-center gap-1 flex-wrap">
+                              {exam.targetClasses.map(cls => (
+                                <span key={cls} className="px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-mono text-[10px] font-bold border border-blue-200">
+                                  {cls}
+                                </span>
+                              ))}
+                            </span>
+                          ) : (
+                            <span className="font-medium text-slate-800">{exam.gradeLevel}</span>
+                          )}
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-600">
+                          <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+                          <span className="font-semibold text-slate-700">Guru Mapel:</span>{' '}
+                          {exam.subjectTeachers && exam.subjectTeachers.length > 0
+                            ? exam.subjectTeachers.join(', ')
+                            : exam.teacherName}
+                        </span>
+                        <span className="flex items-center gap-1 text-slate-600">
+                          <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
+                          <span className="font-semibold text-slate-700">Pengawas:</span>{' '}
+                          {exam.roomProctors && exam.roomProctors.length > 0
+                            ? `${exam.roomProctors.length} Pengawas Acak (per Ruang)`
+                            : (exam.guruPengawas || 'Pengawas Ruang Terjadwal')}
                         </span>
                         <span className="flex items-center gap-1">
                           <Layers className="w-3.5 h-3.5 text-slate-400" />

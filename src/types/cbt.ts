@@ -55,6 +55,11 @@ export interface Question {
   points: number;
 }
 
+export interface RoomProctorAssignment {
+  room: string;
+  proctorName: string;
+}
+
 export interface Exam {
   id: string;
   title: string;
@@ -69,7 +74,11 @@ export interface Exam {
   endTime: string;
   status: 'draft' | 'published' | 'ongoing' | 'completed';
   createdByTeacherId: string;
-  teacherName: string;
+  teacherName: string; // Nama guru pembuat / mapel (string gabungan untuk kompatibilitas)
+  subjectTeachers?: string[]; // Tim Guru Mapel pengampu
+  targetClasses?: string[]; // Daftar kelas yang dipilih khusus untuk jadwal ini (misal: ['IX-1', 'IX-2', 'IX-3'])
+  guruPengawas?: string; // Guru Pengawas utama
+  roomProctors?: RoomProctorAssignment[]; // Penugasan pengawas acak per ruang kelas
   kkm: number;
   randomizeQuestions: boolean;
   randomizeOptions: boolean;

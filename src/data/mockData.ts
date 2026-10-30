@@ -198,7 +198,19 @@ export const INITIAL_EXAMS: Exam[] = [
     endTime: '12:00',
     status: 'ongoing',
     createdByTeacherId: 'usr-guru-1',
-    teacherName: 'Ibu Sri Wahyuni, S.Pd',
+    teacherName: 'Ibu Sri Wahyuni, S.Pd, Bpk. Ahmad Fauzi, S.Pd, Bpk. Budi Santoso, S.Kom',
+    subjectTeachers: [
+      'Ibu Sri Wahyuni, S.Pd',
+      'Bpk. Ahmad Fauzi, S.Pd',
+      'Bpk. Budi Santoso, S.Kom'
+    ],
+    guruPengawas: 'Bpk. Hendra Saputra, M.Pd',
+    roomProctors: [
+      { room: 'Ruang Kelas VII-1', proctorName: 'Bpk. Hendra Saputra, M.Pd' },
+      { room: 'Ruang Kelas VII-2', proctorName: 'Ibu Rina Melati, S.Si' },
+      { room: 'Ruang Kelas VII-3', proctorName: 'Bpk. Danang Prasetyo, M.Hum' },
+      { room: 'Ruang Kelas VII-4', proctorName: 'Ibu Ratna Dewi, S.Pd' },
+    ],
     kkm: 75,
     randomizeQuestions: true,
     randomizeOptions: true,

@@ -153,17 +153,32 @@ export const SiswaDashboard: React.FC = () => {
     disciplineNotes.filter(n => n.studentId === currentUser.id) ||
     disciplineNotes.filter(n => n.studentId === 'usr-siswa-1');
 
-  // Filter exams specifically relevant for this student (matching student's religion for religious exams)
+  // Filter exams specifically relevant for this student (matching student's religion and class/grade)
   const studentAgama = currentUser.agama || 'Islam';
+  const studentKelas = currentUser.kelas || '';
+
   const relevantExams = exams.filter(e => {
-    // If exam has a specific requiredAgama, must match student's agama
+    // 1. Filter Agama
     if (e.requiredAgama) {
-      return e.requiredAgama === studentAgama;
+      if (e.requiredAgama !== studentAgama) return false;
+    } else if (e.subject.toLowerCase().includes('agama')) {
+      if (!e.subject.toLowerCase().includes(studentAgama.toLowerCase())) return false;
     }
-    // If exam subject has "Agama", check if matching
-    if (e.subject.toLowerCase().includes('agama')) {
-      return e.subject.toLowerCase().includes(studentAgama.toLowerCase());
+
+    // 2. Filter Kelas / Target Rombel
+    if (studentKelas) {
+      // Jika jadwal memiliki targetClasses spesifik (misal: ['IX-1', 'IX-2', 'IX-3'])
+      if (e.targetClasses && e.targetClasses.length > 0) {
+        if (!e.targetClasses.includes(studentKelas)) return false;
+      } else if (e.gradeLevel) {
+        // Cek tingkat kelas (VII, VIII, IX) atau nama rombel spesifik
+        if (e.gradeLevel.includes('VII') && !studentKelas.startsWith('VII')) return false;
+        if (e.gradeLevel.includes('VIII') && !studentKelas.startsWith('VIII')) return false;
+        if (e.gradeLevel.includes('IX') && !studentKelas.startsWith('IX')) return false;
+        if (e.gradeLevel.includes('-') && e.gradeLevel !== studentKelas) return false;
+      }
     }
+
     return true;
   });
 

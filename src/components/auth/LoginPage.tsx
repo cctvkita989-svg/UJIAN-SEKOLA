@@ -170,39 +170,6 @@ export const LoginPage: React.FC = () => {
                 {!isLoading && <ArrowRight className="w-3.5 h-3.5" />}
               </button>
             </div>
-
-            {/* Quick 1-Click Demo Logins */}
-            <div className="pt-4 border-t border-slate-200/80 space-y-2">
-              <div className="text-[11px] font-semibold text-slate-500 text-center">
-                Akses Cepat Pengujian (1-Klik Langsung Masuk):
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <button
-                  type="button"
-                  onClick={() => login('admin', 'admin123')}
-                  className="py-2 px-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 rounded-xl text-xs font-bold transition-all text-center cursor-pointer shadow-2xs"
-                  title="Masuk sebagai Administrator / Proktor CBT"
-                >
-                  🔑 Admin CBT
-                </button>
-                <button
-                  type="button"
-                  onClick={() => login('guru1', 'guru123')}
-                  className="py-2 px-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 rounded-xl text-xs font-bold transition-all text-center cursor-pointer shadow-2xs"
-                  title="Masuk sebagai Guru Pengampu"
-                >
-                  👨‍🏫 Guru Mapel
-                </button>
-                <button
-                  type="button"
-                  onClick={() => login('ahmad.fauzi', 'siswa123')}
-                  className="py-2 px-1.5 bg-sky-50 hover:bg-sky-100 border border-sky-200 text-sky-800 rounded-xl text-xs font-bold transition-all text-center cursor-pointer shadow-2xs"
-                  title="Masuk sebagai Siswa Peserta Ujian"
-                >
-                  👨‍🎓 Siswa Ujian
-                </button>
-              </div>
-            </div>
           </form>
         </div>
 

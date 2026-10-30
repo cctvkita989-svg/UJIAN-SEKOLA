@@ -186,8 +186,14 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onC
                 </div>
                 <div className="grid grid-cols-3">
                   <span className="text-slate-500">Username CBT</span>
-                  <span className="col-span-2 font-mono text-indigo-700 font-medium">
+                  <span className="col-span-2 font-mono text-indigo-700 font-bold">
                     {student.username}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3">
+                  <span className="text-slate-500">Password CBT</span>
+                  <span className="col-span-2 font-mono text-emerald-700 font-bold tracking-wider">
+                    {student.password || 'siswa123'}
                   </span>
                 </div>
               </div>

@@ -75,7 +75,7 @@ export const GuruDashboard: React.FC = () => {
             <h1 className="text-2xl font-bold tracking-tight text-slate-900">
               Panel Tenaga Pendidik
             </h1>
-            <span className="text-xs font-semibold text-emerald-700">
+            <span className="text-xs font-semibold text-blue-700">
               · Guru {currentUser.mapel || 'Mata Pelajaran'}
             </span>
           </div>
@@ -87,7 +87,7 @@ export const GuruDashboard: React.FC = () => {
         <div className="flex items-center gap-2">
           <button
             onClick={() => setIsCreateExamOpen(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-emerald-800 hover:bg-emerald-900 active:bg-emerald-950 rounded-lg transition-colors shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 active:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             Buat Paket Ujian Baru
@@ -97,59 +97,59 @@ export const GuruDashboard: React.FC = () => {
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-4 bg-[#fdfdfc] border border-stone-200/90 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-stone-500 mb-2">
+        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">Paket Ujian Saya</span>
-            <BookOpen className="w-4 h-4 text-stone-400" />
+            <BookOpen className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-stone-900">
+          <div className="text-2xl font-bold font-mono tabular-nums text-slate-900">
             {teacherExams.length}
           </div>
-          <div className="text-xs text-stone-500 mt-1">Bank soal aktif tersimpan</div>
+          <div className="text-xs text-slate-500 mt-1">Bank soal aktif tersimpan</div>
         </div>
 
-        <div className="p-4 bg-[#fdfdfc] border border-stone-200/90 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-stone-500 mb-2">
+        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">Butir Soal</span>
-            <FileText className="w-4 h-4 text-stone-400" />
+            <FileText className="w-4 h-4 text-slate-400" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-stone-900">
+          <div className="text-2xl font-bold font-mono tabular-nums text-slate-900">
             {currentQuestions.length}
           </div>
-          <div className="text-xs text-stone-500 mt-1">Pada paket terpilih</div>
+          <div className="text-xs text-slate-500 mt-1">Pada paket terpilih</div>
         </div>
 
-        <div className="p-4 bg-[#fdfdfc] border border-stone-200/90 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-stone-500 mb-2">
+        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">Siswa Sedang Tes</span>
-            <Users className="w-4 h-4 text-emerald-700" />
+            <Users className="w-4 h-4 text-blue-600" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-emerald-800">
+          <div className="text-2xl font-bold font-mono tabular-nums text-blue-700">
             {inProgressCount}
           </div>
-          <div className="text-xs text-stone-500 mt-1">Pantauan real-time aktif</div>
+          <div className="text-xs text-slate-500 mt-1">Pantauan real-time aktif</div>
         </div>
 
-        <div className="p-4 bg-[#fdfdfc] border border-stone-200/90 rounded-xl shadow-xs">
-          <div className="flex items-center justify-between text-stone-500 mb-2">
+        <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
+          <div className="flex items-center justify-between text-slate-500 mb-2">
             <span className="text-xs font-semibold uppercase tracking-wider">Sudah Mengumpulkan</span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-700" />
+            <CheckCircle2 className="w-4 h-4 text-blue-600" />
           </div>
-          <div className="text-2xl font-bold font-mono tabular-nums text-emerald-800">
+          <div className="text-2xl font-bold font-mono tabular-nums text-blue-700">
             {submittedCount}
           </div>
-          <div className="text-xs text-stone-500 mt-1">Lembar jawaban terkirim</div>
+          <div className="text-xs text-slate-500 mt-1">Lembar jawaban terkirim</div>
         </div>
       </div>
 
       {/* Main Tabs */}
-      <div className="flex border-b border-stone-200 overflow-x-auto gap-2">
+      <div className="flex border-b border-slate-200 overflow-x-auto gap-2">
         <button
           onClick={() => setActiveTab('bank')}
           className={`pb-3 px-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'bank'
-              ? 'border-emerald-800 text-emerald-800'
-              : 'border-transparent text-stone-500 hover:text-stone-900'
+              ? 'border-blue-600 text-blue-700 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           Bank Soal & Butir Ujian
@@ -158,8 +158,8 @@ export const GuruDashboard: React.FC = () => {
           onClick={() => setActiveTab('proctor')}
           className={`pb-3 px-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'proctor'
-              ? 'border-emerald-800 text-emerald-800'
-              : 'border-transparent text-stone-500 hover:text-stone-900'
+              ? 'border-blue-600 text-blue-700 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           Pengawasan Real-Time ({inProgressCount} Aktif)
@@ -168,17 +168,17 @@ export const GuruDashboard: React.FC = () => {
           onClick={() => setActiveTab('analysis')}
           className={`pb-3 px-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'analysis'
-              ? 'border-emerald-800 text-emerald-800'
-              : 'border-transparent text-stone-500 hover:text-stone-900'
+              ? 'border-blue-600 text-blue-700 font-bold'
+              : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >
           Analisis Hasil & Rekap Nilai
         </button>
         <button
           onClick={() => setActiveTab('discipline')}
-          className={`pb-3 px-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap ${
+          className={`pb-3 px-3 text-sm font-semibold border-b-2 transition-colors whitespace-nowrap cursor-pointer ${
             activeTab === 'discipline'
-              ? 'border-indigo-600 text-indigo-600'
+              ? 'border-blue-600 text-blue-700 font-bold'
               : 'border-transparent text-slate-500 hover:text-slate-900'
           }`}
         >

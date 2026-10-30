@@ -70,6 +70,7 @@ import { StudentAnswerDetailModal } from './StudentAnswerDetailModal';
 import { ImportStudentsBulkModal } from './ImportStudentsBulkModal';
 import { QuestionEditorModal } from '../guru/QuestionEditorModal';
 import { User, Exam, ExamSession, Question, AttendanceStatus } from '../../types/cbt';
+import { AttendanceStatusModal } from '../common/AttendanceStatusModal';
 
 export type AdminTab =
   // MENU UTAMA
@@ -614,6 +615,29 @@ export const AdminDashboard: React.FC = () => {
     document.body.removeChild(link);
   };
 
+  // Export Student Accounts & Passwords to CSV
+  const handleExportStudentsCSV = () => {
+    const headers = 'No,No Peserta,Nama Lengkap,NISN,Kelas,Agama,Username Login,Password CBT,Ruang Ujian,Sesi Ujian\n';
+    const rows = students
+      .map((s, idx) => {
+        const cleanName = (s.name || '').replace(/"/g, '""');
+        const cleanPass = (s.password || 'siswa123').replace(/"/g, '""');
+        return `${idx + 1},"${s.nomorPeserta || ''}","${cleanName}","${s.nisn || ''}","${s.kelas || ''}","${s.agama || ''}","${s.username}","${cleanPass}","${s.ruangUjian || ''}","${s.sesiUjian || ''}"`;
+      })
+      .join('\n');
+
+    const blob = new Blob(['\uFEFF' + headers + rows], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Daftar_Akun_dan_Password_Siswa_${schoolProfile.name.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showScheduleToast(`Berhasil mengunduh daftar akun & password untuk ${students.length} siswa.`);
+  };
+
   // Print & Download Leger Nilai
   const handleDownloadLeger = () => {
     const el = document.getElementById('printable-leger-matrix');
@@ -825,18 +849,18 @@ export const AdminDashboard: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] flex flex-col md:flex-row">
+    <div className="min-h-screen bg-[#eef4fc] app-bg-root flex flex-col md:flex-row transition-colors duration-200">
       {/* Mobile Top Sub-Header & Menu Trigger */}
-      <div className="md:hidden flex items-center justify-between px-3.5 py-2.5 bg-[#fdfdfc]/98 backdrop-blur-xs border-b border-stone-200/90 sticky top-14 sm:top-16 z-30 shadow-2xs">
+      <div className="md:hidden flex items-center justify-between px-3.5 py-2.5 bg-white/98 backdrop-blur-xs border-b border-slate-200/90 sticky top-14 sm:top-16 z-30 shadow-2xs">
         <div className="flex items-center gap-2 min-w-0">
-          <div className="w-6 h-6 rounded-md bg-emerald-800 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
+          <div className="w-6 h-6 rounded-md bg-blue-600 text-white flex items-center justify-center font-bold text-[10px] shrink-0">
             CBT
           </div>
           <div className="min-w-0">
-            <div className="text-[10px] uppercase font-bold text-stone-400 leading-none">
+            <div className="text-[10px] uppercase font-bold text-slate-400 leading-none">
               {navSections.find(s => s.id === getParentSectionId(activeTab))?.title || 'Menu'}
             </div>
-            <div className="text-xs font-bold text-stone-800 truncate capitalize mt-0.5">
+            <div className="text-xs font-bold text-slate-800 truncate capitalize mt-0.5">
               {activeTab.replace(/_/g, ' ')}
             </div>
           </div>
@@ -844,9 +868,9 @@ export const AdminDashboard: React.FC = () => {
         <button
           type="button"
           onClick={() => setIsSidebarOpenMobile(true)}
-          className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-200 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 text-blue-700 border border-blue-200 rounded-lg text-xs font-bold transition-colors cursor-pointer shrink-0"
         >
-          <Menu className="w-4 h-4 text-emerald-700" />
+          <Menu className="w-4 h-4 text-blue-600" />
           <span>Menu Navigasi</span>
         </button>
       </div>
@@ -854,35 +878,35 @@ export const AdminDashboard: React.FC = () => {
       {/* Mobile Backdrop Overlay */}
       {isSidebarOpenMobile && (
         <div
-          className="fixed inset-0 bg-stone-950/50 backdrop-blur-xs z-50 md:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 bg-slate-950/50 backdrop-blur-xs z-50 md:hidden animate-in fade-in duration-200"
           onClick={() => setIsSidebarOpenMobile(false)}
         />
       )}
 
       {/* SIDEBAR NAVIGATION (Desktop: Sticky Sidebar | Mobile: Slide-in Drawer) */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#fcfbf9] shadow-2xl flex flex-col md:static md:w-64 lg:w-72 md:shadow-none md:border-r md:border-stone-200/90 md:shrink-0 md:sticky md:top-14 sm:md:top-16 md:h-[calc(100vh-3.5rem)] sm:md:h-[calc(100vh-4rem)] md:overflow-y-auto transition-transform duration-200 ease-out ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-2xl flex flex-col md:static md:w-64 lg:w-72 md:shadow-none md:border-r md:border-slate-200/90 md:shrink-0 md:sticky md:top-14 sm:md:top-16 md:h-[calc(100vh-3.5rem)] sm:md:h-[calc(100vh-4rem)] md:overflow-y-auto transition-transform duration-200 ease-out ${
           isSidebarOpenMobile ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
         } print:hidden`}
       >
-        <div className="p-3.5 sm:p-4 border-b border-stone-200/70 flex items-center justify-between bg-white shrink-0">
+        <div className="p-3.5 sm:p-4 border-b border-slate-200/70 flex items-center justify-between bg-white shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-800 text-white flex items-center justify-center font-bold text-sm shadow-xs ring-2 ring-emerald-50/60">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-xs ring-2 sm:ring-4 ring-blue-100/70">
               <ShieldCheck className="w-4 h-4" />
             </div>
             <div>
-              <div className="font-bold text-stone-900 text-xs sm:text-sm leading-tight">Admin Console</div>
-              <div className="text-[10px] text-stone-500 font-medium">Proktor Pusat Ujian Sekolah</div>
+              <div className="font-bold text-slate-900 text-xs sm:text-sm leading-tight">Admin Console</div>
+              <div className="text-[10px] text-slate-500 font-medium">Proktor Pusat Ujian Sekolah</div>
             </div>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="hidden md:inline-block text-[10px] font-semibold text-emerald-800 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md">
+            <span className="hidden md:inline-block text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md">
               Online
             </span>
             <button
               type="button"
               onClick={() => setIsSidebarOpenMobile(false)}
-              className="md:hidden p-1.5 text-stone-400 hover:text-stone-700 hover:bg-stone-100 rounded-lg cursor-pointer"
+              className="md:hidden p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer"
               title="Tutup Menu"
             >
               <X className="w-5 h-5" />
@@ -911,16 +935,16 @@ export const AdminDashboard: React.FC = () => {
                   }}
                   className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-bold transition-all text-left ${
                     isSectionActive
-                      ? 'bg-emerald-50/90 text-emerald-900 font-bold border border-emerald-200/80 shadow-2xs'
-                      : 'text-stone-700 hover:text-stone-900 hover:bg-stone-100/70 font-semibold'
+                      ? 'bg-blue-50 text-blue-900 font-bold border border-blue-200/80 shadow-2xs'
+                      : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100/70 font-semibold'
                   }`}
                 >
                   <div className="flex items-center gap-2.5 truncate">
                     <div
                       className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
                         isSectionActive
-                          ? 'bg-emerald-800 text-white'
-                          : 'bg-stone-100 text-stone-500 group-hover:bg-stone-200'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-slate-100 text-slate-500 group-hover:bg-slate-200'
                       }`}
                     >
                       <SectionIcon className="w-3.5 h-3.5" />
@@ -930,11 +954,11 @@ export const AdminDashboard: React.FC = () => {
 
                   <div className="flex items-center gap-1.5">
                     {hasSubItems && (
-                      <span className="text-[10px] text-stone-400 font-medium">
+                      <span className="text-[10px] text-slate-400 font-medium">
                         {isOpen ? (
-                          <ChevronDown className="w-4 h-4 text-stone-400" />
+                          <ChevronDown className="w-4 h-4 text-slate-400" />
                         ) : (
-                          <ChevronRight className="w-4 h-4 text-stone-400" />
+                          <ChevronRight className="w-4 h-4 text-slate-400" />
                         )}
                       </span>
                     )}
@@ -943,7 +967,7 @@ export const AdminDashboard: React.FC = () => {
 
                 {/* Submenu Accordion Items */}
                 {hasSubItems && isOpen && (
-                  <div className="ml-4 pl-3 my-1 border-l-2 border-emerald-200/60 space-y-0.5 animate-fadeIn">
+                  <div className="ml-4 pl-3 my-1 border-l-2 border-blue-200/80 space-y-0.5 animate-fadeIn">
                     {section.items!.map(subItem => {
                       const SubIcon = subItem.icon;
                       const isSubActive = activeTab === subItem.id;
@@ -957,14 +981,14 @@ export const AdminDashboard: React.FC = () => {
                           }}
                           className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-all ${
                             isSubActive
-                              ? 'bg-emerald-800 text-white font-bold shadow-xs'
-                              : 'text-stone-600 hover:text-stone-900 hover:bg-stone-100/70 font-medium'
+                              ? 'bg-blue-600 text-white font-bold shadow-xs'
+                              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/70 font-medium'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate">
                             <SubIcon
                               className={`w-3.5 h-3.5 shrink-0 ${
-                                isSubActive ? 'text-white' : 'text-stone-400'
+                                isSubActive ? 'text-white' : 'text-slate-400'
                               }`}
                             />
                             <span className="truncate">{subItem.label}</span>
@@ -973,8 +997,8 @@ export const AdminDashboard: React.FC = () => {
                             <span
                               className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono tabular-nums ${
                                 isSubActive
-                                  ? 'bg-emerald-700 text-white font-bold'
-                                  : 'bg-stone-200/80 text-stone-600'
+                                  ? 'bg-blue-700 text-white font-bold'
+                                  : 'bg-slate-200/80 text-slate-600'
                               }`}
                             >
                               {subItem.badge}
@@ -991,12 +1015,12 @@ export const AdminDashboard: React.FC = () => {
         </div>
 
         {/* Server & School Badge at Sidebar Bottom */}
-        <div className="p-3 m-3 rounded-xl bg-stone-100/70 border border-stone-200 text-xs shrink-0">
-          <div className="flex items-center gap-2 text-stone-800 font-bold mb-1">
-            <Server className="w-3.5 h-3.5 text-emerald-800" />
+        <div className="p-3 m-3 rounded-xl bg-slate-50 border border-slate-200 text-xs shrink-0">
+          <div className="flex items-center gap-2 text-slate-800 font-bold mb-1">
+            <Server className="w-3.5 h-3.5 text-blue-600" />
             <span className="truncate">{schoolProfile.name}</span>
           </div>
-          <div className="text-[11px] text-stone-500">
+          <div className="text-[11px] text-slate-500">
             NPSN: {schoolProfile.npsn} • TA {schoolProfile.academicYear}
           </div>
         </div>
@@ -1005,20 +1029,20 @@ export const AdminDashboard: React.FC = () => {
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 min-w-0 p-3 sm:p-6 lg:p-8 overflow-y-auto">
         {/* Top Header Breadcrumb & Status */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-stone-200/80 print:hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 sm:mb-5 pb-3 sm:pb-4 border-b border-slate-200/80 print:hidden">
           <div>
-            <div className="flex items-center gap-2 text-xs text-stone-500 font-medium mb-1">
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium mb-1">
               <span>Admin CBT</span>
-              <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-              <span className="font-semibold text-stone-700">
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <span className="font-semibold text-slate-700">
                 {navSections.find(s => s.id === getParentSectionId(activeTab))?.title}
               </span>
-              <ChevronRight className="w-3.5 h-3.5 text-stone-400" />
-              <span className="capitalize text-emerald-800 font-bold">
+              <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+              <span className="capitalize text-blue-700 font-bold">
                 {activeTab.replace('_', ' ')}
               </span>
             </div>
-            <h1 className="text-xl sm:text-2xl font-bold text-stone-900 capitalize">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 capitalize">
               {activeTab === 'dashboard'
                 ? 'Panel Dashboard Administrator CBT'
                 : activeTab.replace(/_/g, ' ')}
@@ -1026,8 +1050,8 @@ export const AdminDashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
-            <div className="flex items-center gap-1.5 px-3 py-1 bg-stone-100/80 border border-stone-200 rounded-lg text-stone-700 text-xs font-medium">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+            <div className="flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-200 rounded-lg text-slate-700 text-xs font-medium shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
               <span>Server CBT: Online · LAN & Cloud Sync</span>
             </div>
           </div>
@@ -1038,8 +1062,8 @@ export const AdminDashboard: React.FC = () => {
           const currentParent = navSections.find(s => s.id === getParentSectionId(activeTab));
           if (!currentParent?.items || currentParent.items.length <= 1) return null;
           return (
-            <div className="mb-4 sm:mb-6 flex items-center gap-1.5 overflow-x-auto pb-2 pt-0.5 border-b border-stone-200/80 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0 print:hidden">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-stone-400 shrink-0 mr-1.5">
+            <div className="mb-4 sm:mb-6 flex items-center gap-1.5 overflow-x-auto pb-2 pt-0.5 border-b border-slate-200/80 scrollbar-none -mx-3 px-3 sm:mx-0 sm:px-0 print:hidden">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0 mr-1.5">
                 {currentParent.title}:
               </span>
               {currentParent.items.map(subItem => {
@@ -1051,16 +1075,16 @@ export const AdminDashboard: React.FC = () => {
                     onClick={() => setActiveTab(subItem.id)}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all cursor-pointer ${
                       isSelected
-                        ? 'bg-emerald-800 text-white shadow-2xs font-bold'
-                        : 'bg-[#fdfdfc] border border-stone-200 text-stone-600 hover:text-stone-900 hover:bg-stone-100/60'
+                        ? 'bg-blue-600 text-white shadow-2xs font-bold'
+                        : 'bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
                     }`}
                   >
-                    <SubIcon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-stone-500'}`} />
+                    <SubIcon className={`w-3.5 h-3.5 ${isSelected ? 'text-white' : 'text-slate-500'}`} />
                     <span>{subItem.label}</span>
                     {subItem.badge !== undefined && (
                       <span
                         className={`text-[10px] px-1.5 py-0.2 rounded-full font-mono tabular-nums ${
-                          isSelected ? 'bg-emerald-700 text-white font-bold' : 'bg-stone-200/80 text-stone-600'
+                          isSelected ? 'bg-blue-700 text-white font-bold' : 'bg-slate-200/80 text-slate-600'
                         }`}
                       >
                         {subItem.badge}
@@ -1082,96 +1106,96 @@ export const AdminDashboard: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <button
                 onClick={() => setActiveTab('total_siswa')}
-                className="text-left p-4 bg-[#fdfdfc] border border-stone-200 rounded-xl hover:border-emerald-600 hover:shadow-xs transition-all cursor-pointer group"
+                className="text-left p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-xs transition-all cursor-pointer group"
               >
-                <div className="flex items-center justify-between text-stone-500 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-emerald-800">
+                <div className="flex items-center justify-between text-slate-500 mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-blue-700">
                     Total Siswa
                   </span>
-                  <Users className="w-4 h-4 text-stone-400 group-hover:text-emerald-800" />
+                  <Users className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
                 </div>
-                <div className="text-2xl font-bold font-mono tabular-nums text-stone-900">
+                <div className="text-2xl font-bold font-mono tabular-nums text-slate-900">
                   {students.length}
                 </div>
-                <div className="text-[11px] text-stone-500 mt-1 flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                   <span>DNT Terdaftar</span>
-                  <span className="text-emerald-800 font-semibold">Detail →</span>
+                  <span className="text-blue-700 font-semibold">Detail →</span>
                 </div>
               </button>
 
               <button
                 onClick={() => setActiveTab('jumlah_kelas')}
-                className="text-left p-4 bg-[#fdfdfc] border border-stone-200 rounded-xl hover:border-emerald-600 hover:shadow-xs transition-all cursor-pointer group"
+                className="text-left p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-xs transition-all cursor-pointer group"
               >
-                <div className="flex items-center justify-between text-stone-500 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-emerald-800">
+                <div className="flex items-center justify-between text-slate-500 mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-blue-700">
                     Jumlah Kelas
                   </span>
-                  <School className="w-4 h-4 text-stone-400 group-hover:text-emerald-800" />
+                  <School className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
                 </div>
-                <div className="text-2xl font-bold font-mono tabular-nums text-stone-900">
+                <div className="text-2xl font-bold font-mono tabular-nums text-slate-900">
                   {classes.length}
                 </div>
-                <div className="text-[11px] text-stone-500 mt-1 flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                   <span>Rombel Aktif</span>
-                  <span className="text-emerald-800 font-semibold">Detail →</span>
+                  <span className="text-blue-700 font-semibold">Detail →</span>
                 </div>
               </button>
 
               <button
                 onClick={() => setActiveTab('jumlah_mapel')}
-                className="text-left p-4 bg-[#fdfdfc] border border-stone-200 rounded-xl hover:border-emerald-600 hover:shadow-xs transition-all cursor-pointer group"
+                className="text-left p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-xs transition-all cursor-pointer group"
               >
-                <div className="flex items-center justify-between text-stone-500 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-emerald-800">
+                <div className="flex items-center justify-between text-slate-500 mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-blue-700">
                     Jumlah Mapel
                   </span>
-                  <BookOpen className="w-4 h-4 text-stone-400 group-hover:text-emerald-800" />
+                  <BookOpen className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
                 </div>
-                <div className="text-2xl font-bold font-mono tabular-nums text-stone-900">
+                <div className="text-2xl font-bold font-mono tabular-nums text-slate-900">
                   {subjects.length}
                 </div>
-                <div className="text-[11px] text-stone-500 mt-1 flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                   <span>Kurikulum CBT</span>
-                  <span className="text-emerald-800 font-semibold">Detail →</span>
+                  <span className="text-blue-700 font-semibold">Detail →</span>
                 </div>
               </button>
 
               <button
                 onClick={() => setActiveTab('jadwal_ujian')}
-                className="text-left p-4 bg-[#fdfdfc] border border-stone-200 rounded-xl hover:border-emerald-600 hover:shadow-xs transition-all cursor-pointer group"
+                className="text-left p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-xs transition-all cursor-pointer group"
               >
-                <div className="flex items-center justify-between text-stone-500 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-emerald-800">
+                <div className="flex items-center justify-between text-slate-500 mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-blue-700">
                     Jadwal Ujian
                   </span>
-                  <Calendar className="w-4 h-4 text-stone-400 group-hover:text-emerald-800" />
+                  <Calendar className="w-4 h-4 text-slate-400 group-hover:text-blue-600" />
                 </div>
-                <div className="text-2xl font-bold font-mono tabular-nums text-emerald-800">
+                <div className="text-2xl font-bold font-mono tabular-nums text-blue-700">
                   {ongoingExams.length} Aktif
                 </div>
-                <div className="text-[11px] text-stone-500 mt-1 flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                   <span>{exams.length} Total Paket</span>
-                  <span className="text-emerald-800 font-semibold">Detail →</span>
+                  <span className="text-blue-700 font-semibold">Detail →</span>
                 </div>
               </button>
 
               <button
                 onClick={() => setActiveTab('token_ujian')}
-                className="text-left p-4 bg-[#fdfdfc] border border-stone-200 rounded-xl hover:border-emerald-600 hover:shadow-xs transition-all cursor-pointer group col-span-2 sm:col-span-1 lg:col-span-1"
+                className="text-left p-4 bg-white border border-slate-200 rounded-xl hover:border-blue-500 hover:shadow-xs transition-all cursor-pointer group col-span-2 sm:col-span-1 lg:col-span-1"
               >
-                <div className="flex items-center justify-between text-stone-500 mb-2">
-                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-emerald-800">
+                <div className="flex items-center justify-between text-slate-500 mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider group-hover:text-blue-700">
                     Token Ujian
                   </span>
-                  <KeyRound className="w-4 h-4 text-amber-600 group-hover:text-emerald-800" />
+                  <KeyRound className="w-4 h-4 text-blue-600 group-hover:text-blue-700" />
                 </div>
-                <div className="text-2xl font-bold font-mono tracking-wider text-amber-700">
+                <div className="text-2xl font-bold font-mono tracking-wider text-blue-700">
                   {ongoingExams[0]?.token || 'PASMAT'}
                 </div>
-                <div className="text-[11px] text-stone-500 mt-1 flex items-center justify-between">
+                <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
                   <span>Rilis Sesi 1</span>
-                  <span className="text-emerald-800 font-semibold">Kelola →</span>
+                  <span className="text-blue-700 font-semibold">Kelola →</span>
                 </div>
               </button>
             </div>
@@ -1301,18 +1325,18 @@ export const AdminDashboard: React.FC = () => {
                             description: 'Siswa yang saat ini aktif mengerjakan lembar ujian di ruang kelas / lab CBT.',
                           });
                         }}
-                        className="p-3 bg-emerald-50/70 hover:bg-emerald-100 border-2 border-emerald-300 hover:border-emerald-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group"
+                        className="p-3 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 hover:border-emerald-600 dark:hover:border-emerald-500 rounded-xl text-left transition-all cursor-pointer shadow-2xs hover:shadow-xs group"
                         title="Klik untuk melihat siapa saja siswa yang sedang mengerjakan"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-emerald-800 uppercase font-black tracking-wider flex items-center gap-1">
+                          <span className="text-[10px] text-emerald-800 dark:text-emerald-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                             Mengerjakan
                           </span>
-                          <span className="text-[10px] text-emerald-600 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                          <span className="text-[10px] text-stone-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-400 font-medium group-hover:translate-x-0.5 transition-all">Lihat →</span>
                         </div>
-                        <div className="text-2xl font-black font-mono text-emerald-800 mt-1">{inProgressStudentsCount}</div>
-                        <div className="text-[10px] text-emerald-700 mt-0.5 font-medium">Siswa aktif mengerjakan</div>
+                        <div className="text-2xl font-bold font-mono tabular-nums text-emerald-800 dark:text-emerald-400 mt-1.5">{inProgressStudentsCount}</div>
+                        <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Aktif mengerjakan</div>
                       </button>
 
                       {/* 2. TERKUNCI PELANGGARAN */}
@@ -1329,18 +1353,18 @@ export const AdminDashboard: React.FC = () => {
                             description: 'Siswa yang layarnya terkunci karena tab blur atau batas kecurangan. Anda dapat membuka kuncinya langsung di sini.',
                           });
                         }}
-                        className="p-3 bg-rose-50/70 hover:bg-rose-100 border-2 border-rose-300 hover:border-rose-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group"
+                        className="p-3 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 hover:border-rose-600 dark:hover:border-rose-500 rounded-xl text-left transition-all cursor-pointer shadow-2xs hover:shadow-xs group"
                         title="Klik untuk melihat siapa saja siswa yang terkunci dan buka kuncinya"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-rose-800 uppercase font-black tracking-wider flex items-center gap-1">
-                            <AlertTriangle className="w-3 h-3 text-rose-600 animate-pulse" />
+                          <span className="text-[10px] text-rose-800 dark:text-rose-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+                            <AlertTriangle className="w-3 h-3 text-rose-600 dark:text-rose-400" />
                             Terkunci
                           </span>
-                          <span className="text-[10px] text-rose-600 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                          <span className="text-[10px] text-stone-400 group-hover:text-rose-700 dark:group-hover:text-rose-400 font-medium group-hover:translate-x-0.5 transition-all">Lihat →</span>
                         </div>
-                        <div className="text-2xl font-black font-mono text-rose-800 mt-1">{blockedStudentsCount}</div>
-                        <div className="text-[10px] text-rose-700 mt-0.5 font-medium">Perlu dibuka kuncinya</div>
+                        <div className="text-2xl font-bold font-mono tabular-nums text-rose-800 dark:text-rose-400 mt-1.5">{blockedStudentsCount}</div>
+                        <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Perlu buka kunci</div>
                       </button>
 
                       {/* 3. SUDAH MENGUMPULKAN */}
@@ -1357,18 +1381,18 @@ export const AdminDashboard: React.FC = () => {
                             description: 'Siswa yang telah selesai mengumpulkan jawaban beserta perolehan nilai sementaranya.',
                           });
                         }}
-                        className="p-3 bg-blue-50/70 hover:bg-blue-100 border-2 border-blue-300 hover:border-blue-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group"
+                        className="p-3 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 hover:border-blue-600 dark:hover:border-blue-500 rounded-xl text-left transition-all cursor-pointer shadow-2xs hover:shadow-xs group"
                         title="Klik untuk melihat siapa saja siswa yang sudah mengumpulkan"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-blue-800 uppercase font-black tracking-wider flex items-center gap-1">
-                            <CheckCircle2 className="w-3 h-3 text-blue-600" />
-                            Mengumpulkan
+                          <span className="text-[10px] text-blue-800 dark:text-blue-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+                            <CheckCircle2 className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                            Selesai
                           </span>
-                          <span className="text-[10px] text-blue-600 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                          <span className="text-[10px] text-stone-400 group-hover:text-blue-700 dark:group-hover:text-blue-400 font-medium group-hover:translate-x-0.5 transition-all">Lihat →</span>
                         </div>
-                        <div className="text-2xl font-black font-mono text-blue-800 mt-1">{submittedStudentsCount}</div>
-                        <div className="text-[10px] text-blue-700 mt-0.5 font-medium">Sudah submit nilai</div>
+                        <div className="text-2xl font-bold font-mono tabular-nums text-blue-800 dark:text-blue-400 mt-1.5">{submittedStudentsCount}</div>
+                        <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Sudah submit nilai</div>
                       </button>
 
                       {/* 4. BELUM MEMULAI */}
@@ -1385,18 +1409,18 @@ export const AdminDashboard: React.FC = () => {
                             description: 'Siswa yang belum login atau belum memasukkan token ujian untuk sesi ini.',
                           });
                         }}
-                        className="p-3 bg-slate-50/80 hover:bg-slate-100 border-2 border-slate-300 hover:border-slate-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group"
+                        className="p-3 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 hover:border-stone-400 dark:hover:border-stone-600 rounded-xl text-left transition-all cursor-pointer shadow-2xs hover:shadow-xs group"
                         title="Klik untuk melihat siapa saja siswa yang belum mulai"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-slate-700 uppercase font-black tracking-wider flex items-center gap-1">
-                            <Clock className="w-3 h-3 text-slate-500" />
+                          <span className="text-[10px] text-stone-700 dark:text-stone-300 uppercase font-bold tracking-wider flex items-center gap-1.5">
+                            <Clock className="w-3 h-3 text-stone-500" />
                             Belum Mulai
                           </span>
-                          <span className="text-[10px] text-slate-500 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                          <span className="text-[10px] text-stone-400 group-hover:text-stone-700 dark:group-hover:text-stone-200 font-medium group-hover:translate-x-0.5 transition-all">Lihat →</span>
                         </div>
-                        <div className="text-2xl font-black font-mono text-slate-800 mt-1">{notStartedStudentsCount}</div>
-                        <div className="text-[10px] text-slate-500 mt-0.5 font-medium">Belum aktif ujian</div>
+                        <div className="text-2xl font-bold font-mono tabular-nums text-stone-800 dark:text-stone-200 mt-1.5">{notStartedStudentsCount}</div>
+                        <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Belum aktif ujian</div>
                       </button>
 
                       {/* 5. UJIAN TERTULIS / KHUSUS */}
@@ -1413,35 +1437,45 @@ export const AdminDashboard: React.FC = () => {
                             description: 'Siswa dengan metode ujian kertas fisik manual atau berhalangan hadir dengan surat izin.',
                           });
                         }}
-                        className="p-3 bg-purple-50/70 hover:bg-purple-100 border-2 border-purple-300 hover:border-purple-500 rounded-xl text-left transition-all cursor-pointer shadow-xs hover:shadow-sm active:scale-[0.98] group col-span-2 sm:col-span-1"
+                        className="p-3 bg-white dark:bg-stone-900 border border-stone-200/90 dark:border-stone-800 hover:border-indigo-600 dark:hover:border-indigo-500 rounded-xl text-left transition-all cursor-pointer shadow-2xs hover:shadow-xs group col-span-2 sm:col-span-1"
                         title="Klik untuk melihat siapa saja siswa ujian tertulis / sakit / izin / absen"
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] text-purple-800 uppercase font-black tracking-wider flex items-center gap-1">
-                            <FileText className="w-3 h-3 text-purple-600" />
+                          <span className="text-[10px] text-indigo-800 dark:text-indigo-400 uppercase font-bold tracking-wider flex items-center gap-1.5">
+                            <FileText className="w-3 h-3 text-indigo-600 dark:text-indigo-400" />
                             Tertulis / Izin
                           </span>
-                          <span className="text-[10px] text-purple-600 font-semibold group-hover:translate-x-0.5 transition-transform">Lihat →</span>
+                          <span className="text-[10px] text-stone-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-400 font-medium group-hover:translate-x-0.5 transition-all">Lihat →</span>
                         </div>
-                        <div className="text-2xl font-black font-mono text-purple-800 mt-1">{specialStudentsCount}</div>
-                        <div className="text-[10px] text-purple-700 mt-0.5 font-medium">Manual / Izin / Sakit</div>
+                        <div className="text-2xl font-bold font-mono tabular-nums text-indigo-800 dark:text-indigo-400 mt-1.5">{specialStudentsCount}</div>
+                        <div className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">Manual / Izin / Sakit</div>
                       </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Sesi Peserta Real-time */}
-                <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">
-                  <div className="flex items-center justify-between mb-4">
+                {/* Sesi Peserta Real-time (Ringkas & Sederhana) */}
+                <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
                     <div>
-                      <h3 className="text-base font-bold text-slate-900">Pemantauan Peserta Ujian Real-Time</h3>
-                      <p className="text-xs text-slate-500">Status pengerjaan soal dan kontrol sesi proktor</p>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-sm sm:text-base font-bold text-slate-900">
+                          Pemantauan Peserta Ujian Real-Time
+                        </h3>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
+                          5 Peserta Teratas
+                        </span>
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Ringkasan aktivitas peserta terkini (prioritas terkunci & sedang ujian)
+                      </p>
                     </div>
                     <button
                       onClick={() => setActiveTab('siswa')}
-                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800"
+                      className="text-xs font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1 self-start sm:self-auto cursor-pointer"
                     >
-                      Buka Roster Siswa →
+                      <span>Buka Roster Siswa ({examSessions.length})</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
 
@@ -1449,89 +1483,108 @@ export const AdminDashboard: React.FC = () => {
                     <table className="w-full text-left text-xs min-w-[550px]">
                       <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                         <tr>
-                          <th className="py-2.5 px-3">Nama Siswa</th>
-                          <th className="py-2.5 px-3">Kelas & Lab</th>
-                          <th className="py-2.5 px-3">Status</th>
-                          <th className="py-2.5 px-3">Pelanggaran</th>
-                          <th className="py-2.5 px-3 text-right">Aksi Proktor</th>
+                          <th className="py-2 px-3">Nama Siswa</th>
+                          <th className="py-2 px-3">Kelas & Lab</th>
+                          <th className="py-2 px-3">Status</th>
+                          <th className="py-2 px-3">Pelanggaran</th>
+                          <th className="py-2 px-3 text-right">Aksi Proktor</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {examSessions.map(session => (
-                          <tr key={session.id} className="hover:bg-slate-50">
-                            <td className="py-2.5 px-3">
-                              <div className="font-semibold text-slate-900">{session.studentName}</div>
-                              <div className="text-[11px] text-slate-400 font-mono">{session.studentNisn}</div>
-                            </td>
-                            <td className="py-2.5 px-3">
-                              <span className="font-medium text-slate-700">{session.studentClass}</span>
-                              <span className="block text-[11px] text-slate-400">{session.studentRoom}</span>
-                            </td>
-                            <td className="py-2.5 px-3">
-                              <div className="flex flex-col gap-1 items-start">
-                                <span
-                                  className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full font-semibold text-[10px] ${
-                                    session.status === 'in_progress'
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : session.status === 'blocked'
-                                      ? 'bg-rose-100 text-rose-800'
-                                      : session.isOfflineSynced === false
-                                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                                      : 'bg-emerald-100 text-emerald-800'
-                                  }`}
-                                >
-                                  {session.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>}
-                                  {session.status === 'in_progress'
-                                    ? 'Sedang Ujian'
-                                    : session.status === 'blocked'
-                                    ? 'Terkunci'
-                                    : session.isOfflineSynced === false
-                                    ? 'Selesai (Sync Tertunda)'
-                                    : 'Selesai'}
-                                </span>
-                                {session.status === 'submitted' && session.score !== undefined && (
-                                  <span className="text-[11px] font-mono text-slate-600 font-semibold">
-                                    Skor: <strong className="text-emerald-700">{session.score}</strong>
-                                  </span>
-                                )}
-                              </div>
-                            </td>
-                            <td className="py-2.5 px-3">
-                              {session.violationsCount > 0 ? (
-                                <span className="text-rose-600 font-bold flex items-center gap-1 font-mono">
-                                  <AlertTriangle className="w-3.5 h-3.5" />
-                                  {session.violationsCount}x tab blur
-                                </span>
-                              ) : (
-                                <span className="text-slate-400">0</span>
-                              )}
-                            </td>
-                            <td className="py-2.5 px-3 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                {session.status === 'blocked' && (
-                                  <button
-                                    onClick={() => unlockStudent(session.studentId)}
-                                    className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded font-medium text-[11px] flex items-center gap-1 shadow-2xs"
-                                    title="Buka Kunci Siswa"
+                        {[...examSessions]
+                          .sort((a, b) => {
+                            const score = (s: ExamSession) => (s.status === 'blocked' ? 3 : s.status === 'in_progress' ? 2 : 1);
+                            return score(b) - score(a);
+                          })
+                          .slice(0, 5)
+                          .map(session => (
+                            <tr key={session.id} className="hover:bg-slate-50">
+                              <td className="py-2 px-3">
+                                <div className="font-semibold text-slate-900 leading-tight">{session.studentName}</div>
+                                <div className="text-[10px] text-slate-400 font-mono">NISN: {session.studentNisn || '-'}</div>
+                              </td>
+                              <td className="py-2 px-3">
+                                <span className="font-medium text-slate-700">{session.studentClass}</span>
+                                <span className="block text-[10px] text-slate-400">{session.studentRoom}</span>
+                              </td>
+                              <td className="py-2 px-3">
+                                <div className="flex flex-col gap-0.5 items-start">
+                                  <span
+                                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-semibold text-[10px] ${
+                                      session.status === 'in_progress'
+                                        ? 'bg-emerald-100 text-emerald-800'
+                                        : session.status === 'blocked'
+                                        ? 'bg-rose-100 text-rose-800'
+                                        : session.isOfflineSynced === false
+                                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                                        : 'bg-emerald-100 text-emerald-800'
+                                    }`}
                                   >
-                                    <Unlock className="w-3 h-3" />
-                                    Buka
-                                  </button>
+                                    {session.status === 'in_progress' && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>}
+                                    {session.status === 'in_progress'
+                                      ? 'Sedang Ujian'
+                                      : session.status === 'blocked'
+                                      ? 'Terkunci'
+                                      : session.isOfflineSynced === false
+                                      ? 'Selesai (Sync Tertunda)'
+                                      : 'Selesai'}
+                                  </span>
+                                  {session.status === 'submitted' && session.score !== undefined && (
+                                    <span className="text-[10px] font-mono text-slate-600 font-semibold">
+                                      Skor: <strong className="text-emerald-700">{session.score}</strong>
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-2 px-3">
+                                {session.violationsCount > 0 ? (
+                                  <span className="text-rose-600 font-bold flex items-center gap-1 font-mono text-[11px]">
+                                    <AlertTriangle className="w-3 h-3" />
+                                    {session.violationsCount}x tab
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-400 text-[11px]">0x</span>
                                 )}
-                                <button
-                                  onClick={() => resetStudentSession(session.studentId)}
-                                  className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-medium text-[11px] flex items-center gap-1"
-                                  title="Reset sesi ujian siswa"
-                                >
-                                  <RotateCcw className="w-3 h-3" />
-                                  Reset
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
+                              </td>
+                              <td className="py-2 px-3 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  {session.status === 'blocked' && (
+                                    <button
+                                      onClick={() => unlockStudent(session.studentId)}
+                                      className="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded font-medium text-[10px] flex items-center gap-1 shadow-2xs cursor-pointer"
+                                      title="Buka Kunci Siswa"
+                                    >
+                                      <Unlock className="w-3 h-3" />
+                                      Buka
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => resetStudentSession(session.studentId)}
+                                    className="px-2 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded font-medium text-[10px] flex items-center gap-1 cursor-pointer"
+                                    title="Reset sesi ujian siswa"
+                                  >
+                                    <RotateCcw className="w-3 h-3" />
+                                    Reset
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Clean Bottom Banner */}
+                  <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
+                    <span>
+                      Menampilkan <strong className="text-slate-700 font-mono">5 dari {examSessions.length}</strong> total peserta ujian.
+                    </span>
+                    <button
+                      onClick={() => setActiveTab('siswa')}
+                      className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
+                    >
+                      Buka Roster Lengkap Siswa →
+                    </button>
                   </div>
                 </div>
               </div>
@@ -2603,6 +2656,15 @@ export const AdminDashboard: React.FC = () => {
               <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
+                  onClick={handleExportStudentsCSV}
+                  className="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95 transition-all"
+                  title="Unduh file CSV berisi seluruh data siswa, NISN, dan Password unik masing-masing siswa"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Unduh Akun & Password (CSV)</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setIsBatchResetModalOpen(true)}
                   className="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
                 >
@@ -2636,7 +2698,7 @@ export const AdminDashboard: React.FC = () => {
                     onChange={e => setSelectedClassFilter(e.target.value)}
                     className="py-2 px-3 text-xs border border-slate-300 rounded-lg bg-white"
                   >
-                    <option value="ALL">Semua Kelas</option>
+                    <option value="ALL">Semua Kelas ({students.length} Siswa)</option>
                     {classes.map(c => (
                       <option key={c.id} value={c.name}>{c.name}</option>
                     ))}
@@ -2645,12 +2707,13 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs min-w-[650px]">
+                <table className="w-full text-left text-xs min-w-[750px]">
                   <thead className="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
                     <tr>
                       <th className="py-3 px-4">No. Peserta</th>
                       <th className="py-3 px-4">Nama Lengkap</th>
                       <th className="py-3 px-4">NISN</th>
+                      <th className="py-3 px-4">Password CBT</th>
                       <th className="py-3 px-4">Kelas</th>
                       <th className="py-3 px-4">Agama</th>
                       <th className="py-3 px-4">Lab & Sesi</th>
@@ -2670,7 +2733,22 @@ export const AdminDashboard: React.FC = () => {
                         <tr key={s.id} className="hover:bg-slate-50">
                           <td className="py-3 px-4 font-mono font-bold text-slate-800">{s.nomorPeserta}</td>
                           <td className="py-3 px-4 font-bold text-slate-900">{s.name}</td>
-                          <td className="py-3 px-4 font-mono text-slate-600">{s.nisn}</td>
+                          <td className="py-3 px-4 font-mono text-slate-600 font-semibold">{s.nisn}</td>
+                          <td className="py-3 px-4">
+                            <div className="inline-flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200/80 px-2.5 py-1 rounded-md border border-slate-200 transition-colors">
+                              <span className="font-mono font-bold text-slate-800 text-[11px] tracking-wider select-all">
+                                {s.password || 'siswa123'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleCopyToken(s.password || 'siswa123')}
+                                title="Salin Password"
+                                className="text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                              >
+                                <Copy className="w-3 h-3" />
+                              </button>
+                            </div>
+                          </td>
                           <td className="py-3 px-4 font-semibold text-slate-800">{s.kelas}</td>
                           <td className="py-3 px-4">
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-100">
@@ -5374,210 +5452,27 @@ export const AdminDashboard: React.FC = () => {
         );
       })()}
 
-      {/* MODAL EDIT STATUS KEHADIRAN & UJIAN TERTULIS DARI MODAL STATUS */}
-      {statusAttendanceEditingStudent && (
-        <div className="fixed inset-0 z-[70] flex items-center justify-center p-2.5 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
-          <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[85vh] overflow-hidden">
-            {/* Header: Fixed / Shrink-0 */}
-            <div className="shrink-0 p-3.5 sm:p-4 border-b border-slate-100 flex items-start justify-between bg-white">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 font-bold shrink-0">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-sm sm:text-base">Ubah Status Kehadiran Siswa</h3>
-                  <p className="text-xs text-slate-500">
-                    {statusAttendanceEditingStudent.name} (Kelas {statusAttendanceEditingStudent.kelas} · NISN: {statusAttendanceEditingStudent.nisn || '-'})
-                  </p>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setStatusAttendanceEditingStudent(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body: Scrollable with min-h-0 */}
-            <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-5 space-y-3">
-              <label className="text-xs font-bold text-slate-700 block">Pilih Status Kehadiran:</label>
-
-              {/* Pilihan CBT */}
-              <label
-                onClick={() => setStatusAttendanceChoice('cbt')}
-                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  statusAttendanceChoice === 'cbt'
-                    ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20'
-                    : 'border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="modal_att_choice"
-                  checked={statusAttendanceChoice === 'cbt'}
-                  onChange={() => setStatusAttendanceChoice('cbt')}
-                  className="mt-0.5 text-indigo-600 cursor-pointer"
-                />
-                <div>
-                  <div className="font-bold text-xs text-slate-900">💻 Ujian Online CBT (Normal)</div>
-                  <div className="text-[11px] text-slate-500">Mengerjakan ujian di komputer/HP secara online di aplikasi CBT.</div>
-                </div>
-              </label>
-
-              {/* Pilihan Tertulis */}
-              <label
-                onClick={() => setStatusAttendanceChoice('tertulis')}
-                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  statusAttendanceChoice === 'tertulis'
-                    ? 'border-purple-600 bg-purple-50/50 ring-2 ring-purple-500/20'
-                    : 'border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="modal_att_choice"
-                  checked={statusAttendanceChoice === 'tertulis'}
-                  onChange={() => setStatusAttendanceChoice('tertulis')}
-                  className="mt-0.5 text-purple-600 cursor-pointer"
-                />
-                <div className="flex-1">
-                  <div className="font-bold text-xs text-purple-900">📝 Ujian Tertulis (Manual Paper)</div>
-                  <div className="text-[11px] text-purple-700">Mengerjakan lembar fisik kertas karena kendala perangkat gawai.</div>
-                </div>
-              </label>
-
-              {statusAttendanceChoice === 'tertulis' && (
-                <div className="ml-6 p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
-                  <label className="text-xs font-bold text-purple-900 flex items-center justify-between">
-                    <span>Input Nilai Lembar Jawaban Tertulis:</span>
-                    <span className="font-mono text-purple-700">{statusAttendanceScore} / 100</span>
-                  </label>
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={statusAttendanceScore}
-                      onChange={e => setStatusAttendanceScore(Math.min(100, Math.max(0, Number(e.target.value))))}
-                      className="w-24 px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-sm font-bold font-mono text-slate-900 text-center outline-none focus:ring-2 focus:ring-purple-500"
-                    />
-                    <span className="text-xs text-purple-600">Nilai akan langsung masuk ke rekap nilai kelas & leger.</span>
-                  </div>
-                </div>
-              )}
-
-              {/* Pilihan Sakit */}
-              <label
-                onClick={() => setStatusAttendanceChoice('sakit')}
-                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  statusAttendanceChoice === 'sakit'
-                    ? 'border-amber-600 bg-amber-50/50 ring-2 ring-amber-500/20'
-                    : 'border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="modal_att_choice"
-                  checked={statusAttendanceChoice === 'sakit'}
-                  onChange={() => setStatusAttendanceChoice('sakit')}
-                  className="mt-0.5 text-amber-600 cursor-pointer"
-                />
-                <div>
-                  <div className="font-bold text-xs text-amber-900">🤒 Sakit (Surat Dokter / Izin)</div>
-                  <div className="text-[11px] text-amber-700">Tidak hadir karena sakit, berhak mengikuti jadwal ujian susulan.</div>
-                </div>
-              </label>
-
-              {/* Pilihan Izin */}
-              <label
-                onClick={() => setStatusAttendanceChoice('izin')}
-                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  statusAttendanceChoice === 'izin'
-                    ? 'border-sky-600 bg-sky-50/50 ring-2 ring-sky-500/20'
-                    : 'border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="modal_att_choice"
-                  checked={statusAttendanceChoice === 'izin'}
-                  onChange={() => setStatusAttendanceChoice('izin')}
-                  className="mt-0.5 text-sky-600 cursor-pointer"
-                />
-                <div>
-                  <div className="font-bold text-xs text-sky-900">✉️ Izin Resmi</div>
-                  <div className="text-[11px] text-sky-700">Mendapat izin resmi dari madrasah/sekolah.</div>
-                </div>
-              </label>
-
-              {/* Pilihan Absen */}
-              <label
-                onClick={() => setStatusAttendanceChoice('absen')}
-                className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                  statusAttendanceChoice === 'absen'
-                    ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-500/20'
-                    : 'border-slate-200 hover:bg-slate-50'
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="modal_att_choice"
-                  checked={statusAttendanceChoice === 'absen'}
-                  onChange={() => setStatusAttendanceChoice('absen')}
-                  className="mt-0.5 text-rose-600 cursor-pointer"
-                />
-                <div>
-                  <div className="font-bold text-xs text-rose-900">❌ Absen / Alpa (Tanpa Keterangan)</div>
-                  <div className="text-[11px] text-rose-700">Siswa tidak hadir tanpa konfirmasi pihak sekolah.</div>
-                </div>
-              </label>
-
-              <div className="pt-2">
-                <label className="text-xs font-semibold text-slate-700 block mb-1">Catatan Proktor (Opsional):</label>
-                <input
-                  type="text"
-                  placeholder="Misal: Surat dokter terlampir, mengerjakan di ruang guru"
-                  value={statusAttendanceNotes}
-                  onChange={e => setStatusAttendanceNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                />
-              </div>
-            </div>
-
-            {/* Footer: Fixed / Shrink-0 */}
-            <div className="shrink-0 p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setStatusAttendanceEditingStudent(null)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (statusAttendanceEditingStudent) {
-                    updateStudentAttendance(
-                      statusAttendanceEditingStudent.id,
-                      statusAttendanceChoice,
-                      statusAttendanceChoice === 'tertulis' ? statusAttendanceScore : undefined,
-                      statusAttendanceNotes
-                    );
-                    showScheduleToast(`Status kehadiran siswa ${statusAttendanceEditingStudent.name} berhasil diperbarui.`);
-                    setStatusAttendanceEditingStudent(null);
-                  }
-                }}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
-              >
-                <Check className="w-4 h-4" />
-                <span>Simpan Status</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* MODAL EDIT STATUS KEHADIRAN & UJIAN TERTULIS */}
+      <AttendanceStatusModal
+        isOpen={Boolean(statusAttendanceEditingStudent)}
+        student={statusAttendanceEditingStudent}
+        initialChoice={statusAttendanceChoice}
+        initialScore={statusAttendanceScore}
+        initialNotes={statusAttendanceNotes}
+        onClose={() => setStatusAttendanceEditingStudent(null)}
+        onSave={(choice, score, notes) => {
+          if (statusAttendanceEditingStudent) {
+            updateStudentAttendance(
+              statusAttendanceEditingStudent.id,
+              choice,
+              score,
+              notes
+            );
+            showScheduleToast(`Status kehadiran siswa ${statusAttendanceEditingStudent.name} berhasil diperbarui.`);
+            setStatusAttendanceEditingStudent(null);
+          }
+        }}
+      />
 
       {/* TOAST NOTIFIKASI */}
       {scheduleToast && (

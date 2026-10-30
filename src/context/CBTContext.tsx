@@ -14,6 +14,7 @@ import {
   ExamTypeCategory,
   ProctorBroadcastMessage,
   AttendanceStatus,
+  AppTheme,
 } from '../types/cbt';
 import {
   INITIAL_USERS,
@@ -53,6 +54,8 @@ interface CBTContextType {
   examSessions: ExamSession[];
   schoolProfile: SchoolProfile;
   updateSchoolProfile: (profile: Partial<SchoolProfile>) => void;
+  theme: AppTheme;
+  setTheme: (theme: AppTheme) => void;
   
   // User & Session Management
   addUser: (userData: Partial<User>) => void;
@@ -145,12 +148,12 @@ interface CBTContextType {
   resetAllData: () => void;
 }
 
-export const CBT_STORAGE_VERSION = 'v16_proctor_attendance_pdf';
+export const CBT_STORAGE_VERSION = 'v17_official_students_unique_passwords';
 
-// Generate pre-loaded 800 students simulation dataset for instant results
+// Generate pre-loaded official students dataset with unique individual passwords
 const DEFAULT_800_DATA = generate800StudentsData('exam-mat-01');
 const INITIAL_USERS_WITH_800: User[] = [
-  ...INITIAL_USERS,
+  ...INITIAL_USERS.filter(u => u.role !== 'siswa'),
   ...DEFAULT_800_DATA.users,
 ];
 const INITIAL_SESSIONS_WITH_800: ExamSession[] = [
@@ -189,25 +192,59 @@ if (typeof window !== 'undefined') {
 const CBTContext = createContext<CBTContextType | undefined>(undefined);
 
 export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Load state from localStorage or initial mock data, ensuring default students like ahmad.fauzi always exist
+  // Load state from localStorage or initial official student data
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('educbt_users');
     if (saved) {
       try {
         const parsed: User[] = JSON.parse(saved);
-        const hasAhmad = parsed.some(u => u.username.toLowerCase() === 'ahmad.fauzi');
-        if (!hasAhmad) {
-          const merged = [...INITIAL_USERS, ...parsed.filter(u => !INITIAL_USERS.some(iu => iu.id === u.id))];
-          localStorage.setItem('educbt_users', JSON.stringify(merged));
-          return merged;
+        // Ensure at least 800 official students are loaded
+        if (parsed.length >= 800) {
+          return parsed;
         }
-        return parsed;
       } catch (e) {
         // fallback
       }
     }
     return INITIAL_USERS_WITH_800;
   });
+
+  // App Theme: 'soft-blue' | 'sky-pastel' | 'cool-slate' | 'pure-white' | 'light' | 'dark' | 'sepia' | 'midnight'
+  const [theme, setThemeState] = useState<AppTheme>(() => {
+    try {
+      const saved = localStorage.getItem('educbt_theme') as AppTheme;
+      if (saved && ['light', 'soft-blue', 'sky-pastel', 'cool-slate', 'pure-white', 'dark', 'sepia', 'midnight'].includes(saved)) {
+        return saved;
+      }
+    } catch {}
+    return 'soft-blue';
+  });
+
+  const setTheme = (newTheme: AppTheme) => {
+    setThemeState(newTheme);
+    try {
+      localStorage.setItem('educbt_theme', newTheme);
+      document.documentElement.setAttribute('data-theme', newTheme);
+      document.body.setAttribute('data-theme', newTheme);
+      if (newTheme === 'dark' || newTheme === 'midnight') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch {}
+  };
+
+  useEffect(() => {
+    try {
+      document.documentElement.setAttribute('data-theme', theme);
+      document.body.setAttribute('data-theme', theme);
+      if (theme === 'dark' || theme === 'midnight') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    } catch {}
+  }, [theme]);
 
   // Default to false so menu login opens on first load / Netlify
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -644,12 +681,16 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     try {
       const handleStreamError = (error: any) => {
-        // Quietly note transport drop and switch UI indicator to Offline
-        console.warn('[Firestore] Stream connection interrupted:', error?.message || error);
-        setIsOnline(false);
+        // Firebase automatically reconnects on transport or stream interruptions.
+        // Only mark offline if device network is actually disconnected.
+        console.warn('[Firestore] Stream transport interrupted (auto-reconnecting):', error?.message || error);
+        if (typeof navigator !== 'undefined' && !navigator.onLine) {
+          setIsOnline(false);
+        }
       };
 
       const unsubExams = onSnapshot(collection(db, 'exams'), snap => {
+        setIsOnline(true);
         if (!snap.empty) {
           const list: Exam[] = [];
           snap.forEach(d => list.push(d.data() as Exam));
@@ -665,6 +706,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, handleStreamError);
 
       const unsubSessions = onSnapshot(collection(db, 'examSessions'), snap => {
+        setIsOnline(true);
         if (!snap.empty) {
           const list: ExamSession[] = [];
           snap.forEach(d => list.push(d.data() as ExamSession));
@@ -692,6 +734,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }, handleStreamError);
 
       const unsubBroadcasts = onSnapshot(collection(db, 'broadcasts'), snap => {
+        setIsOnline(true);
         if (!snap.empty) {
           const list: ProctorBroadcastMessage[] = [];
           snap.forEach(d => list.push(d.data() as ProctorBroadcastMessage));
@@ -785,7 +828,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (cleanUsername === 'siswa' && u.role === 'siswa') return true;
       if ((cleanUsername === 'siswa.01' || cleanUsername === 'siswa.1' || cleanUsername === 'siswa1' || cleanUsername === 'ahmad' || cleanUsername === 'ahmad fauzi') && (u.username === 'ahmad.fauzi' || u.name.toLowerCase().includes('ahmad fauzi'))) return true;
       if ((cleanUsername === 'siswa.02' || cleanUsername === 'siswa.2' || cleanUsername === 'siswa2' || cleanUsername === 'siti' || cleanUsername === 'siti rahma') && (u.username === 'siti.rahma' || u.name.toLowerCase().includes('siti rahma'))) return true;
-      return uName === cleanUsername || uNisn === cleanUsername;
+      return uName === cleanUsername || uNisn === cleanUsername || u.name.toLowerCase() === cleanUsername;
     });
 
     if (!matchedUser) {
@@ -1935,10 +1978,10 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setClasses(INITIAL_CLASSES);
     setSubjects(INITIAL_SUBJECTS);
-    setUsers(INITIAL_USERS);
+    setUsers(INITIAL_USERS_WITH_800);
     setExams(INITIAL_EXAMS);
     setQuestions(INITIAL_QUESTIONS);
-    setExamSessions(INITIAL_EXAM_SESSIONS);
+    setExamSessions(INITIAL_SESSIONS_WITH_800);
     setDisciplineNotes(INITIAL_DISCIPLINE_NOTES);
     setExamTypes(INITIAL_EXAM_TYPES);
     setSchoolProfile(INITIAL_SCHOOL_PROFILE);
@@ -2022,6 +2065,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         run800StudentsSimulation,
         resetSimulationToStandard,
         resetAllData,
+        theme,
+        setTheme,
       }}
     >
       {children}

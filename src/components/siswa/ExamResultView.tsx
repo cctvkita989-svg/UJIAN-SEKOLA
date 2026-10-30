@@ -135,53 +135,53 @@ export const ExamResultView: React.FC<ExamResultViewProps> = ({ onBackToDashboar
       )}
 
       {/* Main Congratulations Card */}
-      <div className="bg-white border border-stone-200/90 rounded-3xl p-8 sm:p-10 text-center shadow-sm space-y-6">
-        <div className="w-20 h-20 rounded-full bg-emerald-100 border-4 border-emerald-50 flex items-center justify-center mx-auto text-emerald-600 shadow-sm animate-in zoom-in-95 duration-200">
+      <div className="bg-white border border-slate-200/90 rounded-3xl p-8 sm:p-10 text-center shadow-sm space-y-6">
+        <div className="w-20 h-20 rounded-full bg-blue-50 border-4 border-blue-100/70 flex items-center justify-center mx-auto text-blue-600 shadow-sm animate-in zoom-in-95 duration-200">
           <CheckCircle2 className="w-10 h-10" />
         </div>
 
         <div className="space-y-2">
-          <span className="text-xs font-bold text-emerald-700 tracking-wider uppercase px-3 py-1 bg-emerald-50 rounded-full border border-emerald-200/80 inline-block">
+          <span className="text-xs font-bold text-blue-700 tracking-wider uppercase px-3 py-1 bg-blue-50 rounded-full border border-blue-200/80 inline-block">
             Konfirmasi Pengumpulan Ujian
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-stone-900 tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
             Selamat, Anda Telah Menyelesaikan Ujian!
           </h1>
-          <p className="text-sm text-stone-600 max-w-lg mx-auto leading-relaxed">
-            Seluruh lembar jawaban untuk mata pelajaran <strong className="text-stone-900">{exam.subject}</strong> telah berhasil dikumpulkan dan tersimpan aman di sistem.
+          <p className="text-sm text-slate-600 max-w-lg mx-auto leading-relaxed">
+            Seluruh lembar jawaban untuk mata pelajaran <strong className="text-slate-900">{exam.subject}</strong> telah berhasil dikumpulkan dan tersimpan aman di sistem.
           </p>
         </div>
 
         {/* Exam Information Details Box */}
-        <div className="max-w-md mx-auto p-5 bg-stone-50/80 border border-stone-200/80 rounded-2xl space-y-3 text-xs text-left">
-          <div className="flex items-center justify-between pb-2.5 border-b border-stone-200/60">
-            <span className="text-stone-500 flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-stone-400" />
+        <div className="max-w-md mx-auto p-5 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 text-xs text-left">
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200">
+            <span className="text-slate-500 flex items-center gap-1.5">
+              <BookOpen className="w-4 h-4 text-slate-400" />
               Mata Pelajaran
             </span>
-            <span className="font-bold text-stone-900">{exam.subject}</span>
+            <span className="font-bold text-slate-900">{exam.subject}</span>
           </div>
 
-          <div className="flex items-center justify-between pb-2.5 border-b border-stone-200/60">
-            <span className="text-stone-500 flex items-center gap-1.5">
-              <User className="w-4 h-4 text-stone-400" />
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200">
+            <span className="text-slate-500 flex items-center gap-1.5">
+              <User className="w-4 h-4 text-slate-400" />
               Nama Peserta
             </span>
-            <span className="font-semibold text-stone-800">{session.studentName}</span>
+            <span className="font-semibold text-slate-800">{session.studentName}</span>
           </div>
 
-          <div className="flex items-center justify-between pb-2.5 border-b border-stone-200/60">
-            <span className="text-stone-500 flex items-center gap-1.5">
-              <Clock className="w-4 h-4 text-stone-400" />
+          <div className="flex items-center justify-between pb-2.5 border-b border-slate-200">
+            <span className="text-slate-500 flex items-center gap-1.5">
+              <Clock className="w-4 h-4 text-slate-400" />
               Waktu Pengumpulan
             </span>
-            <span className="font-mono font-bold text-stone-800">
+            <span className="font-mono font-bold text-slate-800">
               {session.finishedAt || new Date().toLocaleTimeString('id-ID') + ' WIB'}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-stone-500 flex items-center gap-1.5">
+            <span className="text-slate-500 flex items-center gap-1.5">
               <Check className="w-4 h-4 text-emerald-600" />
               Status Jawaban
             </span>
@@ -192,15 +192,15 @@ export const ExamResultView: React.FC<ExamResultViewProps> = ({ onBackToDashboar
         </div>
 
         {/* Notice for Answer Key & Score Publication */}
-        <div className="max-w-lg mx-auto p-4 bg-indigo-50/80 border border-indigo-200 rounded-2xl flex items-start gap-3 text-left">
-          <div className="w-8 h-8 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 mt-0.5">
+        <div className="max-w-lg mx-auto p-4 bg-blue-50/80 border border-blue-200 rounded-2xl flex items-start gap-3 text-left">
+          <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center shrink-0 mt-0.5">
             <Info className="w-4 h-4" />
           </div>
           <div className="space-y-1">
-            <h4 className="text-xs font-bold text-indigo-950">
+            <h4 className="text-xs font-bold text-blue-950">
               Pemberitahuan Hasil & Kunci Jawaban
             </h4>
-            <p className="text-xs text-indigo-900/80 leading-relaxed">
+            <p className="text-xs text-blue-900/80 leading-relaxed">
               Untuk mengetahui perolehan nilai serta pembahasan jawaban yang benar dan salah, admin akan mempublikasikannya melalui <strong>Menu Nilai & Hasil</strong> setelah seluruh rangkaian asesmen selesai dilaksanakan.
             </p>
           </div>
@@ -211,7 +211,7 @@ export const ExamResultView: React.FC<ExamResultViewProps> = ({ onBackToDashboar
           <button
             type="button"
             onClick={onBackToDashboard}
-            className="w-full py-3 px-6 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
+            className="w-full py-3 px-6 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Kembali ke Beranda Siswa</span>

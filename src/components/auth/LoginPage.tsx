@@ -11,6 +11,7 @@ import {
   KeyRound
 } from 'lucide-react';
 import { ResetPasswordModal } from './ResetPasswordModal';
+import { ThemeSwitcher } from '../common/ThemeSwitcher';
 
 export const LoginPage: React.FC = () => {
   const { login, schoolProfile } = useCBT();
@@ -44,33 +45,38 @@ export const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(6,78,59,0.08),rgba(255,255,255,0))] flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-emerald-100">
+    <div className="min-h-screen bg-[#eef4fc] app-bg-root bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(37,99,235,0.12),rgba(255,255,255,0))] flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-blue-100 relative transition-colors duration-200">
+      {/* Top Corner Mode Switcher */}
+      <div className="absolute top-4 right-4 z-20">
+        <ThemeSwitcher />
+      </div>
+
       <div className="sm:mx-auto sm:w-full sm:max-w-md px-4">
         {/* Brand Lockup */}
         <div className="text-center">
-          <div className="w-13 h-13 rounded-2xl bg-emerald-800 flex items-center justify-center text-white font-bold text-xl mx-auto shadow-sm ring-4 ring-emerald-100/60">
+          <div className="w-13 h-13 rounded-2xl bg-blue-600 flex items-center justify-center text-white font-bold text-xl mx-auto shadow-sm ring-4 ring-blue-100/70">
             U
           </div>
-          <h1 className="mt-4 text-2xl font-bold tracking-tight text-stone-900">
+          <h1 className="mt-4 text-2xl font-bold tracking-tight text-slate-900">
             Ujian Sekolah
           </h1>
-          <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-stone-500">
-            <span className="font-medium text-stone-700">{schoolProfile.name}</span>
+          <div className="mt-1 flex items-center justify-center gap-1.5 text-xs text-slate-500">
+            <span className="font-medium text-slate-700">{schoolProfile.name}</span>
             <span>·</span>
             <span>TA {schoolProfile.academicYear}</span>
           </div>
-          <p className="text-[11px] text-stone-400 mt-0.5">
+          <p className="text-[11px] text-slate-400 mt-0.5">
             {schoolProfile.examTitle}
           </p>
         </div>
 
         {/* Main Card */}
-        <div className="mt-7 bg-[#fdfdfc] py-8 px-6 sm:px-8 border border-stone-200/90 rounded-2xl shadow-xs">
+        <div className="mt-7 bg-white py-8 px-6 sm:px-8 border border-slate-200/90 rounded-2xl shadow-xs">
           <div className="mb-6">
-            <h2 className="text-base font-bold text-stone-900">
+            <h2 className="text-base font-bold text-slate-900">
               Masuk ke Portal Ujian
             </h2>
-            <p className="text-xs text-stone-500 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed">
               Silakan masukkan username/NISN dan password Anda. Hak akses diarahkan otomatis sesuai peran.
             </p>
           </div>
@@ -86,12 +92,12 @@ export const LoginPage: React.FC = () => {
             <div>
               <label
                 htmlFor="username"
-                className="block text-xs font-semibold text-stone-700 mb-1.5"
+                className="block text-xs font-semibold text-slate-700 mb-1.5"
               >
                 Username atau NISN Siswa
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   <User className="w-4 h-4" />
                 </div>
                 <input
@@ -101,8 +107,8 @@ export const LoginPage: React.FC = () => {
                   autoFocus
                   value={username}
                   onChange={e => setUsername(e.target.value)}
-                  placeholder="Contoh: admin, sri.wahyuni, atau ahmad.fauzi"
-                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-stone-50/60 hover:bg-white focus:bg-white border border-stone-200 rounded-xl focus:outline-hidden focus:ring-3 focus:ring-emerald-700/15 focus:border-emerald-800 font-sans transition-all placeholder:text-stone-400"
+                  placeholder="Contoh NISN: 3142848459, atau admin / guru"
+                  className="w-full pl-10 pr-3.5 py-2.5 text-sm bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-3 focus:ring-blue-600/15 focus:border-blue-600 font-sans transition-all placeholder:text-slate-400"
                 />
               </div>
             </div>
@@ -110,12 +116,12 @@ export const LoginPage: React.FC = () => {
             <div>
               <label
                 htmlFor="password"
-                className="block text-xs font-semibold text-stone-700 mb-1.5"
+                className="block text-xs font-semibold text-slate-700 mb-1.5"
               >
                 Password Akun
               </label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                   <Lock className="w-4 h-4" />
                 </div>
                 <input
@@ -125,12 +131,12 @@ export const LoginPage: React.FC = () => {
                   value={password}
                   onChange={e => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full pl-10 pr-11 py-2.5 text-sm bg-stone-50/60 hover:bg-white focus:bg-white border border-stone-200 rounded-xl focus:outline-hidden focus:ring-3 focus:ring-emerald-700/15 focus:border-emerald-800 font-sans transition-all placeholder:text-stone-400"
+                  className="w-full pl-10 pr-11 py-2.5 text-sm bg-slate-50/70 hover:bg-white focus:bg-white border border-slate-200 rounded-xl focus:outline-hidden focus:ring-3 focus:ring-blue-600/15 focus:border-blue-600 font-sans transition-all placeholder:text-slate-400"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-stone-400 hover:text-stone-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -143,13 +149,13 @@ export const LoginPage: React.FC = () => {
 
             {/* Reset Password Link */}
             <div className="flex items-center justify-between text-xs pt-1">
-              <span className="text-stone-400 text-[11px]">Kendala login ujian?</span>
+              <span className="text-slate-400 text-[11px]">Kendala login ujian?</span>
               <button
                 type="button"
                 onClick={() => setIsResetModalOpen(true)}
-                className="text-[11px] font-semibold text-emerald-800 hover:text-emerald-950 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
+                className="text-[11px] font-semibold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
               >
-                <KeyRound className="w-3.5 h-3.5 text-emerald-700" />
+                <KeyRound className="w-3.5 h-3.5 text-blue-600" />
                 <span>Reset Password (Siswa / Admin)</span>
               </button>
             </div>
@@ -158,7 +164,7 @@ export const LoginPage: React.FC = () => {
               <button
                 type="submit"
                 disabled={isLoading}
-                className="w-full py-2.5 px-4 bg-emerald-800 hover:bg-emerald-900 active:scale-[0.99] text-white text-xs font-bold rounded-xl transition-all shadow-xs flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                className="w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white text-xs font-bold rounded-xl transition-all shadow-sm shadow-blue-600/20 flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 <span>{isLoading ? 'Memverifikasi...' : 'Masuk ke Sistem'}</span>
                 {!isLoading && <ArrowRight className="w-3.5 h-3.5" />}
@@ -166,15 +172,15 @@ export const LoginPage: React.FC = () => {
             </div>
 
             {/* Quick 1-Click Demo Logins */}
-            <div className="pt-4 border-t border-stone-200/80 space-y-2">
-              <div className="text-[11px] font-semibold text-stone-500 text-center">
+            <div className="pt-4 border-t border-slate-200/80 space-y-2">
+              <div className="text-[11px] font-semibold text-slate-500 text-center">
                 Akses Cepat Pengujian (1-Klik Langsung Masuk):
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <button
                   type="button"
                   onClick={() => login('admin', 'admin123')}
-                  className="py-2 px-1.5 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-800 rounded-xl text-xs font-bold transition-all text-center cursor-pointer shadow-2xs"
+                  className="py-2 px-1.5 bg-blue-50 hover:bg-blue-100 border border-blue-200 text-blue-800 rounded-xl text-xs font-bold transition-all text-center cursor-pointer shadow-2xs"
                   title="Masuk sebagai Administrator / Proktor CBT"
                 >
                   🔑 Admin CBT
@@ -182,7 +188,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => login('guru1', 'guru123')}
-                  className="py-2 px-1.5 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 rounded-xl text-xs font-bold transition-all text-center cursor-pointer shadow-2xs"
+                  className="py-2 px-1.5 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 rounded-xl text-xs font-bold transition-all text-center cursor-pointer shadow-2xs"
                   title="Masuk sebagai Guru Pengampu"
                 >
                   👨‍🏫 Guru Mapel
@@ -201,14 +207,14 @@ export const LoginPage: React.FC = () => {
         </div>
 
         {/* Tombol Unduh dist.zip untuk Proktor/Pengelola */}
-        <div className="mt-5 p-3.5 bg-[#fdfdfc] border border-stone-200/90 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
+        <div className="mt-5 p-3.5 bg-white border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
           <div className="flex items-center gap-2.5 text-left">
-            <div className="w-8 h-8 rounded-xl bg-emerald-800 text-white flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
               <Download className="w-4 h-4" />
             </div>
             <div>
-              <div className="text-xs font-bold text-stone-900">File Paket Web (dist.zip)</div>
-              <div className="text-[11px] text-stone-500">Unduh paket siap pakai untuk Netlify / server sekolah</div>
+              <div className="text-xs font-bold text-slate-900">File Paket Web (dist.zip)</div>
+              <div className="text-[11px] text-slate-500">Unduh paket siap pakai untuk Netlify / server sekolah</div>
             </div>
           </div>
           <a

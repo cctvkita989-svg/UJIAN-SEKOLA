@@ -7,11 +7,12 @@
 
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    background-color: #f7f6f2;
-    color: #1c1917;
+    background-color: #eef4fc;
+    color: #0f172a;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
+    transition: background-color 0.2s ease, color 0.2s ease;
   }
 
   /* Custom subtle minimalist scrollbar */
@@ -23,16 +24,738 @@
     background: transparent;
   }
   ::-webkit-scrollbar-thumb {
-    background: #d6d3d1;
+    background: #cbd5e1;
     border-radius: 9999px;
   }
   ::-webkit-scrollbar-thumb:hover {
-    background: #a8a29e;
+    background: #94a3b8;
   }
 
   ::selection {
-    background-color: #d1fae5;
-    color: #064e3b;
+    background-color: #dbeafe;
+    color: #1e40af;
   }
 }
 
+/* =========================================================================
+   1. THEME: SOFT BLUE & LIGHT (Standar Biru Putih Sejuk ANBK / Pusmendik)
+   ========================================================================= */
+[data-theme="soft-blue"],
+[data-theme="light"] {
+  color-scheme: light;
+}
+
+[data-theme="soft-blue"] body,
+[data-theme="light"] body,
+[data-theme="soft-blue"] .app-bg-root,
+[data-theme="light"] .app-bg-root {
+  background-color: #eef4fc !important;
+  color: #0f172a !important;
+}
+
+/* =========================================================================
+   2. THEME: SKY PASTEL (Biru Langit Terang)
+   ========================================================================= */
+[data-theme="sky-pastel"] {
+  color-scheme: light;
+}
+
+[data-theme="sky-pastel"] body,
+[data-theme="sky-pastel"] .app-bg-root {
+  background-color: #e0edff !important;
+  color: #0f172a !important;
+}
+
+/* =========================================================================
+   3. THEME: PURE WHITE (Putih Bersih Kontras Tinggi)
+   ========================================================================= */
+[data-theme="pure-white"] {
+  color-scheme: light;
+}
+
+[data-theme="pure-white"] body,
+[data-theme="pure-white"] .app-bg-root {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* =========================================================================
+   4. THEME: COOL SLATE (Abu-Abu Sejuk Modern)
+   ========================================================================= */
+[data-theme="cool-slate"] {
+  color-scheme: light;
+}
+
+[data-theme="cool-slate"] body,
+[data-theme="cool-slate"] .app-bg-root {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* =========================================================================
+   5. THEME: DARK MODE (Dark OLED / Deep Slate)
+   ========================================================================= */
+[data-theme="dark"], html.dark {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] body,
+html.dark body {
+  background-color: #090d16 !important;
+  color: #f1f5f9 !important;
+}
+
+/* Base Root Backgrounds */
+[data-theme="dark"] .bg-\[\#f7f6f2\],
+html.dark .bg-\[\#f7f6f2\],
+[data-theme="dark"] .bg-\[\#faf9f5\],
+html.dark .bg-\[\#faf9f5\],
+[data-theme="dark"] .bg-\[\#eef4fc\],
+html.dark .bg-\[\#eef4fc\],
+[data-theme="dark"] .app-bg-root,
+html.dark .app-bg-root {
+  background-color: #090d16 !important;
+}
+
+/* Cards, Header, Sidebar, and Modal Backgrounds (including opacity classes) */
+[data-theme="dark"] .bg-\[\#fdfdfc\],
+html.dark .bg-\[\#fdfdfc\],
+[data-theme="dark"] .bg-\[\#fcfbf9\],
+html.dark .bg-\[\#fcfbf9\],
+[data-theme="dark"] .bg-white,
+html.dark .bg-white,
+[data-theme="dark"] .bg-white\/98,
+html.dark .bg-white\/98,
+[data-theme="dark"] .bg-white\/95,
+html.dark .bg-white\/95,
+[data-theme="dark"] .bg-white\/90,
+html.dark .bg-white\/90 {
+  background-color: #111a2e !important;
+}
+
+/* Nested Surfaces & Strips */
+[data-theme="dark"] .bg-slate-50,
+html.dark .bg-slate-50,
+[data-theme="dark"] .bg-stone-50,
+html.dark .bg-stone-50,
+[data-theme="dark"] .bg-slate-100,
+html.dark .bg-slate-100,
+[data-theme="dark"] .bg-stone-100,
+html.dark .bg-stone-100,
+[data-theme="dark"] .bg-slate-100\/60,
+html.dark .bg-slate-100\/60,
+[data-theme="dark"] .bg-slate-100\/70,
+html.dark .bg-slate-100\/70,
+[data-theme="dark"] .bg-slate-100\/80,
+html.dark .bg-slate-100\/80,
+[data-theme="dark"] .bg-stone-100\/70,
+html.dark .bg-stone-100\/70,
+[data-theme="dark"] .bg-stone-100\/80,
+html.dark .bg-stone-100\/80 {
+  background-color: #182338 !important;
+}
+
+[data-theme="dark"] .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-50:hover,
+[data-theme="dark"] .hover\:bg-stone-50:hover,
+html.dark .hover\:bg-stone-50:hover,
+[data-theme="dark"] .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-slate-100:hover,
+[data-theme="dark"] .hover\:bg-stone-100:hover,
+html.dark .hover\:bg-stone-100:hover,
+[data-theme="dark"] .hover\:bg-blue-50:hover,
+html.dark .hover\:bg-blue-50:hover,
+[data-theme="dark"] .hover\:bg-slate-200:hover,
+html.dark .hover\:bg-slate-200:hover {
+  background-color: #202e48 !important;
+}
+
+/* Borders & Dividers */
+[data-theme="dark"] .border-stone-200,
+html.dark .border-stone-200,
+[data-theme="dark"] .border-slate-200,
+html.dark .border-slate-200,
+[data-theme="dark"] .border-slate-200\/90,
+html.dark .border-slate-200\/90,
+[data-theme="dark"] .border-slate-200\/80,
+html.dark .border-slate-200\/80,
+[data-theme="dark"] .border-slate-200\/70,
+html.dark .border-slate-200\/70,
+[data-theme="dark"] .border-slate-200\/60,
+html.dark .border-slate-200\/60,
+[data-theme="dark"] .border-stone-300,
+html.dark .border-stone-300,
+[data-theme="dark"] .border-slate-300,
+html.dark .border-slate-300,
+[data-theme="dark"] .border-stone-100,
+html.dark .border-stone-100,
+[data-theme="dark"] .border-slate-100,
+html.dark .border-slate-100,
+[data-theme="dark"] .border-blue-200,
+html.dark .border-blue-200,
+[data-theme="dark"] .border-blue-200\/80,
+html.dark .border-blue-200\/80,
+[data-theme="dark"] .border-blue-200\/70,
+html.dark .border-blue-200\/70,
+[data-theme="dark"] .border-blue-300,
+html.dark .border-blue-300 {
+  border-color: #243247 !important;
+}
+
+[data-theme="dark"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme="dark"] .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme="dark"] .divide-stone-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-stone-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #1e2c42 !important;
+}
+
+/* =========================================================================
+   DARK MODE TEXT READABILITY INVERSIONS (FIX UNREADABLE TEXTS)
+   ========================================================================= */
+[data-theme="dark"] .text-stone-900,
+html.dark .text-stone-900,
+[data-theme="dark"] .text-slate-900,
+html.dark .text-slate-900,
+[data-theme="dark"] .text-slate-950,
+html.dark .text-slate-950,
+[data-theme="dark"] .text-stone-800,
+html.dark .text-stone-800,
+[data-theme="dark"] .text-slate-800,
+html.dark .text-slate-800 {
+  color: #ffffff !important;
+}
+
+[data-theme="dark"] .text-stone-700,
+html.dark .text-stone-700,
+[data-theme="dark"] .text-slate-700,
+html.dark .text-slate-700 {
+  color: #e2e8f0 !important;
+}
+
+[data-theme="dark"] .text-stone-600,
+html.dark .text-stone-600,
+[data-theme="dark"] .text-slate-600,
+html.dark .text-slate-600 {
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] .text-stone-500,
+html.dark .text-stone-500,
+[data-theme="dark"] .text-slate-500,
+html.dark .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+[data-theme="dark"] .text-stone-400,
+html.dark .text-stone-400,
+[data-theme="dark"] .text-slate-400,
+html.dark .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* Blue & Indigo Text Inversion (was dark blue on dark bg, now bright light blue) */
+[data-theme="dark"] .text-blue-600,
+html.dark .text-blue-600,
+[data-theme="dark"] .text-blue-700,
+html.dark .text-blue-700,
+[data-theme="dark"] .text-blue-800,
+html.dark .text-blue-800,
+[data-theme="dark"] .text-blue-900,
+html.dark .text-blue-900,
+[data-theme="dark"] .text-blue-950,
+html.dark .text-blue-950,
+[data-theme="dark"] .text-indigo-600,
+html.dark .text-indigo-600,
+[data-theme="dark"] .text-indigo-700,
+html.dark .text-indigo-700,
+[data-theme="dark"] .text-indigo-800,
+html.dark .text-indigo-800 {
+  color: #93c5fd !important;
+}
+
+/* Keep pure white buttons white */
+[data-theme="dark"] .text-white,
+html.dark .text-white {
+  color: #ffffff !important;
+}
+
+/* Active Tabs & Blue Pills Inversion */
+[data-theme="dark"] .bg-blue-50,
+html.dark .bg-blue-50,
+[data-theme="dark"] .bg-blue-50\/40,
+html.dark .bg-blue-50\/40,
+[data-theme="dark"] .bg-blue-50\/50,
+html.dark .bg-blue-50\/50,
+[data-theme="dark"] .bg-blue-50\/60,
+html.dark .bg-blue-50\/60,
+[data-theme="dark"] .bg-blue-50\/80,
+html.dark .bg-blue-50\/80,
+[data-theme="dark"] .bg-blue-100,
+html.dark .bg-blue-100,
+[data-theme="dark"] .bg-indigo-50,
+html.dark .bg-indigo-50 {
+  background-color: rgba(30, 64, 175, 0.28) !important;
+  color: #93c5fd !important;
+  border-color: rgba(96, 165, 250, 0.35) !important;
+}
+
+/* Status Badges Inversions */
+[data-theme="dark"] .bg-emerald-50,
+html.dark .bg-emerald-50,
+[data-theme="dark"] .bg-emerald-100,
+html.dark .bg-emerald-100,
+[data-theme="dark"] .bg-emerald-100\/70,
+html.dark .bg-emerald-100\/70 {
+  background-color: rgba(16, 185, 129, 0.22) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+[data-theme="dark"] .text-emerald-700,
+html.dark .text-emerald-700,
+[data-theme="dark"] .text-emerald-800,
+html.dark .text-emerald-800,
+[data-theme="dark"] .text-emerald-900,
+html.dark .text-emerald-900 {
+  color: #6ee7b7 !important;
+}
+
+[data-theme="dark"] .bg-amber-50,
+html.dark .bg-amber-50,
+[data-theme="dark"] .bg-amber-100,
+html.dark .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.22) !important;
+  color: #fcd34d !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
+}
+[data-theme="dark"] .text-amber-700,
+html.dark .text-amber-700,
+[data-theme="dark"] .text-amber-800,
+html.dark .text-amber-800,
+[data-theme="dark"] .text-amber-900,
+html.dark .text-amber-900 {
+  color: #fcd34d !important;
+}
+
+[data-theme="dark"] .bg-rose-50,
+html.dark .bg-rose-50,
+[data-theme="dark"] .bg-rose-100,
+html.dark .bg-rose-100 {
+  background-color: rgba(244, 63, 94, 0.22) !important;
+  color: #fda4af !important;
+  border-color: rgba(251, 113, 133, 0.35) !important;
+}
+[data-theme="dark"] .text-rose-700,
+html.dark .text-rose-700,
+[data-theme="dark"] .text-rose-800,
+html.dark .text-rose-800,
+[data-theme="dark"] .text-rose-900,
+html.dark .text-rose-900 {
+  color: #fda4af !important;
+}
+
+[data-theme="dark"] .bg-purple-50,
+html.dark .bg-purple-50,
+[data-theme="dark"] .bg-purple-100,
+html.dark .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.22) !important;
+  color: #d8b4fe !important;
+  border-color: rgba(192, 132, 252, 0.35) !important;
+}
+[data-theme="dark"] .text-purple-700,
+html.dark .text-purple-700,
+[data-theme="dark"] .text-purple-800,
+html.dark .text-purple-800 {
+  color: #d8b4fe !important;
+}
+
+[data-theme="dark"] .bg-sky-50,
+html.dark .bg-sky-50,
+[data-theme="dark"] .bg-sky-100,
+html.dark .bg-sky-100 {
+  background-color: rgba(14, 165, 233, 0.22) !important;
+  color: #7dd3fc !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+[data-theme="dark"] .text-sky-700,
+html.dark .text-sky-700,
+[data-theme="dark"] .text-sky-800,
+html.dark .text-sky-800 {
+  color: #7dd3fc !important;
+}
+
+/* Tables in Dark Mode */
+[data-theme="dark"] thead,
+html.dark thead {
+  background-color: #162238 !important;
+  color: #cbd5e1 !important;
+}
+
+[data-theme="dark"] tbody tr:hover,
+html.dark tbody tr:hover {
+  background-color: #17243b !important;
+}
+
+/* Form Inputs, Selects, & Modals */
+[data-theme="dark"] input:not([type="checkbox"]):not([type="radio"]),
+html.dark input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="dark"] select,
+html.dark select,
+[data-theme="dark"] textarea,
+html.dark textarea {
+  background-color: #151f32 !important;
+  border-color: #2b3d58 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] .theme-dropdown-panel,
+html.dark .theme-dropdown-panel {
+  background-color: #111a2e !important;
+  border-color: #2b3d58 !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb,
+html.dark ::-webkit-scrollbar-thumb {
+  background: #334460;
+}
+
+
+/* =========================================================================
+   6. THEME: SEPIA (Kertas Hangat & Ramah Mata / Eye-Care Mode)
+   ========================================================================= */
+[data-theme="sepia"] {
+  color-scheme: light;
+}
+
+[data-theme="sepia"] body,
+[data-theme="sepia"] .app-bg-root {
+  background-color: #f7eedb !important;
+  color: #3b2c1c !important;
+}
+
+[data-theme="sepia"] .bg-\[\#f7f6f2\],
+[data-theme="sepia"] .bg-\[\#faf9f5\],
+[data-theme="sepia"] .bg-\[\#eef4fc\] {
+  background-color: #f7eedb !important;
+}
+
+[data-theme="sepia"] .bg-\[\#fdfdfc\],
+[data-theme="sepia"] .bg-\[\#fcfbf9\],
+[data-theme="sepia"] .bg-white,
+[data-theme="sepia"] .bg-white\/98,
+[data-theme="sepia"] .bg-white\/95,
+[data-theme="sepia"] .bg-white\/90 {
+  background-color: #fbf6ec !important;
+}
+
+[data-theme="sepia"] .bg-slate-50,
+[data-theme="sepia"] .bg-stone-50,
+[data-theme="sepia"] .bg-slate-100,
+[data-theme="sepia"] .bg-stone-100,
+[data-theme="sepia"] .bg-slate-100\/60,
+[data-theme="sepia"] .bg-slate-100\/70,
+[data-theme="sepia"] .bg-slate-100\/80 {
+  background-color: #eee1c8 !important;
+}
+
+[data-theme="sepia"] .hover\:bg-slate-50:hover,
+[data-theme="sepia"] .hover\:bg-stone-50:hover,
+[data-theme="sepia"] .hover\:bg-slate-100:hover,
+[data-theme="sepia"] .hover\:bg-stone-100:hover,
+[data-theme="sepia"] .hover\:bg-blue-50:hover {
+  background-color: #e5d4b8 !important;
+}
+
+[data-theme="sepia"] .border-stone-200,
+[data-theme="sepia"] .border-slate-200,
+[data-theme="sepia"] .border-slate-200\/90,
+[data-theme="sepia"] .border-slate-200\/80,
+[data-theme="sepia"] .border-slate-200\/70,
+[data-theme="sepia"] .border-slate-200\/60,
+[data-theme="sepia"] .border-stone-300,
+[data-theme="sepia"] .border-slate-300,
+[data-theme="sepia"] .border-blue-200,
+[data-theme="sepia"] .border-blue-200\/80,
+[data-theme="sepia"] .border-blue-200\/70,
+[data-theme="sepia"] .border-stone-100,
+[data-theme="sepia"] .border-slate-100 {
+  border-color: #dfd1b8 !important;
+}
+
+[data-theme="sepia"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme="sepia"] .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme="sepia"] .divide-stone-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #dfd1b8 !important;
+}
+
+[data-theme="sepia"] .text-stone-900,
+[data-theme="sepia"] .text-slate-900,
+[data-theme="sepia"] .text-slate-950,
+[data-theme="sepia"] .text-stone-800,
+[data-theme="sepia"] .text-slate-800 {
+  color: #2b1d11 !important;
+}
+
+[data-theme="sepia"] .text-stone-700,
+[data-theme="sepia"] .text-slate-700 {
+  color: #4d3a27 !important;
+}
+
+[data-theme="sepia"] .text-stone-600,
+[data-theme="sepia"] .text-slate-600,
+[data-theme="sepia"] .text-stone-500,
+[data-theme="sepia"] .text-slate-500 {
+  color: #735a40 !important;
+}
+
+[data-theme="sepia"] .text-stone-400,
+[data-theme="sepia"] .text-slate-400 {
+  color: #9c8266 !important;
+}
+
+[data-theme="sepia"] .text-blue-600,
+[data-theme="sepia"] .text-blue-700,
+[data-theme="sepia"] .text-blue-800 {
+  color: #854d0e !important;
+}
+
+[data-theme="sepia"] .bg-blue-50,
+[data-theme="sepia"] .bg-blue-100 {
+  background-color: #f5e9d3 !important;
+  color: #854d0e !important;
+}
+
+[data-theme="sepia"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="sepia"] select,
+[data-theme="sepia"] textarea {
+  background-color: #faf3e6 !important;
+  border-color: #d6c5a8 !important;
+  color: #2b1d11 !important;
+}
+
+[data-theme="sepia"] .theme-dropdown-panel {
+  background-color: #fbf6ec !important;
+  border-color: #dfd1b8 !important;
+  color: #2b1d11 !important;
+}
+
+[data-theme="sepia"] ::-webkit-scrollbar-thumb {
+  background: #cbb99f;
+}
+
+
+/* =========================================================================
+   7. THEME: MIDNIGHT SAMUDRA (Lab Siber / Deep Ocean & Cyan Modern)
+   ========================================================================= */
+[data-theme="midnight"] {
+  color-scheme: dark;
+}
+
+[data-theme="midnight"] body,
+[data-theme="midnight"] .app-bg-root {
+  background-color: #040814 !important;
+  color: #e0f2fe !important;
+}
+
+[data-theme="midnight"] .bg-\[\#f7f6f2\],
+[data-theme="midnight"] .bg-\[\#faf9f5\],
+[data-theme="midnight"] .bg-\[\#eef4fc\] {
+  background-color: #040814 !important;
+}
+
+/* Cards, Header, Sidebar, and Modal Backgrounds */
+[data-theme="midnight"] .bg-\[\#fdfdfc\],
+[data-theme="midnight"] .bg-\[\#fcfbf9\],
+[data-theme="midnight"] .bg-white,
+[data-theme="midnight"] .bg-white\/98,
+[data-theme="midnight"] .bg-white\/95,
+[data-theme="midnight"] .bg-white\/90 {
+  background-color: #0a1329 !important;
+}
+
+[data-theme="midnight"] .bg-slate-50,
+[data-theme="midnight"] .bg-stone-50,
+[data-theme="midnight"] .bg-slate-100,
+[data-theme="midnight"] .bg-stone-100,
+[data-theme="midnight"] .bg-slate-100\/60,
+[data-theme="midnight"] .bg-slate-100\/70,
+[data-theme="midnight"] .bg-slate-100\/80 {
+  background-color: #101e3d !important;
+}
+
+[data-theme="midnight"] .hover\:bg-slate-50:hover,
+[data-theme="midnight"] .hover\:bg-stone-50:hover,
+[data-theme="midnight"] .hover\:bg-slate-100:hover,
+[data-theme="midnight"] .hover\:bg-stone-100:hover,
+[data-theme="midnight"] .hover\:bg-blue-50:hover,
+[data-theme="midnight"] .hover\:bg-slate-200:hover {
+  background-color: #172a52 !important;
+}
+
+[data-theme="midnight"] .border-stone-200,
+[data-theme="midnight"] .border-slate-200,
+[data-theme="midnight"] .border-slate-200\/90,
+[data-theme="midnight"] .border-slate-200\/80,
+[data-theme="midnight"] .border-slate-200\/70,
+[data-theme="midnight"] .border-slate-200\/60,
+[data-theme="midnight"] .border-stone-300,
+[data-theme="midnight"] .border-slate-300,
+[data-theme="midnight"] .border-stone-100,
+[data-theme="midnight"] .border-slate-100,
+[data-theme="midnight"] .border-blue-200,
+[data-theme="midnight"] .border-blue-200\/80,
+[data-theme="midnight"] .border-blue-200\/70,
+[data-theme="midnight"] .border-blue-300 {
+  border-color: #172c54 !important;
+}
+
+[data-theme="midnight"] .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+[data-theme="midnight"] .divide-slate-200 > :not([hidden]) ~ :not([hidden]),
+[data-theme="midnight"] .divide-stone-100 > :not([hidden]) ~ :not([hidden]) {
+  border-color: #172c54 !important;
+}
+
+/* Typography in Midnight Samudra */
+[data-theme="midnight"] .text-stone-900,
+[data-theme="midnight"] .text-slate-900,
+[data-theme="midnight"] .text-slate-950,
+[data-theme="midnight"] .text-stone-800,
+[data-theme="midnight"] .text-slate-800 {
+  color: #f0f9ff !important;
+}
+
+[data-theme="midnight"] .text-stone-700,
+[data-theme="midnight"] .text-slate-700 {
+  color: #e0f2fe !important;
+}
+
+[data-theme="midnight"] .text-stone-600,
+[data-theme="midnight"] .text-slate-600 {
+  color: #bae6fd !important;
+}
+
+[data-theme="midnight"] .text-stone-500,
+[data-theme="midnight"] .text-slate-500 {
+  color: #7dd3fc !important;
+}
+
+[data-theme="midnight"] .text-stone-400,
+[data-theme="midnight"] .text-slate-400 {
+  color: #38bdf8 !important;
+}
+
+/* Blue & Indigo Text Inversion in Midnight Samudra */
+[data-theme="midnight"] .text-blue-600,
+[data-theme="midnight"] .text-blue-700,
+[data-theme="midnight"] .text-blue-800,
+[data-theme="midnight"] .text-blue-900,
+[data-theme="midnight"] .text-blue-950,
+[data-theme="midnight"] .text-indigo-600,
+[data-theme="midnight"] .text-indigo-700,
+[data-theme="midnight"] .text-indigo-800 {
+  color: #38bdf8 !important;
+}
+
+[data-theme="midnight"] .text-white {
+  color: #ffffff !important;
+}
+
+/* Active Tabs & Blue Pills Inversion in Midnight */
+[data-theme="midnight"] .bg-blue-50,
+[data-theme="midnight"] .bg-blue-50\/40,
+[data-theme="midnight"] .bg-blue-50\/50,
+[data-theme="midnight"] .bg-blue-50\/60,
+[data-theme="midnight"] .bg-blue-50\/80,
+[data-theme="midnight"] .bg-blue-100,
+[data-theme="midnight"] .bg-indigo-50 {
+  background-color: rgba(14, 165, 233, 0.22) !important;
+  color: #7dd3fc !important;
+  border-color: rgba(56, 189, 248, 0.35) !important;
+}
+
+/* Status Badges in Midnight */
+[data-theme="midnight"] .bg-emerald-50,
+[data-theme="midnight"] .bg-emerald-100,
+[data-theme="midnight"] .bg-emerald-100\/70 {
+  background-color: rgba(16, 185, 129, 0.22) !important;
+  color: #6ee7b7 !important;
+  border-color: rgba(52, 211, 153, 0.35) !important;
+}
+[data-theme="midnight"] .text-emerald-700,
+[data-theme="midnight"] .text-emerald-800,
+[data-theme="midnight"] .text-emerald-900 {
+  color: #6ee7b7 !important;
+}
+
+[data-theme="midnight"] .bg-amber-50,
+[data-theme="midnight"] .bg-amber-100 {
+  background-color: rgba(245, 158, 11, 0.22) !important;
+  color: #fcd34d !important;
+  border-color: rgba(251, 191, 36, 0.35) !important;
+}
+[data-theme="midnight"] .text-amber-700,
+[data-theme="midnight"] .text-amber-800,
+[data-theme="midnight"] .text-amber-900 {
+  color: #fcd34d !important;
+}
+
+[data-theme="midnight"] .bg-rose-50,
+[data-theme="midnight"] .bg-rose-100 {
+  background-color: rgba(244, 63, 94, 0.22) !important;
+  color: #fda4af !important;
+  border-color: rgba(251, 113, 133, 0.35) !important;
+}
+[data-theme="midnight"] .text-rose-700,
+[data-theme="midnight"] .text-rose-800,
+[data-theme="midnight"] .text-rose-900 {
+  color: #fda4af !important;
+}
+
+[data-theme="midnight"] .bg-purple-50,
+[data-theme="midnight"] .bg-purple-100 {
+  background-color: rgba(168, 85, 247, 0.22) !important;
+  color: #d8b4fe !important;
+  border-color: rgba(192, 132, 252, 0.35) !important;
+}
+[data-theme="midnight"] .text-purple-700,
+[data-theme="midnight"] .text-purple-800 {
+  color: #d8b4fe !important;
+}
+
+[data-theme="midnight"] thead {
+  background-color: #0c1833 !important;
+  color: #bae6fd !important;
+}
+
+[data-theme="midnight"] tbody tr:hover {
+  background-color: #0f2042 !important;
+}
+
+[data-theme="midnight"] input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="midnight"] select,
+[data-theme="midnight"] textarea {
+  background-color: #0c1833 !important;
+  border-color: #1e3a6e !important;
+  color: #f0f9ff !important;
+}
+
+[data-theme="midnight"] .theme-dropdown-panel {
+  background-color: #0a1329 !important;
+  border-color: #1e3a6e !important;
+  color: #f0f9ff !important;
+}
+
+[data-theme="midnight"] ::-webkit-scrollbar-thumb {
+  background: #1e3a6e;
+}
+
+
+/* Print Mode Safety (Always Clean White Paper Format) */
+@media print {
+  body, html {
+    background-color: #ffffff !important;
+    color: #000000 !important;
+  }
+}

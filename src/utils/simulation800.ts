@@ -1,4 +1,5 @@
 import { User, ExamSession, StudentAnswer } from '../types/cbt';
+import { OFFICIAL_STUDENTS_LIST } from '../data/officialStudentsData';
 
 const FIRST_NAMES_MALE = [
   'Ahmad', 'Muhammad', 'Rizky', 'Dimas', 'Budi', 'Fajar', 'Rian', 'Bayu',
@@ -128,27 +129,21 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     '< 60 (E)': 0,
   };
 
-  // 793 simulated students + 7 original students = EXACTLY 800 students
-  const TOTAL_SIMULATED = 793;
+  // Use official students dataset from the school roster
+  const studentSourceList = OFFICIAL_STUDENTS_LIST;
+  const TOTAL_STUDENTS = studentSourceList.length;
 
-  for (let i = 0; i < TOTAL_SIMULATED; i++) {
-    const isMale = i % 2 === 0;
-    const firstList = isMale ? FIRST_NAMES_MALE : FIRST_NAMES_FEMALE;
-    const firstName = firstList[i % firstList.length];
-    const lastName = LAST_NAMES[(i * 3 + Math.floor(i / 7)) % LAST_NAMES.length];
-    const middleName = (i % 5 === 0) ? LAST_NAMES[(i * 2 + 5) % LAST_NAMES.length] : '';
-    const fullName = middleName ? `${firstName} ${middleName} ${lastName}` : `${firstName} ${lastName}`;
-
-    const studentId = `usr-sim-siswa-${String(i + 1).padStart(4, '0')}`;
-    const nisn = `006819${String(1001 + i).slice(0, 4)}`;
-    const studentClass = CLASSES[i % CLASSES.length];
-    const labRoom = `Ruang Kelas ${studentClass}`;
-    const religion = RELIGIONS[i % RELIGIONS.length];
-    
-    // Session 1, 2, or 3
-    const sessionNum = (i % 3) + 1;
-    const sessionName = `Sesi ${sessionNum} (${sessionNum === 1 ? '07.30 - 09.00' : sessionNum === 2 ? '09.30 - 11.00' : '11.30 - 13.00'})`;
-    const noPeserta = `U-24-${studentClass.replace('-', '')}-${String((i % 35) + 1).padStart(3, '0')}`;
+  for (let i = 0; i < TOTAL_STUDENTS; i++) {
+    const officialStudent = studentSourceList[i];
+    const studentId = officialStudent.id;
+    const fullName = officialStudent.name;
+    const nisn = officialStudent.nisn || `006819${String(1001 + i).slice(0, 4)}`;
+    const studentClass = officialStudent.kelas || 'VII-1';
+    const labRoom = officialStudent.ruangUjian || `Ruang Kelas ${studentClass}`;
+    const religion = officialStudent.agama || 'Islam';
+    const sessionName = officialStudent.sesiUjian || 'Sesi 1 (07.30 - 09.30)';
+    const noPeserta = officialStudent.nomorPeserta || `U-24-${studentClass.replace('-', '')}-${String((i % 40) + 1).padStart(3, '0')}`;
+    const sessionNum = sessionName.includes('Sesi 2') ? 2 : sessionName.includes('Sesi 3') ? 3 : 1;
 
     const targetFinalScore = scoreTargets[i % scoreTargets.length];
     totalScoreSum += targetFinalScore;
@@ -193,19 +188,7 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     }
 
     const user: User = {
-      id: studentId,
-      name: fullName,
-      username: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${i + 1}`,
-      role: 'siswa',
-      password: 'siswa123',
-      email: `${firstName.toLowerCase()}.${i + 1}@siswa.sch.id`,
-      nisn: nisn,
-      kelas: studentClass,
-      jurusan: 'Reguler',
-      agama: religion,
-      ruangUjian: labRoom,
-      nomorPeserta: noPeserta,
-      sesiUjian: sessionName,
+      ...officialStudent,
       statusLogin: statusLogin,
     };
     users.push(user);
@@ -332,7 +315,8 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     sessions.push(session);
   }
 
-  const avgScore = Number((totalScoreSum / 800).toFixed(1));
+  const total = TOTAL_STUDENTS || 1;
+  const avgScore = Number((totalScoreSum / total).toFixed(1));
   const highestScore = 100;
   const lowestScore = 40;
 
@@ -340,9 +324,9 @@ export function generate800StudentsData(examId: string = 'exam-mat-01'): {
     users,
     sessions,
     summary: {
-      totalStudents: 800,
+      totalStudents: TOTAL_STUDENTS,
       passedCount,
-      remedialCount: 800 - passedCount,
+      remedialCount: TOTAL_STUDENTS - passedCount,
       avgScore,
       highestScore,
       lowestScore,

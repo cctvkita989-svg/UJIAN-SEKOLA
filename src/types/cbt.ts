@@ -1,4 +1,5 @@
 export type Role = 'admin' | 'guru' | 'siswa';
+export type AppTheme = 'light' | 'soft-blue' | 'sky-pastel' | 'cool-slate' | 'pure-white' | 'dark' | 'sepia' | 'midnight';
 
 export interface User {
   id: string;
@@ -15,7 +16,8 @@ export interface User {
   ruangUjian?: string;
   nomorPeserta?: string;
   sesiUjian?: string;
-  agama?: 'Islam' | 'Kristen' | 'Katolik' | 'Hindu' | 'Buddha' | 'Konghucu';
+  agama?: 'Islam' | 'Kristen' | 'Katolik' | 'Katholik' | 'Hindu' | 'Buddha' | 'Konghucu' | string;
+  gender?: 'L' | 'P' | string;
   statusLogin?: 'offline' | 'online' | 'ujian' | 'terkunci';
   password?: string;
 }

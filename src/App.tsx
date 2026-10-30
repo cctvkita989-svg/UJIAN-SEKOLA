@@ -23,7 +23,7 @@ const MainAppContent: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#f7f6f2] flex flex-col justify-between text-stone-900">
+    <div className="min-h-screen bg-[#eef4fc] app-bg-root flex flex-col justify-between text-slate-900 transition-colors duration-200">
       <div>
         <Header onOpenRoleSwitcher={() => setIsRoleSwitcherOpen(true)} />
 
@@ -34,16 +34,16 @@ const MainAppContent: React.FC = () => {
         </main>
       </div>
 
-      <footer className="mt-12 py-6 border-t border-stone-200/80 bg-[#faf9f5] text-center text-xs text-stone-500 print:hidden">
+      <footer className="mt-12 py-6 border-t border-blue-200/70 bg-white/90 backdrop-blur-xs text-center text-xs text-slate-500 print:hidden transition-colors">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div>
-            <span className="font-semibold text-stone-800">{schoolProfile.name}</span>
+            <span className="font-semibold text-slate-800">{schoolProfile.name}</span>
             <span className="mx-1.5">·</span>
             <span>NPSN: {schoolProfile.npsn}</span>
             <span className="mx-1.5">·</span>
             <span>Tahun Pelajaran {schoolProfile.academicYear}</span>
           </div>
-          <div className="font-medium text-stone-600">
+          <div className="font-medium text-slate-600">
             Sistem Ujian Sekolah (CBT)
           </div>
         </div>

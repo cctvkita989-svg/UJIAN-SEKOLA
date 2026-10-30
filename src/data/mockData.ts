@@ -707,8 +707,10 @@ export const INITIAL_CLASSES: ClassItem[] = [
   { id: 'cls-8-6', name: 'VIII-6', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Tri Wulandari, M.Pd', ruangLab: 'Ruang Kelas VIII-6', totalStudents: 32 },
   { id: 'cls-8-7', name: 'VIII-7', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Joko Susilo, S.Kom', ruangLab: 'Ruang Kelas VIII-7', totalStudents: 32 },
   { id: 'cls-8-8', name: 'VIII-8', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Maya Safitri, S.Pd', ruangLab: 'Ruang Kelas VIII-8', totalStudents: 32 },
+  { id: 'cls-8-9', name: 'VIII-9', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Rizky Ananda, S.Pd', ruangLab: 'Ruang Kelas VIII-9', totalStudents: 32 },
+  { id: 'cls-8-10', name: 'VIII-10', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Nurul Hidayah, M.Pd', ruangLab: 'Ruang Kelas VIII-10', totalStudents: 32 },
 
-  // Tingkat IX (IX-1 sampai IX-8)
+  // Tingkat IX (IX-1 sampai IX-10)
   { id: 'cls-9-1', name: 'IX-1', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Suryadi, M.Kom', ruangLab: 'Ruang Kelas IX-1', totalStudents: 32 },
   { id: 'cls-9-2', name: 'IX-2', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Dian Permata, M.Pd', ruangLab: 'Ruang Kelas IX-2', totalStudents: 32 },
   { id: 'cls-9-3', name: 'IX-3', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Bambang Pamungkas, S.Pd', ruangLab: 'Ruang Kelas IX-3', totalStudents: 32 },
@@ -717,6 +719,8 @@ export const INITIAL_CLASSES: ClassItem[] = [
   { id: 'cls-9-6', name: 'IX-6', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Anisa Rahma, S.Pd', ruangLab: 'Ruang Kelas IX-6', totalStudents: 32 },
   { id: 'cls-9-7', name: 'IX-7', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Gunawan Wibisono, S.Pd', ruangLab: 'Ruang Kelas IX-7', totalStudents: 32 },
   { id: 'cls-9-8', name: 'IX-8', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Linda Marlina, M.Hum', ruangLab: 'Ruang Kelas IX-8', totalStudents: 32 },
+  { id: 'cls-9-9', name: 'IX-9', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Syarif Hidayatullah, S.Pd', ruangLab: 'Ruang Kelas IX-9', totalStudents: 32 },
+  { id: 'cls-9-10', name: 'IX-10', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Putri Handayani, M.Pd', ruangLab: 'Ruang Kelas IX-10', totalStudents: 32 },
 ];
 
 export const INITIAL_SUBJECTS: SubjectItem[] = [

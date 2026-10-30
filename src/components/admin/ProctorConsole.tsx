@@ -33,6 +33,7 @@ import {
   X
 } from 'lucide-react';
 import { ExamSession, User, AttendanceStatus } from '../../types/cbt';
+import { AttendanceStatusModal } from '../common/AttendanceStatusModal';
 
 export interface ProctorConsoleProps {
   initialExamId?: string;
@@ -1647,216 +1648,26 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
         </div>
       )}
 
-      {/* MODAL STATUS KEHADIRAN & UJIAN TERTULIS */}
-      {attendanceModalStudent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-200">
-          <div className="relative w-full max-w-lg my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 flex flex-col max-h-[calc(100vh-2rem)] sm:max-h-[90vh] overflow-hidden">
-            {/* Header: Fixed / Shrink-0 */}
-            <div className="shrink-0 p-4 sm:p-5 border-b border-slate-100 flex items-start justify-between bg-white">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-600 shrink-0">
-                  <ClipboardCheck className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">Catat Status Kehadiran & Ujian</h3>
-                  <p className="text-xs text-slate-500">
-                    {attendanceModalStudent.name} (Kelas {attendanceModalStudent.kelas || '-'} · NISN: {attendanceModalStudent.nisn || '-'})
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setAttendanceModalStudent(null)}
-                className="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 cursor-pointer"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Body: Scrollable */}
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3">
-              <label className="text-xs font-bold text-slate-700 block">Pilih Status Kehadiran Siswa:</label>
-
-              <div className="grid grid-cols-1 gap-2.5">
-                {/* Opsi CBT */}
-                <label
-                  onClick={() => setAttendanceChoice('cbt')}
-                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    attendanceChoice === 'cbt'
-                      ? 'border-indigo-600 bg-indigo-50/50 ring-2 ring-indigo-500/20'
-                      : 'border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="attendance_status"
-                    checked={attendanceChoice === 'cbt'}
-                    onChange={() => setAttendanceChoice('cbt')}
-                    className="mt-0.5 text-indigo-600 cursor-pointer"
-                  />
-                  <div>
-                    <div className="font-bold text-xs text-slate-900">💻 Ujian Online CBT (Normal)</div>
-                    <div className="text-[11px] text-slate-500">Mengerjakan ujian di komputer/HP melalui aplikasi CBT daring sekolah.</div>
-                  </div>
-                </label>
-
-                {/* Opsi Tertulis */}
-                <label
-                  onClick={() => setAttendanceChoice('tertulis')}
-                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    attendanceChoice === 'tertulis'
-                      ? 'border-purple-600 bg-purple-50/50 ring-2 ring-purple-500/20'
-                      : 'border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="attendance_status"
-                    checked={attendanceChoice === 'tertulis'}
-                    onChange={() => setAttendanceChoice('tertulis')}
-                    className="mt-0.5 text-purple-600 cursor-pointer"
-                  />
-                  <div className="flex-1">
-                    <div className="font-bold text-xs text-purple-900">📝 Ujian Tertulis (Manual Paper)</div>
-                    <div className="text-[11px] text-purple-700">Mengerjakan lembar soal & LJK kertas fisik karena kendala gawai/kebijakan.</div>
-                  </div>
-                </label>
-
-                {/* Input Nilai jika Ujian Tertulis */}
-                {attendanceChoice === 'tertulis' && (
-                  <div className="ml-6 p-3 bg-purple-50 rounded-xl border border-purple-200 space-y-2">
-                    <label className="text-xs font-bold text-purple-900 flex items-center justify-between">
-                      <span>Input Nilai Lembar Jawaban Tertulis:</span>
-                      <span className="font-mono text-purple-700">{attendanceManualScore} / 100</span>
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="number"
-                        min="0"
-                        max="100"
-                        value={attendanceManualScore}
-                        onChange={e => setAttendanceManualScore(Math.min(100, Math.max(0, Number(e.target.value))))}
-                        className="w-24 px-3 py-1.5 bg-white border border-purple-300 rounded-lg text-sm font-bold font-mono text-slate-900 text-center outline-none focus:ring-2 focus:ring-purple-500"
-                      />
-                      <span className="text-xs text-purple-600">
-                        Nilai akan langsung masuk ke daftar leger nilai dan rekap nilai per kelas.
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Opsi Sakit */}
-                <label
-                  onClick={() => setAttendanceChoice('sakit')}
-                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    attendanceChoice === 'sakit'
-                      ? 'border-amber-600 bg-amber-50/50 ring-2 ring-amber-500/20'
-                      : 'border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="attendance_status"
-                    checked={attendanceChoice === 'sakit'}
-                    onChange={() => setAttendanceChoice('sakit')}
-                    className="mt-0.5 text-amber-600 cursor-pointer"
-                  />
-                  <div>
-                    <div className="font-bold text-xs text-amber-900">🤒 Sakit (Surat Dokter / Izin Orang Tua)</div>
-                    <div className="text-[11px] text-amber-700">Tidak hadir karena sakit, berhak mengikuti jadwal ujian susulan.</div>
-                  </div>
-                </label>
-
-                {/* Opsi Izin */}
-                <label
-                  onClick={() => setAttendanceChoice('izin')}
-                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    attendanceChoice === 'izin'
-                      ? 'border-sky-600 bg-sky-50/50 ring-2 ring-sky-500/20'
-                      : 'border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="attendance_status"
-                    checked={attendanceChoice === 'izin'}
-                    onChange={() => setAttendanceChoice('izin')}
-                    className="mt-0.5 text-sky-600 cursor-pointer"
-                  />
-                  <div>
-                    <div className="font-bold text-xs text-sky-900">✉️ Izin Resmi</div>
-                    <div className="text-[11px] text-sky-700">Mendapat izin resmi dari madrasah/sekolah untuk kepentingan keluarga/lomba.</div>
-                  </div>
-                </label>
-
-                {/* Opsi Absen / Alpa */}
-                <label
-                  onClick={() => setAttendanceChoice('absen')}
-                  className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
-                    attendanceChoice === 'absen'
-                      ? 'border-rose-600 bg-rose-50/50 ring-2 ring-rose-500/20'
-                      : 'border-slate-200 hover:bg-slate-50'
-                  }`}
-                >
-                  <input
-                    type="radio"
-                    name="attendance_status"
-                    checked={attendanceChoice === 'absen'}
-                    onChange={() => setAttendanceChoice('absen')}
-                    className="mt-0.5 text-rose-600 cursor-pointer"
-                  />
-                  <div>
-                    <div className="font-bold text-xs text-rose-900">❌ Absen / Alpa (Tanpa Keterangan)</div>
-                    <div className="text-[11px] text-rose-700">Siswa tidak hadir tanpa kabar pada sesi ujian ini.</div>
-                  </div>
-                </label>
-              </div>
-
-              {/* Catatan Tambahan */}
-              <div className="pt-2">
-                <label className="text-xs font-semibold text-slate-700 block mb-1">
-                  Catatan Proktor / Alasan (Opsional):
-                </label>
-                <input
-                  type="text"
-                  placeholder="Misal: Surat dokter terlampir, lembar soal tertulis diperiksa Pak Budi"
-                  value={attendanceNotes}
-                  onChange={e => setAttendanceNotes(e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                />
-              </div>
-            </div>
-
-            {/* Footer: Fixed / Shrink-0 */}
-            <div className="shrink-0 p-3.5 sm:p-4 border-t border-slate-100 bg-slate-50/80 flex items-center justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => setAttendanceModalStudent(null)}
-                className="px-4 py-2 border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-semibold cursor-pointer transition-colors"
-              >
-                Batal
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (attendanceModalStudent) {
-                    updateStudentAttendance(
-                      attendanceModalStudent.id,
-                      attendanceChoice,
-                      attendanceChoice === 'tertulis' ? attendanceManualScore : undefined,
-                      attendanceNotes
-                    );
-                    setAttendanceModalStudent(null);
-                  }
-                }}
-                className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer flex items-center gap-1.5 transition-colors"
-              >
-                <Check className="w-4 h-4" />
-                <span>Simpan Status</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Attendance Status Modal */}
+      <AttendanceStatusModal
+        isOpen={Boolean(attendanceModalStudent)}
+        student={attendanceModalStudent}
+        initialChoice={attendanceChoice}
+        initialScore={attendanceManualScore}
+        initialNotes={attendanceNotes}
+        onClose={() => setAttendanceModalStudent(null)}
+        onSave={(choice, score, notes) => {
+          if (attendanceModalStudent) {
+            updateStudentAttendance(
+              attendanceModalStudent.id,
+              choice,
+              score,
+              notes
+            );
+            setAttendanceModalStudent(null);
+          }
+        }}
+      />
     </div>
   );
 };

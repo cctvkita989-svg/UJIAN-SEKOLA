@@ -235,19 +235,19 @@ export const StudentExamHistoryView: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* 1. Header & Summary Hero Section */}
-      <div className="bg-[#fdfdfc] border border-stone-200/90 rounded-2xl p-6 shadow-xs">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-stone-200/80">
+      <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-5 border-b border-slate-200/80">
           <div>
             <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-              <h2 className="text-xl font-bold tracking-tight text-stone-900">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+              <h2 className="text-xl font-bold tracking-tight text-slate-900">
                 Riwayat & Arsip Hasil Asesmen CBT
               </h2>
-              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-stone-100 text-stone-700 border border-stone-200">
+              <span className="px-2 py-0.5 rounded-md text-[11px] font-semibold bg-slate-100 text-slate-700 border border-slate-200">
                 {historyItems.length} Ujian Terdata
               </span>
             </div>
-            <p className="text-xs text-stone-500 mt-1">
+            <p className="text-xs text-slate-500 mt-1">
               Catatan lengkap hasil pengerjaan ujian, skor kelulusan KKM, timestamp pelaksanaan, serta ulasan butir soal Anda.
             </p>
           </div>
@@ -255,10 +255,10 @@ export const StudentExamHistoryView: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={handlePrintAllHistory}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-stone-700 bg-white hover:bg-stone-50 border border-stone-200 rounded-xl transition-colors shadow-2xs cursor-pointer"
+              className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-2xs cursor-pointer"
               title="Cetak Seluruh Rekap Riwayat Ujian"
             >
-              <Printer className="w-4 h-4 text-stone-500" />
+              <Printer className="w-4 h-4 text-slate-500" />
               <span>Cetak Rekap Riwayat</span>
             </button>
           </div>
@@ -266,79 +266,79 @@ export const StudentExamHistoryView: React.FC = () => {
 
         {/* KPI Strip */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-5">
-          <div className="p-3.5 bg-stone-50/70 border border-stone-200/80 rounded-xl">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 Total Ujian Selesai
               </span>
-              <FileText className="w-4 h-4 text-stone-400" />
+              <FileText className="w-4 h-4 text-slate-400" />
             </div>
-            <div className="text-2xl font-bold font-mono text-stone-900 mt-1">
+            <div className="text-2xl font-bold font-mono text-slate-900 mt-1">
               {stats.total}
             </div>
-            <span className="text-[11px] text-stone-500">Paket soal diselesaikan</span>
+            <span className="text-[11px] text-slate-500">Paket soal diselesaikan</span>
           </div>
 
-          <div className="p-3.5 bg-stone-50/70 border border-stone-200/80 rounded-xl">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 Rata-Rata Nilai
               </span>
-              <Award className="w-4 h-4 text-emerald-700" />
+              <Award className="w-4 h-4 text-blue-600" />
             </div>
-            <div className="text-2xl font-bold font-mono text-emerald-800 mt-1">
+            <div className="text-2xl font-bold font-mono text-blue-700 mt-1">
               {stats.avg}
             </div>
-            <span className="text-[11px] text-stone-500">Skala 0 - 100</span>
+            <span className="text-[11px] text-slate-500">Skala 0 - 100</span>
           </div>
 
-          <div className="p-3.5 bg-stone-50/70 border border-stone-200/80 rounded-xl">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 Ketuntasan KKM
               </span>
-              <CheckCircle2 className="w-4 h-4 text-stone-400" />
+              <CheckCircle2 className="w-4 h-4 text-slate-400" />
             </div>
-            <div className="text-2xl font-bold font-mono text-stone-900 mt-1">
-              {stats.passed} <span className="text-xs font-normal text-stone-500 font-sans">Tuntas</span>
+            <div className="text-2xl font-bold font-mono text-slate-900 mt-1">
+              {stats.passed} <span className="text-xs font-normal text-slate-500 font-sans">Tuntas</span>
             </div>
             <span className="text-[11px] text-rose-700">
               {stats.remedial} mapel remedial (&lt; 75)
             </span>
           </div>
 
-          <div className="p-3.5 bg-stone-50/70 border border-stone-200/80 rounded-xl">
+          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-500">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">
                 Integritas CBT
               </span>
-              <ShieldCheck className="w-4 h-4 text-emerald-700" />
+              <ShieldCheck className="w-4 h-4 text-blue-600" />
             </div>
-            <div className="text-2xl font-bold font-mono text-emerald-800 mt-1">
+            <div className="text-2xl font-bold font-mono text-blue-700 mt-1">
               {stats.total > 0 ? `${Math.round((stats.cleanIntegrity / stats.total) * 100)}%` : '100%'}
             </div>
-            <span className="text-[11px] text-stone-500">Sesi tertib tanpa tab-blur</span>
+            <span className="text-[11px] text-slate-500">Sesi tertib tanpa tab-blur</span>
           </div>
         </div>
       </div>
 
       {/* 2. Search, Category, and Sorting Controls */}
-      <div className="bg-white border border-stone-200/90 rounded-2xl p-4 shadow-xs space-y-3">
+      <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-xs space-y-3">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
           {/* Search Bar */}
           <div className="relative flex-1">
-            <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-3" />
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
             <input
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               placeholder="Cari nama mata pelajaran, kode, atau guru pengampu..."
-              className="w-full pl-9 pr-4 py-2 text-xs bg-stone-50/70 border border-stone-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-stone-400 text-stone-800 placeholder-stone-400"
+              className="w-full pl-9 pr-4 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:bg-white focus:outline-hidden focus:border-blue-500 text-slate-800 placeholder-slate-400"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-2.5 text-stone-400 hover:text-stone-600"
+                className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -347,12 +347,12 @@ export const StudentExamHistoryView: React.FC = () => {
 
           {/* Sort Dropdown */}
           <div className="flex items-center gap-2">
-            <ArrowUpDown className="w-4 h-4 text-stone-400" />
-            <span className="text-xs text-stone-500 whitespace-nowrap">Urutkan:</span>
+            <ArrowUpDown className="w-4 h-4 text-slate-400" />
+            <span className="text-xs text-slate-500 whitespace-nowrap">Urutkan:</span>
             <select
               value={sortBy}
               onChange={e => setSortBy(e.target.value as any)}
-              className="px-3 py-1.5 text-xs bg-stone-50/70 border border-stone-200 rounded-xl text-stone-700 focus:outline-hidden focus:border-stone-400 cursor-pointer"
+              className="px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:outline-hidden focus:border-blue-500 cursor-pointer"
             >
               <option value="newest">Terbaru / Terakhir Selesai</option>
               <option value="score_high">Nilai Tertinggi</option>
@@ -362,9 +362,9 @@ export const StudentExamHistoryView: React.FC = () => {
         </div>
 
         {/* Filter Pills */}
-        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-stone-100 text-xs">
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mr-1">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
               Kategori:
             </span>
             {(['ALL', 'PAS', 'PTS', 'US'] as const).map(cat => (
@@ -373,8 +373,8 @@ export const StudentExamHistoryView: React.FC = () => {
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                   selectedCategory === cat
-                    ? 'bg-stone-900 text-white font-semibold shadow-2xs'
-                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200/80'
+                    ? 'bg-blue-600 text-white font-semibold shadow-2xs'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
                 }`}
               >
                 {cat === 'ALL' ? 'Semua Kategori' : cat}
@@ -383,7 +383,7 @@ export const StudentExamHistoryView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <span className="text-[11px] font-semibold text-stone-400 uppercase tracking-wider mr-1">
+            <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mr-1">
               Status:
             </span>
             {(['ALL', 'Tuntas', 'Remedial'] as const).map(st => (
@@ -393,11 +393,11 @@ export const StudentExamHistoryView: React.FC = () => {
                 className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer ${
                   selectedStatus === st
                     ? st === 'Tuntas'
-                      ? 'bg-emerald-800 text-white font-semibold'
+                      ? 'bg-blue-600 text-white font-semibold'
                       : st === 'Remedial'
-                      ? 'bg-rose-800 text-white font-semibold'
-                      : 'bg-stone-900 text-white font-semibold'
-                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200/80'
+                      ? 'bg-rose-700 text-white font-semibold'
+                      : 'bg-blue-600 text-white font-semibold'
+                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80'
                 }`}
               >
                 {st === 'ALL' ? 'Semua Status' : st}
@@ -409,12 +409,12 @@ export const StudentExamHistoryView: React.FC = () => {
 
       {/* 3. Exam History Cards List */}
       {filteredItems.length === 0 ? (
-        <div className="bg-white border border-stone-200/90 rounded-2xl p-12 text-center shadow-xs">
-          <div className="w-12 h-12 rounded-xl bg-stone-100 text-stone-400 flex items-center justify-center mx-auto mb-3">
+        <div className="bg-white border border-slate-200/90 rounded-2xl p-12 text-center shadow-xs">
+          <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
             <History className="w-6 h-6" />
           </div>
-          <h3 className="text-sm font-bold text-stone-800">Tidak Ada Riwayat Ujian Ditemukan</h3>
-          <p className="text-xs text-stone-500 max-w-sm mx-auto mt-1">
+          <h3 className="text-sm font-bold text-slate-800">Tidak Ada Riwayat Ujian Ditemukan</h3>
+          <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
             Tidak ada data yang sesuai dengan kata kunci pencarian atau filter yang dipilih. Coba reset filter pencarian Anda.
           </p>
           <button
@@ -423,7 +423,7 @@ export const StudentExamHistoryView: React.FC = () => {
               setSelectedCategory('ALL');
               setSelectedStatus('ALL');
             }}
-            className="mt-4 px-4 py-1.5 bg-stone-900 text-white text-xs font-semibold rounded-lg hover:bg-stone-800 transition-colors cursor-pointer"
+            className="mt-4 px-4 py-1.5 bg-blue-600 text-white text-xs font-semibold rounded-lg hover:bg-blue-700 transition-colors cursor-pointer"
           >
             Reset Filter
           </button>

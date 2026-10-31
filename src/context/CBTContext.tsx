@@ -148,7 +148,7 @@ interface CBTContextType {
   resetAllData: () => void;
 }
 
-export const CBT_STORAGE_VERSION = 'v17_official_students_unique_passwords';
+export const CBT_STORAGE_VERSION = 'v19_real_smp_exams_ready';
 
 // Generate pre-loaded official students dataset with unique individual passwords
 const DEFAULT_800_DATA = generate800StudentsData('exam-mat-01');

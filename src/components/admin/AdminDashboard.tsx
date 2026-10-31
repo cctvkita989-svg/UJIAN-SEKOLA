@@ -1727,13 +1727,26 @@ export const AdminDashboard: React.FC = () => {
                     ))}
                   </select>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setOpenSections(prev => ({ ...prev, nilai_laporan: true }));
+                      setSelectedDocType('kartu_peserta');
+                      setActiveTab('dokumen_ujian');
+                      showScheduleToast(`Membuka Dokumen Cetak Kartu Peserta Ujian ${selectedClassFilter !== 'ALL' ? `Kelas ${selectedClassFilter}` : 'Seluruh Rombel'}.`);
+                    }}
+                    className="px-3 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-2xs cursor-pointer transition-colors"
+                    title="Cetak lembar kartu peserta ujian lengkap barcode, username, & password unik per rombel kelas"
+                  >
+                    <Printer className="w-4 h-4 text-indigo-600" /> Cetak Kartu Massal (Per Rombel)
+                  </button>
                   <button
                     onClick={() => setIsImportBulkOpen(true)}
                     className="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
                     title="Import data siswa massal dari file Excel atau salin tempel teks"
                   >
-                    <UploadCloud className="w-4 h-4" /> Import Massal Siswa (Excel/CSV)
+                    <UploadCloud className="w-4 h-4" /> Import Massal (Excel)
                   </button>
                   <button
                     onClick={() => setIsAddStudentOpen(true)}

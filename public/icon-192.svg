@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192" fill="none">
+  <defs>
+    <linearGradient id="cbtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded squircle -->
+  <rect width="192" height="192" rx="42" fill="url(#cbtGrad)"/>
+  
+  <!-- Graduation Cap & Certificate Crest -->
+  <path d="M96 46L148 72L96 98L44 72L96 46Z" fill="#ffffff" stroke="#e0e7ff" stroke-width="2"/>
+  <path d="M148 72V104" stroke="url(#goldGrad)" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="148" cy="107" r="5" fill="url(#goldGrad)"/>
+  <path d="M68 85V114C68 126 80.5 135 96 135C111.5 135 124 126 124 114V85L96 99L68 85Z" fill="#e0e7ff" opacity="0.95"/>
+  
+  <!-- CBT Letters Badge -->
+  <rect x="52" y="142" width="88" height="26" rx="6" fill="#1e1b4b"/>
+  <text x="96" y="160" text-anchor="middle" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="900" letter-spacing="2">CBT SMP</text>
+</svg>

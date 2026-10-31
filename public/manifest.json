@@ -1,0 +1,33 @@
+{
+  "id": "/",
+  "name": "CBT SMP NEGERI 1 PANDAN",
+  "short_name": "CBT SMPN 1",
+  "description": "Sistem Ujian Sekolah Computer Based Test (CBT) Terintegrasi untuk Siswa dan Guru SMP Negeri 1 Pandan",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "maskable"
+    }
+  ]
+}

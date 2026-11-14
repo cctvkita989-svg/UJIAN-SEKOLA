@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.ujian_sekola.twa",
+        "sha256_cert_fingerprints": ["EC:5C:1C:97:65:82:79:30:6B:F9:6F:04:41:1C:3C:69:BC:22:1D:ED:2E:47:22:D7:CE:C2:A9:87:3C:66:E9:72"]
+      }
+    }]

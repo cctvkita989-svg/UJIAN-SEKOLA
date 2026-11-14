@@ -5,11 +5,28 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!assets/|sw\\.js|workbox-.*\\.js|manifest\\.json|favicon\\.ico|.*\\.(?:png|svg|ico|webp|jpg|jpeg|zip|json|js|css|woff2?)$).*)",
+      "source": "/((?!assets/|\\.well-known/|sw\\.js|workbox-.*\\.js|manifest\\.json|favicon\\.ico|.*\\.(?:png|svg|ico|webp|jpg|jpeg|zip|json|js|css|woff2?)$).*)",
       "destination": "/index.html"
     }
   ],
   "headers": [
+    {
+      "source": "/.well-known/assetlinks.json",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "application/json; charset=utf-8"
+        },
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300"
+        }
+      ]
+    },
     {
       "source": "/sw.js",
       "headers": [

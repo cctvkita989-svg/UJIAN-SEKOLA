@@ -187,6 +187,23 @@ export const GuruDashboard: React.FC = () => {
       </div>
 
       {/* TAB 1: BANK SOAL */}
+      {activeTab === 'bank' && !currentExam && (
+        <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-xs space-y-3">
+          <BookOpen className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900">Belum Ada Paket Ujian & Bank Soal</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Saat ini belum ada jadwal atau paket ujian yang terdaftar. Anda dapat membuat paket ujian baru melalui tombol di atas atau menunggu jadwal resmi dari Admin/Panitia Ujian.
+          </p>
+          <button
+            onClick={() => setIsCreateExamOpen(true)}
+            className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-xs cursor-pointer"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            Buat Paket Ujian Baru
+          </button>
+        </div>
+      )}
+
       {activeTab === 'bank' && currentExam && (
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Left Column: List of Teacher's Exams */}
@@ -368,6 +385,16 @@ export const GuruDashboard: React.FC = () => {
       )}
 
       {/* TAB 2: PENGAWASAN REAL-TIME */}
+      {activeTab === 'proctor' && !currentExam && (
+        <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-xs space-y-2">
+          <Users className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900">Belum Ada Ruang Ujian Aktif</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Pemantauan ruang ujian real-time akan tampil setelah jadwal atau paket ujian dibuat dan siswa mulai masuk mengerjakan soal.
+          </p>
+        </div>
+      )}
+
       {activeTab === 'proctor' && currentExam && (
         <div className="bg-white border border-slate-200 rounded-xl shadow-xs overflow-hidden">
           <div className="p-4 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/50">
@@ -511,6 +538,16 @@ export const GuruDashboard: React.FC = () => {
       )}
 
       {/* TAB 3: ANALISIS HASIL */}
+      {activeTab === 'analysis' && !currentExam && (
+        <div className="bg-white border border-slate-200 rounded-xl p-10 text-center shadow-xs space-y-2">
+          <Sparkles className="w-10 h-10 text-slate-300 mx-auto" />
+          <h3 className="text-base font-bold text-slate-900">Belum Ada Data Analisis Nilai</h3>
+          <p className="text-xs text-slate-500 max-w-md mx-auto">
+            Statistik ketuntasan KKM dan rekap hasil ujian akan otomatis tersedia setelah ada paket ujian yang dikerjakan oleh peserta.
+          </p>
+        </div>
+      )}
+
       {activeTab === 'analysis' && currentExam && (
         <div className="space-y-6">
           <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs">

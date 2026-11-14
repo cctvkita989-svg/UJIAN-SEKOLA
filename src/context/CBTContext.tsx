@@ -18,17 +18,14 @@ import {
 } from '../types/cbt';
 import {
   INITIAL_USERS,
-  INITIAL_EXAMS,
-  INITIAL_QUESTIONS,
   INITIAL_EXAM_SESSIONS,
   INITIAL_SCHOOL_PROFILE,
   INITIAL_ANNOUNCEMENTS,
-  INITIAL_DISCIPLINE_NOTES,
-  INITIAL_STUDENT_GRADES,
   INITIAL_CLASSES,
   INITIAL_SUBJECTS,
   INITIAL_EXAM_TYPES,
 } from '../data/mockData';
+import { OFFICIAL_STUDENTS_LIST } from '../data/officialStudentsData';
 import { generate800StudentsData } from '../utils/simulation800';
 import { db } from '../lib/firebase';
 import {
@@ -36,6 +33,7 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  getDocs,
   onSnapshot,
 } from 'firebase/firestore';
 import { offlineStorage } from '../lib/offlineStorage';
@@ -144,28 +142,39 @@ interface CBTContextType {
   run800StudentsSimulation: () => void;
   resetSimulationToStandard: () => void;
 
-  // Global reset to default mock data (SMP VII-IX, Agama, Leger)
+  // Global reset & Clear Trial Data (preserve 830 official students + school master data)
   resetAllData: () => void;
+  clearTrialData: () => Promise<{ success: boolean; message: string }>;
 }
 
-export const CBT_STORAGE_VERSION = 'v19_real_smp_exams_ready';
+export const CBT_STORAGE_VERSION = 'v20_clean_production_ready';
 
-// Generate pre-loaded official students dataset with unique individual passwords
-const DEFAULT_800_DATA = generate800StudentsData('exam-mat-01');
-const INITIAL_USERS_WITH_800: User[] = [
+// Clean official baseline: keep Admin, Teachers, and 830 Official Students (all offline, zero trial exams)
+const CLEAN_OFFICIAL_USERS: User[] = [
   ...INITIAL_USERS.filter(u => u.role !== 'siswa'),
-  ...DEFAULT_800_DATA.users,
-];
-const INITIAL_SESSIONS_WITH_800: ExamSession[] = [
-  ...INITIAL_EXAM_SESSIONS,
-  ...DEFAULT_800_DATA.sessions,
+  ...OFFICIAL_STUDENTS_LIST.map(s => ({ ...s, statusLogin: 'offline' as const })),
 ];
 
-// Auto-purge stale storage if from previous version
+// Auto-purge stale trial/simulation storage if upgrading from previous version
 if (typeof window !== 'undefined') {
   try {
     const currentVersion = localStorage.getItem('educbt_version');
     if (currentVersion !== CBT_STORAGE_VERSION) {
+      const staleSessionKeys: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (
+          k &&
+          (k.startsWith('educbt_answers_') ||
+            k.startsWith('educbt_progress_') ||
+            k.startsWith('educbt_session_') ||
+            k.startsWith('educbt_submitted_'))
+        ) {
+          staleSessionKeys.push(k);
+        }
+      }
+      staleSessionKeys.forEach(k => localStorage.removeItem(k));
+
       localStorage.removeItem('educbt_classes');
       localStorage.removeItem('educbt_subjects');
       localStorage.removeItem('educbt_users');
@@ -175,6 +184,9 @@ if (typeof window !== 'undefined') {
       localStorage.removeItem('educbt_discipline');
       localStorage.removeItem('educbt_grades');
       localStorage.removeItem('educbt_exam_types');
+      localStorage.removeItem('educbt_broadcasts');
+      localStorage.removeItem('educbt_announcements');
+      localStorage.removeItem('educbt_offline_sync_queue');
       localStorage.removeItem('educbt_curr_user');
       localStorage.removeItem('educbt_sim_800');
       localStorage.removeItem('educbt_school');
@@ -183,6 +195,7 @@ if (typeof window !== 'undefined') {
       // Ensure user starts at Login Page so students/teachers/admin see login menu
       localStorage.removeItem('educbt_auth');
       localStorage.setItem('educbt_version', CBT_STORAGE_VERSION);
+      offlineStorage.clearAllExamCaches().catch(() => {});
     }
   } catch (e) {
     console.error('Storage migration error:', e);
@@ -192,13 +205,12 @@ if (typeof window !== 'undefined') {
 const CBTContext = createContext<CBTContextType | undefined>(undefined);
 
 export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  // Load state from localStorage or initial official student data
+  // Load state from localStorage or clean official student data
   const [users, setUsers] = useState<User[]>(() => {
     const saved = localStorage.getItem('educbt_users');
     if (saved) {
       try {
         const parsed: User[] = JSON.parse(saved);
-        // Ensure at least 800 official students are loaded
         if (parsed.length >= 800) {
           return parsed;
         }
@@ -206,7 +218,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // fallback
       }
     }
-    return INITIAL_USERS_WITH_800;
+    return CLEAN_OFFICIAL_USERS;
   });
 
   // App Theme: 'soft-blue' | 'sky-pastel' | 'cool-slate' | 'pure-white' | 'light' | 'dark' | 'sepia' | 'midnight'
@@ -267,21 +279,21 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [exams, setExams] = useState<Exam[]>(() => {
     const saved = localStorage.getItem('educbt_exams');
-    return saved ? JSON.parse(saved) : INITIAL_EXAMS;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [questions, setQuestions] = useState<Record<string, Question[]>>(() => {
     const saved = localStorage.getItem('educbt_questions');
-    return saved ? JSON.parse(saved) : INITIAL_QUESTIONS;
+    return saved ? JSON.parse(saved) : {};
   });
 
   const [examSessions, setExamSessions] = useState<ExamSession[]>(() => {
     let baseList: ExamSession[] = [];
     try {
       const saved = localStorage.getItem('educbt_sessions');
-      baseList = saved ? JSON.parse(saved) : INITIAL_SESSIONS_WITH_800;
+      baseList = saved ? JSON.parse(saved) : [];
     } catch {
-      baseList = INITIAL_SESSIONS_WITH_800;
+      baseList = [];
     }
 
     try {
@@ -324,7 +336,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [isSimulated800, setIsSimulated800] = useState<boolean>(() => {
     const saved = localStorage.getItem('educbt_sim_800');
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === 'true' : false;
   });
 
   const [schoolProfile, setSchoolProfile] = useState<SchoolProfile>(() => {
@@ -355,12 +367,12 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [disciplineNotes, setDisciplineNotes] = useState<StudentDisciplineNote[]>(() => {
     const saved = localStorage.getItem('educbt_discipline');
-    return saved ? JSON.parse(saved) : INITIAL_DISCIPLINE_NOTES;
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [studentGrades, setStudentGrades] = useState<Record<string, StudentSubjectGrade[]>>(() => {
     const saved = localStorage.getItem('educbt_grades');
-    return saved ? JSON.parse(saved) : INITIAL_STUDENT_GRADES;
+    return saved ? JSON.parse(saved) : {};
   });
 
   const [classes, setClasses] = useState<ClassItem[]>(() => {
@@ -380,16 +392,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const [broadcastMessages, setBroadcastMessages] = useState<ProctorBroadcastMessage[]>(() => {
     const saved = localStorage.getItem('educbt_broadcasts');
-    return saved ? JSON.parse(saved) : [
-      {
-        id: 'bc-1',
-        timestamp: '08:00',
-        sender: 'Proktor Utama (Lab 01)',
-        content: 'Perhatian seluruh peserta ujian: pastikan browser dalam layar penuh dan jangan membuka aplikasi lain.',
-        targetRoom: 'ALL',
-        priority: 'urgent',
-      }
-    ];
+    return saved ? JSON.parse(saved) : [];
   });
 
   const [activeExamTaking, setActiveExamTaking] = useState<{
@@ -691,61 +694,70 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const unsubExams = onSnapshot(collection(db, 'exams'), snap => {
         setIsOnline(true);
-        if (!snap.empty) {
-          const list: Exam[] = [];
-          snap.forEach(d => list.push(d.data() as Exam));
-          if (list.length > 0) {
-            setExams(prev => {
-              const map = new Map<string, Exam>();
-              prev.forEach(e => map.set(e.id, e));
-              list.forEach(e => map.set(e.id, e));
-              return Array.from(map.values());
+        const changes = snap.docChanges();
+        if (changes.length > 0) {
+          setExams(prev => {
+            const map = new Map<string, Exam>();
+            prev.forEach(e => map.set(e.id, e));
+            changes.forEach(change => {
+              if (change.type === 'removed') {
+                map.delete(change.doc.id);
+              } else {
+                const examData = change.doc.data() as Exam;
+                map.set(examData.id || change.doc.id, examData);
+              }
             });
-          }
+            return Array.from(map.values());
+          });
         }
       }, handleStreamError);
 
       const unsubSessions = onSnapshot(collection(db, 'examSessions'), snap => {
         setIsOnline(true);
-        if (!snap.empty) {
-          const list: ExamSession[] = [];
-          snap.forEach(d => list.push(d.data() as ExamSession));
-          if (list.length > 0) {
-            setExamSessions(prev => {
-              const map = new Map<string, ExamSession>();
-              prev.forEach(s => map.set(s.id, s));
-              list.forEach(remoteSession => {
+        const changes = snap.docChanges();
+        if (changes.length > 0) {
+          setExamSessions(prev => {
+            const map = new Map<string, ExamSession>();
+            prev.forEach(s => map.set(s.id, s));
+            changes.forEach(change => {
+              if (change.type === 'removed') {
+                map.delete(change.doc.id);
+              } else {
+                const remoteSession = change.doc.data() as ExamSession;
                 const localSession = map.get(remoteSession.id);
                 // CRITICAL CONFLICT GUARD:
                 // If local session is already submitted, never let remote stale 'in_progress' overwrite it!
                 if (localSession && localSession.status === 'submitted' && remoteSession.status !== 'submitted') {
-                  // Keep local submitted state and immediately push to remote if online
                   if (typeof navigator !== 'undefined' && navigator.onLine) {
                     syncSessionToFirestore(localSession);
                   }
                   return;
                 }
                 map.set(remoteSession.id, remoteSession);
-              });
-              return Array.from(map.values());
+              }
             });
-          }
+            return Array.from(map.values());
+          });
         }
       }, handleStreamError);
 
       const unsubBroadcasts = onSnapshot(collection(db, 'broadcasts'), snap => {
         setIsOnline(true);
-        if (!snap.empty) {
-          const list: ProctorBroadcastMessage[] = [];
-          snap.forEach(d => list.push(d.data() as ProctorBroadcastMessage));
-          if (list.length > 0) {
-            setBroadcastMessages(prev => {
-              const map = new Map<string, ProctorBroadcastMessage>();
-              prev.forEach(b => map.set(b.id, b));
-              list.forEach(b => map.set(b.id, b));
-              return Array.from(map.values());
+        const changes = snap.docChanges();
+        if (changes.length > 0) {
+          setBroadcastMessages(prev => {
+            const map = new Map<string, ProctorBroadcastMessage>();
+            prev.forEach(b => map.set(b.id, b));
+            changes.forEach(change => {
+              if (change.type === 'removed') {
+                map.delete(change.doc.id);
+              } else {
+                const bcData = change.doc.data() as ProctorBroadcastMessage;
+                map.set(bcData.id || change.doc.id, bcData);
+              }
             });
-          }
+            return Array.from(map.values());
+          });
         }
       }, handleStreamError);
 
@@ -1245,10 +1257,18 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       priority,
     };
     setBroadcastMessages(prev => [newBroadcast, ...prev]);
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      syncBroadcastToFirestore(newBroadcast);
+    }
   };
 
   const clearBroadcasts = () => {
     setBroadcastMessages([]);
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      getDocs(collection(db, 'broadcasts'))
+        .then(snap => Promise.all(snap.docs.map(d => deleteDoc(d.ref))))
+        .catch(e => console.warn('[Firestore] Clear broadcasts note:', e));
+    }
   };
 
   // 800 Students Simulation Controls
@@ -1296,11 +1316,25 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     };
     setExams(prev => [newExam, ...prev]);
     setQuestions(prev => ({ ...prev, [newId]: [] }));
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      syncExamToFirestore(newExam);
+    }
     return newExam;
   };
 
   const updateExam = (examId: string, data: Partial<Exam>) => {
-    setExams(prev => prev.map(e => (e.id === examId ? { ...e, ...data } : e)));
+    setExams(prev =>
+      prev.map(e => {
+        if (e.id === examId) {
+          const updated = { ...e, ...data };
+          if (typeof navigator !== 'undefined' && navigator.onLine) {
+            syncExamToFirestore(updated);
+          }
+          return updated;
+        }
+        return e;
+      })
+    );
     if (activeExamTaking && activeExamTaking.exam.id === examId) {
       setActiveExamTaking(prev => (prev ? { ...prev, exam: { ...prev.exam, ...data } } : null));
     }
@@ -1314,6 +1348,11 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return copy;
     });
     setExamSessions(prev => prev.filter(s => s.examId !== examId));
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      deleteDoc(doc(db, 'exams', examId)).catch(e =>
+        console.warn('[Firestore] Delete exam note:', e)
+      );
+    }
   };
 
   const deleteExamsBulk = (examIds: string[]) => {
@@ -1326,6 +1365,13 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return copy;
     });
     setExamSessions(prev => prev.filter(s => !idSet.has(s.examId)));
+    if (typeof navigator !== 'undefined' && navigator.onLine) {
+      examIds.forEach(id => {
+        deleteDoc(doc(db, 'exams', id)).catch(e =>
+          console.warn('[Firestore] Bulk delete exam note:', e)
+        );
+      });
+    }
   };
 
   const generateNewToken = (examId: string) => {
@@ -1962,6 +2008,68 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setActiveExamTaking(null);
   };
 
+  const clearTrialData = async (): Promise<{ success: boolean; message: string }> => {
+    try {
+      // 1. Reset student login statuses to offline while preserving ALL 830 students + unique passwords + teachers + admin
+      setUsers(prev =>
+        prev.map(u => (u.role === 'siswa' ? { ...u, statusLogin: 'offline' } : u))
+      );
+
+      // 2. Empty all trial exams, questions, sessions, discipline notes, grades, broadcasts
+      setExams([]);
+      setQuestions({});
+      setExamSessions([]);
+      setDisciplineNotes([]);
+      setStudentGrades({});
+      setBroadcastMessages([]);
+      setIsSimulated800(false);
+      setActiveExamTaking(null);
+      setPendingOfflineSyncCount(0);
+
+      // 3. Clear offline IndexedDB + localStorage caches
+      await offlineStorage.clearAllExamCaches();
+      localStorage.setItem('educbt_exams', JSON.stringify([]));
+      localStorage.setItem('educbt_questions', JSON.stringify({}));
+      localStorage.setItem('educbt_sessions', JSON.stringify([]));
+      localStorage.setItem('educbt_discipline', JSON.stringify([]));
+      localStorage.setItem('educbt_grades', JSON.stringify({}));
+      localStorage.setItem('educbt_broadcasts', JSON.stringify([]));
+      localStorage.setItem('educbt_sim_800', 'false');
+      localStorage.setItem('educbt_version', CBT_STORAGE_VERSION);
+
+      // 4. Delete any existing trial documents from Firestore collections ('exams', 'examSessions', 'broadcasts')
+      let firestoreDeletedCount = 0;
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        try {
+          const collectionsToClear = ['exams', 'examSessions', 'broadcasts'];
+          for (const colName of collectionsToClear) {
+            const snap = await getDocs(collection(db, colName));
+            if (!snap.empty) {
+              await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+              firestoreDeletedCount += snap.size;
+            }
+          }
+        } catch (fsErr) {
+          console.warn('[Firestore] Clear trial data cloud note:', fsErr);
+        }
+      }
+
+      return {
+        success: true,
+        message:
+          firestoreDeletedCount > 0
+            ? `Data uji coba berhasil dikosongkan (${firestoreDeletedCount} dokumen cloud & seluruh cache lokal dibersihkan). Data induk 830 siswa, guru, kelas, dan mapel tetap aman tersimpan.`
+            : 'Seluruh data uji coba berhasil dikosongkan! Data induk 830 siswa, password unik, akun guru, kelas, dan mapel tetap aman tersimpan.',
+      };
+    } catch (e) {
+      console.error('Clear trial data error:', e);
+      return {
+        success: false,
+        message: 'Terjadi kendala saat mengosongkan sebagian data uji coba. Silakan coba lagi.',
+      };
+    }
+  };
+
   const resetAllData = () => {
     localStorage.removeItem('educbt_classes');
     localStorage.removeItem('educbt_subjects');
@@ -1972,17 +2080,23 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     localStorage.removeItem('educbt_discipline');
     localStorage.removeItem('educbt_grades');
     localStorage.removeItem('educbt_exam_types');
+    localStorage.removeItem('educbt_broadcasts');
     localStorage.setItem('educbt_version', CBT_STORAGE_VERSION);
+    localStorage.setItem('educbt_sim_800', 'false');
     localStorage.setItem('educbt_auth', 'true');
     localStorage.setItem('educbt_curr_user', JSON.stringify(INITIAL_USERS[0]));
+    offlineStorage.clearAllExamCaches().catch(() => {});
 
     setClasses(INITIAL_CLASSES);
     setSubjects(INITIAL_SUBJECTS);
-    setUsers(INITIAL_USERS_WITH_800);
-    setExams(INITIAL_EXAMS);
-    setQuestions(INITIAL_QUESTIONS);
-    setExamSessions(INITIAL_SESSIONS_WITH_800);
-    setDisciplineNotes(INITIAL_DISCIPLINE_NOTES);
+    setUsers(CLEAN_OFFICIAL_USERS);
+    setExams([]);
+    setQuestions({});
+    setExamSessions([]);
+    setDisciplineNotes([]);
+    setStudentGrades({});
+    setBroadcastMessages([]);
+    setIsSimulated800(false);
     setExamTypes(INITIAL_EXAM_TYPES);
     setSchoolProfile(INITIAL_SCHOOL_PROFILE);
     setCurrentUserState(INITIAL_USERS[0]);
@@ -2065,6 +2179,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         run800StudentsSimulation,
         resetSimulationToStandard,
         resetAllData,
+        clearTrialData,
         theme,
         setTheme,
       }}

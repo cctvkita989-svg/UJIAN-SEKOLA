@@ -133,6 +133,7 @@ export const AdminDashboard: React.FC = () => {
     resetUserPasswordDirect,
     resetAdminPassword,
     batchResetAllStudentsPassword,
+    clearTrialData,
     currentUser,
   } = useCBT();
 
@@ -208,6 +209,8 @@ export const AdminDashboard: React.FC = () => {
   } | null>(null);
   const [selectedExamIds, setSelectedExamIds] = useState<string[]>([]);
   const [scheduleToast, setScheduleToast] = useState<string | null>(null);
+  const [isClearTrialModalOpen, setIsClearTrialModalOpen] = useState(false);
+  const [isClearingTrialData, setIsClearingTrialData] = useState(false);
 
   const showScheduleToast = (msg: string) => {
     setScheduleToast(msg);
@@ -1191,10 +1194,10 @@ export const AdminDashboard: React.FC = () => {
                   <KeyRound className="w-4 h-4 text-blue-600 group-hover:text-blue-700" />
                 </div>
                 <div className="text-2xl font-bold font-mono tracking-wider text-blue-700">
-                  {ongoingExams[0]?.token || 'PASMAT'}
+                  {ongoingExams[0]?.token || exams[0]?.token || 'BELUM ADA'}
                 </div>
                 <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
-                  <span>Rilis Sesi 1</span>
+                  <span>{ongoingExams[0] ? 'Sesi Aktif' : exams.length > 0 ? 'Siap Dirilis' : 'Belum Ada Jadwal'}</span>
                   <span className="text-blue-700 font-semibold">Kelola →</span>
                 </div>
               </button>
@@ -1219,7 +1222,24 @@ export const AdminDashboard: React.FC = () => {
                   </div>
 
                   <div className="space-y-3">
-                    {exams.map(exam => (
+                    {exams.length === 0 ? (
+                      <div className="p-6 rounded-xl border border-dashed border-stone-300 bg-stone-50/70 text-center space-y-2.5">
+                        <Calendar className="w-8 h-8 text-stone-400 mx-auto" />
+                        <div className="text-sm font-bold text-stone-800">Belum Ada Jadwal Ujian Aktif</div>
+                        <p className="text-xs text-stone-500 max-w-md mx-auto">
+                          Data uji coba sudah bersih. Anda siap membuat jadwal ujian resmi sekolah sesuai mata pelajaran dan pembagian kelas.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={handleOpenAddSchedule}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition-colors"
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          <span>Buat Jadwal Ujian Baru</span>
+                        </button>
+                      </div>
+                    ) : (
+                      exams.map(exam => (
                       <div
                         key={exam.id}
                         className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-xl border border-stone-200 bg-stone-50/70 hover:bg-stone-50 transition-colors gap-3"
@@ -1262,7 +1282,8 @@ export const AdminDashboard: React.FC = () => {
                           </button>
                         </div>
                       </div>
-                    ))}
+                    ))
+                    )}
                   </div>
                 </div>
 
@@ -1491,7 +1512,14 @@ export const AdminDashboard: React.FC = () => {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100">
-                        {[...examSessions]
+                        {examSessions.length === 0 ? (
+                          <tr>
+                            <td colSpan={5} className="py-8 text-center text-slate-400">
+                              Belum ada sesi ujian yang sedang berlangsung atau tercatat. Seluruh {students.length} siswa berstatus standby.
+                            </td>
+                          </tr>
+                        ) : (
+                          [...examSessions]
                           .sort((a, b) => {
                             const score = (s: ExamSession) => (s.status === 'blocked' ? 3 : s.status === 'in_progress' ? 2 : 1);
                             return score(b) - score(a);
@@ -1569,7 +1597,8 @@ export const AdminDashboard: React.FC = () => {
                                 </div>
                               </td>
                             </tr>
-                          ))}
+                          ))
+                        )}
                       </tbody>
                     </table>
                   </div>
@@ -1577,7 +1606,7 @@ export const AdminDashboard: React.FC = () => {
                   {/* Clean Bottom Banner */}
                   <div className="mt-3 pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-500">
                     <span>
-                      Menampilkan <strong className="text-slate-700 font-mono">5 dari {examSessions.length}</strong> total peserta ujian.
+                      Menampilkan <strong className="text-slate-700 font-mono">{Math.min(5, examSessions.length)} dari {examSessions.length}</strong> total peserta ujian.
                     </span>
                     <button
                       onClick={() => setActiveTab('siswa')}
@@ -2156,6 +2185,26 @@ export const AdminDashboard: React.FC = () => {
                   return matchJenis && matchMapel && matchJam;
                 });
 
+                if (exams.length === 0) {
+                  return (
+                    <div className="p-10 text-center bg-white border border-slate-200 rounded-xl space-y-3">
+                      <Calendar className="w-9 h-9 text-slate-300 mx-auto" />
+                      <h4 className="text-sm font-bold text-slate-900">Belum Ada Jadwal Ujian Terdaftar</h4>
+                      <p className="text-xs text-slate-500 max-w-md mx-auto">
+                        Semua jadwal uji coba telah dikosongkan. Klik tombol di bawah untuk membuat jadwal ujian resmi sekolah.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={handleOpenAddSchedule}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                        Buat Jadwal Ujian Terbaru
+                      </button>
+                    </div>
+                  );
+                }
+
                 if (filteredExams.length === 0) {
                   return (
                     <div className="p-8 text-center bg-white border border-slate-200 rounded-xl text-slate-500 text-xs">
@@ -2393,12 +2442,19 @@ export const AdminDashboard: React.FC = () => {
                 <div className="bg-white/10 backdrop-blur-xs p-4 rounded-xl border border-white/20 text-center">
                   <div className="text-[11px] text-indigo-200 uppercase font-semibold mb-1">Token Aktif Saat Ini</div>
                   <div className="text-3xl font-mono font-black tracking-widest text-amber-300">
-                    {ongoingExams[0]?.token || exams[0]?.token || 'PASMAT'}
+                    {ongoingExams[0]?.token || exams[0]?.token || 'BELUM ADA'}
                   </div>
                   <div className="mt-2.5 flex items-center justify-center gap-2">
                     <button
                       type="button"
-                      onClick={() => handleCopyToken(ongoingExams[0]?.token || exams[0]?.token || 'PASMAT')}
+                      onClick={() => {
+                        const t = ongoingExams[0]?.token || exams[0]?.token;
+                        if (t) {
+                          handleCopyToken(t);
+                        } else {
+                          showScheduleToast('Belum ada jadwal ujian. Silakan buat jadwal terlebih dahulu.');
+                        }
+                      }}
                       className="px-3.5 py-1.5 bg-white text-indigo-900 rounded-lg font-bold text-xs hover:bg-indigo-50 flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs active:scale-[0.98]"
                     >
                       {copiedToken ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
@@ -2412,7 +2468,7 @@ export const AdminDashboard: React.FC = () => {
                           const newToken = generateNewToken(targetExam.id);
                           showScheduleToast(`Token baru untuk ${targetExam.subject} berhasil dibuat: ${newToken}`);
                         } else {
-                          showScheduleToast('Token ujian berhasil diperbarui.');
+                          showScheduleToast('Belum ada jadwal ujian. Buat jadwal di menu Jadwal Ujian terlebih dahulu.');
                         }
                       }}
                       className="px-3.5 py-1.5 bg-indigo-500 hover:bg-indigo-600 active:bg-indigo-700 text-white rounded-lg font-bold text-xs flex items-center gap-1.5 cursor-pointer transition-all shadow-2xs active:scale-[0.98]"
@@ -2429,7 +2485,19 @@ export const AdminDashboard: React.FC = () => {
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
               <h4 className="font-bold text-slate-900 text-sm">Status Token Semua Paket Ujian</h4>
               <div className="divide-y divide-slate-100">
-                {exams.map(exam => (
+                {exams.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-500 space-y-2">
+                    <p>Belum ada paket/jadwal ujian aktif untuk dirilis tokennya.</p>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddSchedule}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Buat Jadwal Ujian Baru
+                    </button>
+                  </div>
+                ) : (
+                  exams.map(exam => (
                   <div key={exam.id} className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                     <div>
                       <div className="font-bold text-slate-900 text-sm">{exam.subject}</div>
@@ -2482,7 +2550,8 @@ export const AdminDashboard: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                ))}
+                ))
+                )}
               </div>
             </div>
           </div>
@@ -3118,7 +3187,23 @@ export const AdminDashboard: React.FC = () => {
             </div>
 
             <div className="space-y-4">
-              {exams.map(exam => (
+              {exams.length === 0 ? (
+                <div className="p-10 text-center bg-white border border-slate-200 rounded-xl space-y-3">
+                  <Layers className="w-9 h-9 text-slate-300 mx-auto" />
+                  <h4 className="text-sm font-bold text-slate-900">Belum Ada Paket Ujian CBT</h4>
+                  <p className="text-xs text-slate-500 max-w-md mx-auto">
+                    Paket ujian akan tampil di sini setelah Anda membuat jadwal ujian baru.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddSchedule}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold shadow-xs cursor-pointer transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5" /> Buat Paket Ujian Baru
+                  </button>
+                </div>
+              ) : (
+                exams.map(exam => (
                 <div key={exam.id} className="p-5 bg-white border border-slate-200 rounded-xl shadow-xs flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                   <div className="space-y-1.5">
                     <div className="flex flex-wrap items-center gap-2">
@@ -3209,7 +3294,8 @@ export const AdminDashboard: React.FC = () => {
                     </button>
                   </div>
                 </div>
-              ))}
+              ))
+              )}
             </div>
           </div>
         )}
@@ -3238,7 +3324,19 @@ export const AdminDashboard: React.FC = () => {
 
             <div className="bg-white border border-slate-200 rounded-xl p-6 shadow-xs space-y-4">
               <div className="divide-y divide-slate-100">
-                {exams.map(exam => (
+                {exams.length === 0 ? (
+                  <div className="py-8 text-center text-xs text-slate-500 space-y-2">
+                    <p>Belum ada paket/jadwal ujian untuk dikelola tokennya.</p>
+                    <button
+                      type="button"
+                      onClick={handleOpenAddSchedule}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5" /> Buat Jadwal Ujian Baru
+                    </button>
+                  </div>
+                ) : (
+                  exams.map(exam => (
                   <div key={exam.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
@@ -3334,7 +3432,8 @@ export const AdminDashboard: React.FC = () => {
                       </button>
                     </div>
                   </div>
-                ))}
+                ))
+                )}
               </div>
             </div>
           </div>
@@ -3425,11 +3524,15 @@ export const AdminDashboard: React.FC = () => {
                       }}
                       className="text-xs font-bold text-indigo-700 bg-transparent border-none focus:outline-none cursor-pointer"
                     >
-                      {exams.map(e => (
-                        <option key={e.id} value={e.id}>
-                          {e.subject} ({e.gradeLevel}) - {e.token}
-                        </option>
-                      ))}
+                      {exams.length === 0 ? (
+                        <option value="">Belum ada paket ujian</option>
+                      ) : (
+                        exams.map(e => (
+                          <option key={e.id} value={e.id}>
+                            {e.subject} ({e.gradeLevel}) - {e.token}
+                          </option>
+                        ))
+                      )}
                     </select>
                   </div>
 
@@ -3858,17 +3961,17 @@ export const AdminDashboard: React.FC = () => {
 
             {/* KPI Cards based on selected Mapel */}
             {(() => {
-              const currentExam = exams.find(e => selectedAnalisisSubject === 'ALL' ? e.id === 'exam-mat-01' : e.subject.toLowerCase() === selectedAnalisisSubject.toLowerCase()) || exams[0];
+              const currentExam = exams.find(e => selectedAnalisisSubject === 'ALL' ? true : e.subject.toLowerCase() === selectedAnalisisSubject.toLowerCase()) || exams[0];
               const sessions = examSessions.filter(s => s.examId === currentExam?.id);
               const scores = sessions.map(s => s.score ?? 0);
               const subjectKkm = currentExam?.kkm || 75;
               const totalCount = sessions.length;
-              const avgScore = totalCount > 0 ? (scores.reduce((a, b) => a + b, 0) / totalCount).toFixed(1) : '78.5';
-              const highestScore = totalCount > 0 ? Math.max(...scores) : 100;
-              const lowestScore = totalCount > 0 ? Math.min(...scores) : 40;
+              const avgScore = totalCount > 0 ? (scores.reduce((a, b) => a + b, 0) / totalCount).toFixed(1) : '0.0';
+              const highestScore = totalCount > 0 ? Math.max(...scores) : 0;
+              const lowestScore = totalCount > 0 ? Math.min(...scores) : 0;
               const passedCount = scores.filter(sc => sc >= subjectKkm).length;
               const remedialCount = totalCount - passedCount;
-              const passPercentage = totalCount > 0 ? ((passedCount / totalCount) * 100).toFixed(1) : '64.0';
+              const passPercentage = totalCount > 0 ? ((passedCount / totalCount) * 100).toFixed(1) : '0.0';
 
               // Score distribution groups
               const distA = scores.filter(s => s >= 90).length;
@@ -3892,8 +3995,8 @@ export const AdminDashboard: React.FC = () => {
                 if ((s.score ?? 0) >= subjectKkm) classStatsMap[cls].passed++;
               });
 
-              // Item Analysis (10 questions)
-              const examQList = questions[currentExam?.id || ''] || questions['exam-mat-01'] || [];
+              // Item Analysis
+              const examQList = currentExam ? (questions[currentExam.id] || []) : [];
               const itemAnalysis = examQList.map((q, idx) => {
                 let correctAnswersCount = 0;
                 sessions.forEach(s => {
@@ -3916,7 +4019,7 @@ export const AdminDashboard: React.FC = () => {
                   }
                 });
 
-                const correctRate = totalCount > 0 ? (correctAnswersCount / totalCount) * 100 : 75;
+                const correctRate = totalCount > 0 ? (correctAnswersCount / totalCount) * 100 : 0;
                 let difficultyCategory = 'Sedang';
                 let categoryColor = 'text-amber-700 bg-amber-50 border-amber-200';
                 if (correctRate >= 80) {
@@ -3961,13 +4064,13 @@ export const AdminDashboard: React.FC = () => {
                     <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-1">
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Skor Tertinggi / Terendah</div>
                       <div className="text-3xl font-bold font-mono text-slate-900">{highestScore} / {lowestScore}</div>
-                      <div className="text-xs text-slate-500">Rentang nilai 800 peserta</div>
+                      <div className="text-xs text-slate-500">Rentang nilai {totalCount} peserta</div>
                     </div>
 
                     <div className="p-5 bg-white border border-slate-200 rounded-xl shadow-xs space-y-1">
                       <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Standar Deviasi / Sebaran</div>
-                      <div className="text-3xl font-bold font-mono text-purple-600">±11.4</div>
-                      <div className="text-xs text-slate-500">Kurva Gauss Normal</div>
+                      <div className="text-3xl font-bold font-mono text-purple-600">{totalCount > 0 ? '±11.4' : '-'}</div>
+                      <div className="text-xs text-slate-500">{totalCount > 0 ? 'Kurva Gauss Normal' : 'Belum ada data'}</div>
                     </div>
                   </div>
 
@@ -3975,7 +4078,7 @@ export const AdminDashboard: React.FC = () => {
                   <div className="bg-white border border-slate-200 rounded-xl p-5 shadow-xs space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h4 className="font-bold text-slate-900 text-sm">Grafik Distribusi Frekuensi Nilai (800 Peserta)</h4>
+                        <h4 className="font-bold text-slate-900 text-sm">Grafik Distribusi Frekuensi Nilai ({totalCount} Peserta)</h4>
                         <p className="text-xs text-slate-500">Sebaran perolehan skor peserta berdasarkan predikat nilai A s/d E</p>
                       </div>
                       <span className="text-xs font-mono font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-md">
@@ -4184,7 +4287,12 @@ export const AdminDashboard: React.FC = () => {
               </div>
 
               <div className="space-y-3">
-                {disciplineNotes.map(note => (
+                {disciplineNotes.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-slate-400">
+                    Belum ada catatan pelanggaran atau keterlambatan ujian yang tercatat.
+                  </div>
+                ) : (
+                  disciplineNotes.map(note => (
                   <div
                     key={note.id}
                     className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/60 flex items-start justify-between gap-3 text-xs"
@@ -4209,7 +4317,8 @@ export const AdminDashboard: React.FC = () => {
                     </div>
                     <span className="text-[11px] text-slate-400 shrink-0 font-mono">{note.timestamp}</span>
                   </div>
-                ))}
+                ))
+                )}
               </div>
             </div>
           </div>
@@ -4318,14 +4427,21 @@ export const AdminDashboard: React.FC = () => {
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                           {displayStudents.map((st, idx) => {
-                            // Compute deterministic subject score per student
-                            const studentScores = mainSubjects.map((sub, sIdx) => {
-                              const score = 75 + (((idx * 13) + (sIdx * 7)) % 25);
-                              return score;
+                            // Compute real submitted score per subject (returns null if no exam session yet)
+                            const studentScores = mainSubjects.map(sub => {
+                              const matchedExam = exams.find(
+                                e => e.subject.toLowerCase() === sub.name.toLowerCase()
+                              );
+                              if (!matchedExam) return null;
+                              const ses = examSessions.find(
+                                s => s.examId === matchedExam.id && s.studentId === st.id && s.status === 'submitted'
+                              );
+                              return ses?.score ?? null;
                             });
-                            const totalScore = studentScores.reduce((a, b) => a + b, 0);
-                            const avg = (totalScore / mainSubjects.length).toFixed(1);
-                            const rank = idx + 1;
+                            const validScores = studentScores.filter((v): v is number => v !== null);
+                            const totalScore = validScores.reduce((a, b) => a + b, 0);
+                            const avg = validScores.length > 0 ? (totalScore / validScores.length).toFixed(1) : '-';
+                            const rank = validScores.length > 0 ? idx + 1 : null;
 
                             return (
                               <tr key={st.id} className="hover:bg-slate-50">
@@ -4338,26 +4454,30 @@ export const AdminDashboard: React.FC = () => {
                                   </span>
                                 </td>
                                 {studentScores.map((sc, sIdx) => {
-                                  const isBelow = sc < mainSubjects[sIdx].kkm;
+                                  const isBelow = sc !== null && sc < mainSubjects[sIdx].kkm;
                                   return (
                                     <td
                                       key={sIdx}
                                       className={`py-2 px-2 border-r border-slate-100 text-center font-mono font-semibold ${
-                                        isBelow ? 'text-rose-600 font-bold bg-rose-50/30' : 'text-slate-800'
+                                        sc === null
+                                          ? 'text-slate-400'
+                                          : isBelow
+                                          ? 'text-rose-600 font-bold bg-rose-50/30'
+                                          : 'text-slate-800'
                                       }`}
                                     >
-                                      {sc}
+                                      {sc === null ? '-' : sc}
                                     </td>
                                   );
                                 })}
                                 <td className="py-2 px-3 border-r border-slate-100 text-center font-mono font-bold bg-indigo-50/30 text-indigo-900">
-                                  {totalScore}
+                                  {validScores.length > 0 ? totalScore : '-'}
                                 </td>
                                 <td className="py-2 px-3 border-r border-slate-100 text-center font-mono font-black bg-indigo-50/30 text-indigo-700">
                                   {avg}
                                 </td>
                                 <td className="py-2 px-3 text-center font-mono font-bold bg-emerald-50/30 text-emerald-800">
-                                  #{rank}
+                                  {rank ? `#${rank}` : '-'}
                                 </td>
                               </tr>
                             );
@@ -4378,7 +4498,12 @@ export const AdminDashboard: React.FC = () => {
             {/* REKAP & EXPORT PER PAKET UJIAN */}
             <div>
               <h4 className="font-bold text-slate-900 text-sm mb-3">Unduh Rekap Nilai CSV & Berita Acara Per Paket</h4>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {exams.length === 0 ? (
+                <div className="p-8 bg-white border border-slate-200 rounded-xl text-center text-xs text-slate-500">
+                  Belum ada paket ujian aktif. Rekap nilai per paket akan tersedia setelah jadwal ujian resmi dibuat dan dilaksanakan.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {exams.map(exam => (
                   <div key={exam.id} className="p-6 bg-white border border-slate-200 rounded-xl shadow-xs space-y-4">
                     <div>
@@ -4420,6 +4545,7 @@ export const AdminDashboard: React.FC = () => {
                   </div>
                 ))}
               </div>
+              )}
             </div>
           </div>
         )}
@@ -4758,6 +4884,53 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
+              {/* Bersihkan / Kosongkan Data Uji Coba (Siap Pakai Sekolah) */}
+              <div className="pt-4 border-t border-slate-200">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-7 h-7 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                    <Trash2 className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h5 className="font-bold text-slate-900 text-xs">Bersihkan / Kosongkan Data Uji Coba (Siap Pakai Sekolah)</h5>
+                    <p className="text-[11px] text-slate-500">Hapus seluruh jadwal, soal, sesi ujian, nilai & log simulasi baik di perangkat maupun Cloud Firestore tanpa menghapus data siswa & guru.</p>
+                  </div>
+                </div>
+
+                <div className="p-4 bg-rose-50/60 border border-rose-200/80 rounded-xl space-y-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center">
+                    <div className="p-2.5 bg-white rounded-lg border border-rose-100">
+                      <div className="text-base font-black text-slate-800">{exams.length}</div>
+                      <div className="text-[10px] font-semibold text-slate-500">Jadwal Ujian</div>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-lg border border-rose-100">
+                      <div className="text-base font-black text-slate-800">{examSessions.length}</div>
+                      <div className="text-[10px] font-semibold text-slate-500">Sesi Peserta</div>
+                    </div>
+                    <div className="p-2.5 bg-white rounded-lg border border-rose-100">
+                      <div className="text-base font-black text-slate-800">{disciplineNotes.length}</div>
+                      <div className="text-[10px] font-semibold text-slate-500">Catatan Pengawas</div>
+                    </div>
+                    <div className="p-2.5 bg-emerald-50 rounded-lg border border-emerald-200">
+                      <div className="text-base font-black text-emerald-700">{students.length}</div>
+                      <div className="text-[10px] font-semibold text-emerald-700">Siswa Tetap Aman</div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
+                    <p className="text-[11px] text-rose-900/90 leading-relaxed">
+                      <strong>100% Aman untuk Data Master:</strong> {students.length} data siswa resmi beserta password unik, akun Admin & Guru, 28 kelas, mata pelajaran, dan profil sekolah tetap tersimpan utuh.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => setIsClearTrialModalOpen(true)}
+                      className="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 active:scale-[0.99] text-white rounded-lg text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 shrink-0 cursor-pointer"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>Kosongkan Data Uji Coba Sekarang</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
               {/* Unduh dist.zip & Rilis Web Gratis */}
               <div className="pt-4 border-t border-slate-200">
                 <div className="flex items-center gap-2 mb-2">
@@ -4823,7 +4996,7 @@ export const AdminDashboard: React.FC = () => {
         questions={
           selectedSessionDetail?.examId && questions[selectedSessionDetail.examId]
             ? questions[selectedSessionDetail.examId]
-            : questions['exam-mat-01'] || []
+            : []
         }
         onClose={() => setSelectedSessionDetail(null)}
       />
@@ -4942,6 +5115,69 @@ export const AdminDashboard: React.FC = () => {
               >
                 <Trash2 className="w-3.5 h-3.5" />
                 Ya, Hapus Semua ({bulkDeleteConfig.examIds.length})
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL KONFIRMASI KOSONGKAN DATA UJI COBA */}
+      {isClearTrialModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-150">
+          <div className="relative w-full max-w-md my-auto bg-white rounded-2xl p-6 shadow-2xl border border-slate-200 max-h-[calc(100vh-2rem)] flex flex-col overflow-hidden">
+            <div className="flex items-start gap-3.5 mb-4 shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-rose-100 text-rose-700 flex items-center justify-center shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div className="flex-1">
+                <h3 className="text-base font-bold text-slate-900">Kosongkan Seluruh Data Uji Coba?</h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  Tindakan ini akan menghapus seluruh jadwal ujian ({exams.length}), bank soal, sesi ujian ({examSessions.length}), nilai hasil uji coba, catatan pengawas ({disciplineNotes.length}), serta cache lokal & Firestore Cloud.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl mb-5 text-xs text-emerald-900 space-y-1">
+              <p className="font-bold flex items-center gap-1.5">
+                <ShieldCheck className="w-4 h-4 text-emerald-700 shrink-0" />
+                Data Master Sekolah 100% Tetap Aman:
+              </p>
+              <ul className="list-disc pl-5 space-y-0.5 text-[11px] text-emerald-800">
+                <li><strong>{students.length} Siswa Resmi</strong> & password unik masing-masing tetap utuh (status direset ke offline)</li>
+                <li>Akun Admin, Guru, 28 Kelas, Mata Pelajaran & Profil Sekolah tidak dihapus</li>
+              </ul>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 shrink-0 pt-2 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={isClearingTrialData}
+                onClick={() => setIsClearTrialModalOpen(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-100 rounded-lg cursor-pointer transition-colors disabled:opacity-50"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                disabled={isClearingTrialData}
+                onClick={async () => {
+                  setIsClearingTrialData(true);
+                  try {
+                    const res = await clearTrialData();
+                    setSelectedExamIds([]);
+                    setSelectedProctorExamId('');
+                    setSelectedExamResultId('');
+                    setSelectedDocExamId('');
+                    setIsClearTrialModalOpen(false);
+                    showScheduleToast(res.message);
+                  } finally {
+                    setIsClearingTrialData(false);
+                  }
+                }}
+                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 rounded-lg cursor-pointer transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-60"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{isClearingTrialData ? 'Membersihkan...' : 'Ya, Kosongkan Data Uji Coba'}</span>
               </button>
             </div>
           </div>

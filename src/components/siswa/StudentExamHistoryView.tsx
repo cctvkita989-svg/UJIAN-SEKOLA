@@ -73,7 +73,7 @@ export const StudentExamHistoryView: React.FC = () => {
   // 1. Merge submitted sessions and student grades into a unified exam history list
   const historyItems: MergedExamHistoryItem[] = useMemo(() => {
     const studentId = currentUser.id || 'usr-siswa-1';
-    const myGrades: StudentSubjectGrade[] = studentGrades[studentId] || studentGrades['usr-siswa-1'] || [];
+    const myGrades: StudentSubjectGrade[] = studentGrades[studentId] || [];
     const mySessions = examSessions.filter(
       s => s.studentId === studentId && s.status === 'submitted'
     );

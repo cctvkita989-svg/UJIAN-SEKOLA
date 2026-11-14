@@ -371,6 +371,48 @@ class OfflineStorageManager {
       }
     } catch {}
   }
+
+  // Clear all exam caches (localStorage session/answer keys + IndexedDB stores)
+  public async clearAllExamCaches(): Promise<void> {
+    try {
+      const keysToRemove: string[] = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const k = localStorage.key(i);
+        if (
+          k &&
+          (k.startsWith('educbt_answers_') ||
+            k.startsWith('educbt_progress_') ||
+            k.startsWith('educbt_session_') ||
+            k.startsWith('educbt_submitted_'))
+        ) {
+          keysToRemove.push(k);
+        }
+      }
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+      localStorage.removeItem('educbt_submitted_ids');
+      localStorage.removeItem('educbt_known_session_ids');
+      localStorage.removeItem('educbt_offline_sync_queue');
+    } catch (e) {
+      console.warn('[OfflineStorage] Clear localStorage cache warning:', e);
+    }
+
+    try {
+      const db = await this.initDB();
+      if (db) {
+        await new Promise<void>((resolve) => {
+          const tx = db.transaction([STORE_ANSWERS, STORE_SESSIONS, STORE_QUEUE], 'readwrite');
+          tx.objectStore(STORE_ANSWERS).clear();
+          tx.objectStore(STORE_SESSIONS).clear();
+          tx.objectStore(STORE_QUEUE).clear();
+          tx.oncomplete = () => resolve();
+          tx.onerror = () => resolve();
+          tx.onabort = () => resolve();
+        });
+      }
+    } catch (e) {
+      console.warn('[OfflineStorage] Clear IndexedDB cache warning:', e);
+    }
+  }
 }
 
 export const offlineStorage = new OfflineStorageManager();

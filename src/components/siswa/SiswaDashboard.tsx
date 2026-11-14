@@ -134,7 +134,7 @@ export const SiswaDashboard: React.FC = () => {
   };
 
   // Student grades data
-  const myGrades = studentGrades[currentUser.id] || studentGrades['usr-siswa-1'] || [];
+  const myGrades = studentGrades[currentUser.id] || [];
   const completedGrades = myGrades.filter(g => g.status !== 'Belum Ujian');
   const avgScore =
     completedGrades.length > 0
@@ -142,16 +142,15 @@ export const SiswaDashboard: React.FC = () => {
           completedGrades.reduce((sum, g) => sum + g.score, 0) / completedGrades.length
         ).toFixed(1)
       : '0';
-  const highestGrade =
-    completedGrades.length > 0 ? Math.max(...completedGrades.map(g => g.score)) : 0;
-  const lowestGrade =
-    completedGrades.length > 0 ? Math.min(...completedGrades.map(g => g.score)) : 0;
+  const sortedByScore = [...completedGrades].sort((a, b) => b.score - a.score);
+  const highestGradeItem = sortedByScore[0];
+  const lowestGradeItem = sortedByScore[sortedByScore.length - 1];
+  const highestGrade = highestGradeItem ? highestGradeItem.score : 0;
+  const lowestGrade = lowestGradeItem ? lowestGradeItem.score : 0;
   const passedCount = myGrades.filter(g => g.status === 'Tuntas').length;
 
   // Student discipline notes
-  const myDisciplineNotes =
-    disciplineNotes.filter(n => n.studentId === currentUser.id) ||
-    disciplineNotes.filter(n => n.studentId === 'usr-siswa-1');
+  const myDisciplineNotes = disciplineNotes.filter(n => n.studentId === currentUser.id);
 
   // Filter exams specifically relevant for this student (matching student's religion and class/grade)
   const studentAgama = currentUser.agama || 'Islam';
@@ -488,11 +487,35 @@ export const SiswaDashboard: React.FC = () => {
           <div>
             <h2 className="text-lg font-bold text-slate-900">Jadwal Asesmen Berbasis Komputer</h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Satu sesi sedang aktif berlangsung dan satu sesi belum dimulai (menunggu jadwal).
+              {relevantExams.length === 0
+                ? 'Saat ini belum ada jadwal ujian aktif yang dirilis untuk kelas Anda.'
+                : upcomingExam
+                ? 'Satu sesi sedang aktif berlangsung dan satu sesi belum dimulai (menunggu jadwal).'
+                : 'Berikut jadwal asesmen CBT yang tersedia untuk sesi Anda.'}
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {relevantExams.length === 0 ? (
+            <div className="bg-white border border-slate-200 rounded-2xl p-8 sm:p-10 text-center shadow-xs space-y-4">
+              <div className="w-14 h-14 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mx-auto border border-indigo-100">
+                <Calendar className="w-7 h-7" />
+              </div>
+              <div className="max-w-md mx-auto space-y-1.5">
+                <h3 className="text-base font-bold text-slate-900">Belum Ada Jadwal Ujian Aktif</h3>
+                <p className="text-xs text-slate-500 leading-relaxed">
+                  Panitia & Proktor ujian belum merilis jadwal ujian resmi untuk{' '}
+                  <strong className="text-slate-700">Kelas {currentUser.kelas || '-'}</strong> ({studentAgama}).
+                  Silakan tunggu instruksi pengawas ruang atau refresh halaman saat sesi ujian dibuka.
+                </p>
+              </div>
+              <div className="inline-flex flex-wrap items-center justify-center gap-2 text-[11px] text-slate-600 bg-slate-50 border border-slate-200 px-3.5 py-2 rounded-xl">
+                <span>Ruang: <strong className="text-slate-800">{currentUser.ruangUjian || `Ruang Kelas ${currentUser.kelas || '-'}`}</strong></span>
+                <span>·</span>
+                <span>Status Akun: <strong className="text-emerald-700">Siap Mengikuti Ujian</strong></span>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* UJIAN 1: SEDANG BERLANGSUNG ATAU SUDAH SELESAI */}
             {ongoingExam && (() => {
               const ongoingState = getExamStudentState(ongoingExam.id);
@@ -811,6 +834,7 @@ export const SiswaDashboard: React.FC = () => {
               );
             })()}
           </div>
+          )}
         </div>
       )}
 
@@ -861,7 +885,9 @@ export const SiswaDashboard: React.FC = () => {
               <div className="text-3xl font-mono font-bold text-emerald-700 mt-1">
                 {highestGrade}
               </div>
-              <span className="text-xs text-slate-500 mt-1 block">PABP (Agama Islam)</span>
+              <span className="text-xs text-slate-500 mt-1 block">
+                {highestGradeItem ? highestGradeItem.subject : 'Belum ada nilai'}
+              </span>
             </div>
 
             <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
@@ -871,7 +897,9 @@ export const SiswaDashboard: React.FC = () => {
               <div className="text-3xl font-mono font-bold text-rose-600 mt-1">
                 {lowestGrade}
               </div>
-              <span className="text-xs text-slate-500 mt-1 block">Fisika (Remedial)</span>
+              <span className="text-xs text-slate-500 mt-1 block">
+                {lowestGradeItem ? `${lowestGradeItem.subject} (${lowestGradeItem.status})` : 'Belum ada nilai'}
+              </span>
             </div>
 
             <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
@@ -894,7 +922,9 @@ export const SiswaDashboard: React.FC = () => {
                   Klik tombol pada kolom keterangan untuk melihat analisis jawaban benar dan salah tiap mata pelajaran.
                 </p>
               </div>
-              <span className="text-xs text-slate-500 font-medium">Semester Genap 2024/2025</span>
+              <span className="text-xs text-slate-500 font-medium">
+                {schoolProfile.semester} {schoolProfile.academicYear}
+              </span>
             </div>
 
             <div className="overflow-x-auto">
@@ -910,7 +940,14 @@ export const SiswaDashboard: React.FC = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
-                  {myGrades.map(g => {
+                  {myGrades.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} className="py-10 text-center text-slate-400">
+                        Belum ada data nilai ujian yang tercatat. Nilai akan muncul setelah Anda menyelesaikan ujian CBT.
+                      </td>
+                    </tr>
+                  ) : (
+                    myGrades.map(g => {
                     const matchedExam = exams.find(
                       e => e.subject.toLowerCase() === g.subject.toLowerCase() ||
                            e.id.toLowerCase() === g.code.toLowerCase() ||
@@ -961,7 +998,8 @@ export const SiswaDashboard: React.FC = () => {
                         </td>
                       </tr>
                     );
-                  })}
+                  })
+                  )}
                 </tbody>
               </table>
             </div>

@@ -253,18 +253,30 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                 onChange={e => setSelectedExamFilter(e.target.value)}
                 className="py-1.5 px-3 bg-white text-slate-900 text-xs font-bold rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-xs cursor-pointer max-w-md"
               >
-                {exams.map(ex => (
-                  <option key={ex.id} value={ex.id}>
-                    {ex.title} ({ex.subject} - {ex.gradeLevel})
-                  </option>
-                ))}
-                <option value="ALL">Semua Paket Ujian</option>
+                {exams.length === 0 ? (
+                  <option value="ALL">Belum Ada Jadwal Ujian Aktif (Mode Standby Ruang)</option>
+                ) : (
+                  <>
+                    {exams.map(ex => (
+                      <option key={ex.id} value={ex.id}>
+                        {ex.title} ({ex.subject} - {ex.gradeLevel})
+                      </option>
+                    ))}
+                    <option value="ALL">Semua Paket Ujian</option>
+                  </>
+                )}
               </select>
             </div>
 
             {(() => {
               const activeExam = exams.find(e => e.id === selectedExamFilter) || exams[0];
-              if (!activeExam) return null;
+              if (!activeExam) {
+                return (
+                  <div className="text-xs text-indigo-200 pt-0.5">
+                    Belum ada jadwal ujian dibuat. Seluruh {students.length} siswa resmi berada dalam status <strong className="text-white">Standby / Offline</strong>.
+                  </div>
+                );
+              }
               return (
                 <div className="text-xs text-slate-300 flex flex-wrap items-center gap-3 pt-0.5">
                   <span>Guru/Pengawas: <strong className="text-white">{activeExam.teacherName}</strong></span>

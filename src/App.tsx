@@ -7,6 +7,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { GuruDashboard } from './components/guru/GuruDashboard';
 import { SiswaDashboard } from './components/siswa/SiswaDashboard';
 import { CBTExamRoom } from './components/siswa/CBTExamRoom';
+import { OfflineIndicator } from './components/common/OfflineIndicator';
 
 const MainAppContent: React.FC = () => {
   const { isAuthenticated, currentRole, activeExamTaking, schoolProfile } = useCBT();
@@ -61,6 +62,7 @@ export default function App() {
   return (
     <CBTProvider>
       <MainAppContent />
+      <OfflineIndicator />
     </CBTProvider>
   );
 }

@@ -56,7 +56,9 @@ import {
   ArrowRight,
   LayoutGrid,
   List,
-  UserX
+  UserX,
+  Smartphone,
+  Globe
 } from 'lucide-react';
 import { AddStudentModal } from './AddStudentModal';
 import { StudentCardModal } from './StudentCardModal';
@@ -211,6 +213,12 @@ export const AdminDashboard: React.FC = () => {
   const [scheduleToast, setScheduleToast] = useState<string | null>(null);
   const [isClearTrialModalOpen, setIsClearTrialModalOpen] = useState(false);
   const [isClearingTrialData, setIsClearingTrialData] = useState(false);
+  const [deployUrlInput, setDeployUrlInput] = useState(() =>
+    typeof window !== 'undefined' && window.location.hostname.includes('vercel.app')
+      ? window.location.origin
+      : 'https://ujian-sekola.vercel.app'
+  );
+  const [copiedDeployUrl, setCopiedDeployUrl] = useState(false);
 
   const showScheduleToast = (msg: string) => {
     setScheduleToast(msg);
@@ -4931,30 +4939,150 @@ export const AdminDashboard: React.FC = () => {
                 </div>
               </div>
 
-              {/* Unduh dist.zip & Rilis Web Gratis */}
-              <div className="pt-4 border-t border-slate-200">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold text-xs">
-                    📦
+              {/* Rilis Online (Vercel Gratis) & Panduan APK / Exambro Sekolah */}
+              <div className="pt-4 border-t border-slate-200 space-y-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0">
+                    <Globe className="w-4 h-4" />
                   </div>
                   <div>
-                    <h5 className="font-bold text-slate-900 text-xs">Unduh Paket Web Siap Pakai (dist.zip)</h5>
-                    <p className="text-[11px] text-slate-500">Gunakan untuk hosting gratis di Netlify Drop atau server offline Wi-Fi sekolah (100% Bebas Biaya)</p>
+                    <h5 className="font-bold text-slate-900 text-xs">Rilis Online (Vercel Gratis) & Panduan APK / Exambro Android</h5>
+                    <p className="text-[11px] text-slate-500">Sistem sudah dikonfigurasi untuk Vercel (`vercel.json`), PWA Offline, dan pembungkusan APK / Exambro siswa.</p>
                   </div>
                 </div>
 
-                <div className="p-4 bg-emerald-50/50 border border-emerald-200/80 rounded-xl space-y-3">
-                  <p className="text-xs text-stone-700 leading-relaxed">
-                    Paket rilis ini berisi seluruh sistem CBT (kode HTML/CSS/JS, bank soal, jadwal, dan simulasi siswa). Anda tidak perlu membayar server cloud atau kartu kredit.
-                  </p>
-                  <div className="flex items-center gap-2.5 flex-wrap">
+                {/* Checklist Kesiapan Sekolah */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                    <div className="text-[10px] font-semibold text-emerald-700">Data Uji Coba</div>
+                    <div className="text-xs font-bold text-emerald-950 mt-0.5">
+                      {exams.length === 0 ? 'Bersih (0 Uji Coba)' : `${exams.length} Jadwal Aktif`}
+                    </div>
+                  </div>
+                  <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                    <div className="text-[10px] font-semibold text-emerald-700">Peserta Resmi</div>
+                    <div className="text-xs font-bold text-emerald-950 mt-0.5">{students.length} Siswa Siap</div>
+                  </div>
+                  <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                    <div className="text-[10px] font-semibold text-emerald-700">Konfigurasi Vercel</div>
+                    <div className="text-xs font-bold text-emerald-950 mt-0.5">vercel.json & Build Siap</div>
+                  </div>
+                  <div className="p-2.5 bg-emerald-50/70 border border-emerald-200 rounded-xl">
+                    <div className="text-[10px] font-semibold text-emerald-700">Standar APK / PWA</div>
+                    <div className="text-xs font-bold text-emerald-950 mt-0.5">PNG 192/512 & SW Siap</div>
+                  </div>
+                </div>
+
+                {/* URL Ujian Sekolah untuk Exambro & PWABuilder */}
+                <div className="p-4 bg-indigo-50/60 border border-indigo-200/80 rounded-xl space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-indigo-950 mb-1">
+                      URL Ujian Sekolah (untuk Exambro Siswa & Pembuatan APK)
+                    </label>
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <input
+                        type="url"
+                        value={deployUrlInput}
+                        onChange={e => setDeployUrlInput(e.target.value)}
+                        placeholder="https://ujian-sekola.vercel.app"
+                        className="flex-1 px-3 py-2 text-xs font-mono bg-white border border-indigo-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500/25 focus:border-indigo-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (navigator.clipboard) {
+                            navigator.clipboard.writeText(deployUrlInput);
+                            setCopiedDeployUrl(true);
+                            setTimeout(() => setCopiedDeployUrl(false), 2000);
+                          }
+                        }}
+                        className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 shrink-0 cursor-pointer transition-colors"
+                      >
+                        {copiedDeployUrl ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        <span>{copiedDeployUrl ? 'Tersalin!' : 'Salin URL'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (typeof window !== 'undefined') {
+                            setDeployUrlInput(window.location.origin);
+                          }
+                        }}
+                        className="px-3 py-2 bg-white hover:bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-lg text-xs font-semibold shrink-0 cursor-pointer transition-colors"
+                      >
+                        Pakai URL Saat Ini
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 2 Kolom Panduan: Vercel & Android Exambro/APK */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                    <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+                        <Server className="w-3.5 h-3.5 text-indigo-600" />
+                        <span>Langkah 1: Deploy Gratis ke Vercel</span>
+                      </div>
+                      <ol className="text-[11px] text-slate-600 space-y-1.5 list-decimal pl-4 leading-relaxed">
+                        <li>Upload/sinkronkan proyek ini ke GitHub Anda (atau jalankan <code className="font-mono bg-slate-100 px-1 rounded">npx vercel --prod</code>).</li>
+                        <li>Buka <strong>vercel.com/new</strong> lalu Import repositori (otomatis terdeteksi sebagai <strong>Vite</strong> dengan output <code className="font-mono bg-slate-100 px-1 rounded">dist</code>).</li>
+                        <li>Setelah muncul link <code className="font-mono bg-slate-100 px-1 rounded">https://...vercel.app</code>, masukkan link tersebut ke kolom URL di atas.</li>
+                        <li>Buka <strong>Firebase Console → Authentication → Settings → Authorized domains</strong>, tambahkan domain Vercel Anda agar akses selalu aman.</li>
+                      </ol>
+                      <div className="pt-1">
+                        <a
+                          href="https://vercel.com/new"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-semibold text-[11px] transition-colors"
+                        >
+                          Buka Vercel Dashboard <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 bg-white border border-slate-200 rounded-xl space-y-2">
+                      <div className="flex items-center gap-1.5 font-bold text-xs text-slate-900">
+                        <Smartphone className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Langkah 2: Jalankan di HP Siswa (Exambro / APK)</span>
+                      </div>
+                      <ul className="text-[11px] text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+                        <li>
+                          <strong>Opsi A — Exambro Android (Paling Aman Anti-Curang):</strong> Siswa instal aplikasi <em>Exambro / CBT Exam Browser</em> gratis dari Play Store, lalu masukkan URL Vercel sekolah untuk mengunci layar, split-screen & screenshot.
+                        </li>
+                        <li>
+                          <strong>Opsi B — File APK Sekolah (PWABuilder):</strong> Buka <strong>pwabuilder.com</strong>, masukkan URL Vercel sekolah, pilih <em>Package for Stores → Android</em> lalu unduh file <code className="font-mono bg-slate-100 px-1 rounded">.apk</code> siap sebar.
+                        </li>
+                      </ul>
+                      <div className="pt-1 flex flex-wrap gap-2">
+                        <a
+                          href="https://www.pwabuilder.com/"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] transition-colors"
+                        >
+                          Buka PWABuilder (Buat APK) <ExternalLink className="w-3 h-3" />
+                        </a>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Alternatif Paket Offline / Netlify Drop */}
+                <div className="p-4 bg-emerald-50/50 border border-emerald-200/80 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div>
+                    <h6 className="font-bold text-xs text-emerald-950">Alternatif Hosting Instan / Server Wi-Fi Lokal (`dist.zip`)</h6>
+                    <p className="text-[11px] text-emerald-800/90 mt-0.5">
+                      Unduh bundel statis siap pakai untuk diunggah ke Netlify Drop atau server lokal ruang lab sekolah.
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap shrink-0">
                     <a
                       href="/dist.zip"
                       download="dist.zip"
-                      className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
                     >
-                      <FileDown className="w-4 h-4" />
-                      Unduh dist.zip (800 KB)
+                      <FileDown className="w-3.5 h-3.5" />
+                      Unduh dist.zip
                     </a>
                     <a
                       href="https://app.netlify.com/drop"

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { ResetPasswordModal } from './ResetPasswordModal';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
+import { PWAInstallButton } from '../common/PWAInstallButton';
 
 export const LoginPage: React.FC = () => {
   const { login, schoolProfile } = useCBT();
@@ -46,8 +47,9 @@ export const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#eef4fc] app-bg-root bg-[radial-gradient(ellipse_80%_80%_at_50%_-20%,rgba(37,99,235,0.12),rgba(255,255,255,0))] flex flex-col justify-center py-12 sm:px-6 lg:px-8 selection:bg-blue-100 relative transition-colors duration-200">
-      {/* Top Corner Mode Switcher */}
-      <div className="absolute top-4 right-4 z-20">
+      {/* Top Corner Install & Mode Switcher */}
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2">
+        <PWAInstallButton compact />
         <ThemeSwitcher />
       </div>
 

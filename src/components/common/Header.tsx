@@ -3,6 +3,7 @@ import { useCBT } from '../../context/CBTContext';
 import { ShieldCheck, GraduationCap, UserCheck, ArrowRightLeft, LogOut } from 'lucide-react';
 import { Role } from '../../types/cbt';
 import { ThemeSwitcher } from './ThemeSwitcher';
+import { PWAInstallButton } from './PWAInstallButton';
 
 interface HeaderProps {
   onOpenRoleSwitcher: () => void;
@@ -88,6 +89,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenRoleSwitcher }) => {
           </div>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <PWAInstallButton compact />
             <ThemeSwitcher />
 
             <button

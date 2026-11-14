@@ -105,20 +105,81 @@ export const CBTExamRoom: React.FC = () => {
     prevOnlineRef.current = isOnline;
   }, [isOnline]);
 
-  // Anti-cheat window blur / visibility detection
+  const lastViolationTimestampRef = useRef<number>(0);
+
+  // Anti-cheat: window blur / visibility detection + block copy, paste, cut, right-click, long-press & shortcuts
   useEffect(() => {
     if (!activeExamTaking || activeExamTaking.session.status !== 'in_progress') return;
 
+    const triggerViolationSafe = () => {
+      const now = Date.now();
+      if (now - lastViolationTimestampRef.current < 1500) return;
+      lastViolationTimestampRef.current = now;
+      recordExamViolation();
+      setShowViolationAlert(true);
+    };
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        recordExamViolation();
-        setShowViolationAlert(true);
+        triggerViolationSafe();
+      }
+    };
+
+    const handleWindowBlur = () => {
+      triggerViolationSafe();
+    };
+
+    const preventClipboardOrMenu = (e: Event) => {
+      e.preventDefault();
+    };
+
+    const preventSelectOutsideInput = (e: Event) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA')) return;
+      e.preventDefault();
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      const hasCtrlOrMeta = e.ctrlKey || e.metaKey;
+
+      if (e.key === 'PrintScreen' || e.key === 'F12') {
+        e.preventDefault();
+        return;
+      }
+
+      if (hasCtrlOrMeta && ['c', 'v', 'x', 'a', 's', 'p', 'u'].includes(key)) {
+        const target = e.target as HTMLElement | null;
+        const isTextInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+        if (key === 'a' && isTextInput) return;
+        e.preventDefault();
+      }
+
+      if (hasCtrlOrMeta && e.shiftKey && ['i', 'j', 'c', 's'].includes(key)) {
+        e.preventDefault();
       }
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    document.addEventListener('copy', preventClipboardOrMenu);
+    document.addEventListener('cut', preventClipboardOrMenu);
+    document.addEventListener('paste', preventClipboardOrMenu);
+    document.addEventListener('contextmenu', preventClipboardOrMenu);
+    document.addEventListener('dragstart', preventClipboardOrMenu);
+    document.addEventListener('selectstart', preventSelectOutsideInput);
+    document.addEventListener('keydown', handleKeyDown);
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      document.removeEventListener('copy', preventClipboardOrMenu);
+      document.removeEventListener('cut', preventClipboardOrMenu);
+      document.removeEventListener('paste', preventClipboardOrMenu);
+      document.removeEventListener('contextmenu', preventClipboardOrMenu);
+      document.removeEventListener('dragstart', preventClipboardOrMenu);
+      document.removeEventListener('selectstart', preventSelectOutsideInput);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [activeExamTaking?.session?.status]);
 
@@ -421,6 +482,8 @@ export const CBTExamRoom: React.FC = () => {
 
   return (
     <div className={`min-h-screen flex flex-col justify-between transition-colors ${
+      activeExamTaking.session.status === 'in_progress' ? 'exam-kiosk-shield' : ''
+    } ${
       isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#eef4fc] text-slate-900'
     }`}>
       {/* OFFLINE STATUS BANNER (REASSURING NOTIFICATION) */}

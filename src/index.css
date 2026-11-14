@@ -752,10 +752,28 @@ html.dark ::-webkit-scrollbar-thumb {
 }
 
 
+/* Exam Room Anti-Copy, Anti-Long-Press & Anti-Print Shield */
+.exam-kiosk-shield {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+.exam-kiosk-shield input,
+.exam-kiosk-shield textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* Print Mode Safety (Always Clean White Paper Format) */
 @media print {
   body, html {
     background-color: #ffffff !important;
     color: #000000 !important;
   }
+
+  .exam-kiosk-shield {
+    display: none !important;
+  }
 }
+

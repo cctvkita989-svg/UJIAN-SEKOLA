@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+
+        <!-- Discrete Top Kiosk Control Strip -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="36dp"
+            android:background="#0F172A"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="12dp"
+            android:paddingEnd="8dp">
+
+            <TextView
+                android:id="@+id/tvPinStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="Mode Kiosk Terkunci"
+                android:textColor="#34D399"
+                android:textSize="11sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnRefreshWeb"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:backgroundTint="#1E293B"
+                android:minWidth="0dp"
+                android:paddingStart="10dp"
+                android:paddingTop="0dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="0dp"
+                android:text="Muat Ulang"
+                android:textAllCaps="false"
+                android:textColor="#E2E8F0"
+                android:textSize="10sp" />
+
+            <Button
+                android:id="@+id/btnProctorExit"
+                android:layout_width="wrap_content"
+                android:layout_height="28dp"
+                android:layout_marginStart="6dp"
+                android:backgroundTint="#BE123C"
+                android:minWidth="0dp"
+                android:paddingStart="10dp"
+                android:paddingTop="0dp"
+                android:paddingEnd="10dp"
+                android:paddingBottom="0dp"
+                android:text="Keluar (PIN)"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <!-- Protected Exam WebView -->
+        <WebView
+            android:id="@+id/examWebView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1" />
+    </LinearLayout>
+
+    <!-- Blocking Overlay When Screen Pinning Is Not Active -->
+    <LinearLayout
+        android:id="@+id/pinningOverlay"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="#E60F172A"
+        android:clickable="true"
+        android:focusable="true"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="24dp"
+        android:visibility="gone">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="#FFFFFF"
+            android:elevation="8dp"
+            android:orientation="vertical"
+            android:padding="22dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Mode Sematkan Aplikasi (Pinning) Wajib Aktif"
+                android:textColor="#0F172A"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvPinOverlayDesc"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:lineSpacingExtra="3dp"
+                android:text="Untuk menjaga kejujuran ujian, aplikasi harus disematkan (Screen Pinning). Klik tombol di bawah lalu pilih 'Mengerti / Ya' pada dialog sistem Android.\n\nJika pinning dilepas saat ujian berlangsung, layar HP akan terkunci dan pelanggaran tercatat."
+                android:textColor="#334155"
+                android:textSize="13sp" />
+
+            <Button
+                android:id="@+id/btnActivatePinning"
+                android:layout_width="match_parent"
+                android:layout_height="46dp"
+                android:layout_marginTop="18dp"
+                android:backgroundTint="#2563EB"
+                android:text="Aktifkan Pinning Sekarang"
+                android:textAllCaps="false"
+                android:textColor="#FFFFFF"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnOpenPinSettings"
+                android:layout_width="match_parent"
+                android:layout_height="42dp"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#F1F5F9"
+                android:text="Buka Pengaturan Keamanan / Sematkan HP"
+                android:textAllCaps="false"
+                android:textColor="#1E293B"
+                android:textSize="12sp" />
+
+            <Button
+                android:id="@+id/btnOverlayProctorBypass"
+                android:layout_width="match_parent"
+                android:layout_height="40dp"
+                android:layout_marginTop="8dp"
+                android:backgroundTint="#FFF1F2"
+                android:text="Keluar / Buka Kunci (PIN Pengawas)"
+                android:textAllCaps="false"
+                android:textColor="#BE123C"
+                android:textSize="12sp" />
+        </LinearLayout>
+    </LinearLayout>
+
+</FrameLayout>

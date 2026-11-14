@@ -5047,20 +5047,31 @@ export const AdminDashboard: React.FC = () => {
                       </div>
                       <ul className="text-[11px] text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
                         <li>
-                          <strong>Opsi A — Exambro Android (Paling Aman Anti-Curang):</strong> Siswa instal aplikasi <em>Exambro / CBT Exam Browser</em> gratis dari Play Store, lalu masukkan URL Vercel sekolah untuk mengunci layar, split-screen & screenshot.
+                          <strong>Opsi A — APK Kiosk Sekolah (Auto Pinning + Anti-Screenshot):</strong> Unduh proyek Android Kiosk siap build (memakai <code className="font-mono bg-slate-100 px-1 rounded">startLockTask</code> pinning, kembali ke layar kunci bila dilepas, blokir screenshot <code className="font-mono bg-slate-100 px-1 rounded">FLAG_SECURE</code>, anti-copas, PIN keluar <code className="font-mono bg-slate-100 px-1 rounded">123456</code>). Upload ke GitHub baru → otomatis jadi file <code className="font-mono bg-slate-100 px-1 rounded">.apk</code> di tab <em>Actions</em>.
                         </li>
                         <li>
-                          <strong>Opsi B — File APK Sekolah (PWABuilder):</strong> Buka <strong>pwabuilder.com</strong>, masukkan URL Vercel sekolah, pilih <em>Package for Stores → Android</em> lalu unduh file <code className="font-mono bg-slate-100 px-1 rounded">.apk</code> siap sebar.
+                          <strong>Opsi B — Exambro Play Store:</strong> Instal <em>Exambro</em> gratis di Play Store dan masukkan URL <code className="font-mono bg-slate-100 px-1 rounded">ujian-sekola.vercel.app</code>.
+                        </li>
+                        <li>
+                          <strong>Opsi C — APK TWA (PWABuilder):</strong> Gunakan <strong>pwabuilder.com</strong> + file <code className="font-mono bg-slate-100 px-1 rounded">assetlinks.json</code> (sudah terpasang).
                         </li>
                       </ul>
                       <div className="pt-1 flex flex-wrap gap-2">
+                        <a
+                          href="/android-kiosk.zip"
+                          download="android-kiosk-smpn1.zip"
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-[11px] transition-colors cursor-pointer"
+                        >
+                          <FileDown className="w-3.5 h-3.5" />
+                          Unduh Proyek APK Kiosk (89 KB)
+                        </a>
                         <a
                           href="https://www.pwabuilder.com/"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-[11px] transition-colors"
                         >
-                          Buka PWABuilder (Buat APK) <ExternalLink className="w-3 h-3" />
+                          Buka PWABuilder <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
                     </div>

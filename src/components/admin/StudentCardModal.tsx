@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { useCBT } from '../../context/CBTContext';
-import { X, Printer, QrCode, Download, CheckCircle2 } from 'lucide-react';
+import { X, Printer, Download, CheckCircle2 } from 'lucide-react';
 import { User } from '../../types/cbt';
+import { downloadSingleStudentCardPdf } from '../../utils/pdfGenerator';
 
 interface StudentCardModalProps {
   student: User | null;
@@ -14,89 +15,23 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onC
 
   if (!student) return null;
 
-  const handleDownload = () => {
-    const cardEl = document.getElementById('printable-student-card');
-    if (!cardEl) return;
-
-    const html = `<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <title>Kartu_Ujian_${student.name.replace(/\s+/g, '_')}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @page { size: A4 portrait; margin: 15mm; }
-    body { font-family: sans-serif; padding: 20px; background: #fff; color: #1e293b; }
-    @media print { body { padding: 0 !important; } }
-  </style>
-</head>
-<body>
-  <div style="max-width: 500px; margin: 20px auto;">
-    ${cardEl.innerHTML}
-  </div>
-  <script>
-    window.addEventListener('load', function() {
-      setTimeout(function() { window.print(); }, 400);
-    });
-  </script>
-</body>
-</html>`;
-
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `Kartu_Ujian_${student.name.replace(/\s+/g, '_')}.html`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 1000);
-
-    setToastMessage('Kartu peserta berhasil diunduh. Buka file untuk langsung mencetak atau simpan PDF.');
-    setTimeout(() => setToastMessage(null), 5000);
+  const handleDownloadPdf = () => {
+    try {
+      const fileName = downloadSingleStudentCardPdf({
+        student,
+        schoolProfile,
+      });
+      setToastMessage(`File PDF "${fileName}" berhasil diunduh!`);
+      setTimeout(() => setToastMessage(null), 5000);
+    } catch (err) {
+      console.error('Gagal mengunduh PDF Kartu Peserta:', err);
+      setToastMessage('Gagal membuat file PDF. Silakan coba kembali.');
+      setTimeout(() => setToastMessage(null), 5000);
+    }
   };
 
   const handlePrint = () => {
-    const cardEl = document.getElementById('printable-student-card');
-    let printed = false;
-    try {
-      if (cardEl) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = 'none';
-        document.body.appendChild(iframe);
-        const doc = iframe.contentWindow?.document;
-        if (doc) {
-          doc.open();
-          doc.write(`<!DOCTYPE html><html><head><script src="https://cdn.tailwindcss.com"></script></head><body style="padding:15px;">${cardEl.innerHTML}</body></html>`);
-          doc.close();
-          setTimeout(() => {
-            try {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-              printed = true;
-            } catch (e) {}
-          }, 350);
-        }
-      }
-    } catch (e) {}
-
-    try {
-      window.print();
-      printed = true;
-    } catch (e) {}
-
-    if (printed) {
-      setToastMessage('Dialog cetak kartu dibuka.');
-    } else {
-      handleDownload();
-    }
+    handleDownloadPdf();
   };
 
   return (
@@ -122,101 +57,82 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onC
           </div>
         )}
 
-        {/* Printable Card Area */}
+        {/* Printable Card Area (Gaya Presisi KTP) */}
         <div className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6" id="printable-student-card">
-          <div className="border-2 border-slate-800 rounded-lg p-5 bg-white shadow-xs">
+          <div className="border-2 border-slate-800 rounded-xl p-4 bg-white shadow-xs max-w-[440px] mx-auto aspect-[85.6/54] flex flex-col justify-between">
             {/* Header Kop */}
-            <div className="text-center border-b-2 border-slate-800 pb-3 mb-4">
-              <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                KARTU PESERTA ASESMEN / UJIAN SEKOLAH
+            <div className="text-center border-b-2 border-slate-800 pb-2">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-slate-600">
+                KARTU TANDA PESERTA UJIAN
               </div>
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+              <h3 className="text-sm font-black text-slate-900 tracking-tight uppercase leading-tight">
                 {schoolProfile.name}
               </h3>
-              <p className="text-[11px] text-slate-500">
-                NPSN: {schoolProfile.npsn} · Tahun Pelajaran {schoolProfile.academicYear}
+              <p className="text-[10px] text-slate-500">
+                NPSN: {schoolProfile.npsn} · TA {schoolProfile.academicYear}
               </p>
             </div>
 
-            {/* Content Body */}
-            <div className="flex gap-4 items-start">
-              {/* Photo Box */}
-              <div className="w-24 h-32 border border-slate-300 rounded bg-slate-100 flex flex-col items-center justify-center text-slate-400 shrink-0 text-center p-2">
-                <span className="text-[10px] font-medium leading-tight">FOTO 3X4</span>
-                <span className="text-[9px] text-slate-400 mt-1">PESERTA</span>
-              </div>
-
+            {/* Content Body (Tanpa Sesi Ujian & Tanpa QR) */}
+            <div className="flex gap-3.5 items-center my-2 flex-1">
               {/* Data Table */}
-              <div className="flex-1 space-y-1.5 text-xs">
+              <div className="flex-1 min-w-0 space-y-1 text-[11px]">
                 <div className="grid grid-cols-3">
                   <span className="text-slate-500">No. Peserta</span>
-                  <span className="col-span-2 font-bold font-mono text-slate-900">
-                    {student.nomorPeserta || 'U-24-001'}
+                  <span className="col-span-2 font-bold font-mono text-slate-900 truncate">
+                    : {student.nomorPeserta || 'U-24-001'}
                   </span>
                 </div>
                 <div className="grid grid-cols-3">
-                  <span className="text-slate-500">Nama Lengkap</span>
-                  <span className="col-span-2 font-semibold text-slate-900">
-                    {student.name}
+                  <span className="text-slate-500">Nama Siswa</span>
+                  <span className="col-span-2 font-bold text-slate-900 truncate">
+                    : {student.name}
                   </span>
                 </div>
                 <div className="grid grid-cols-3">
-                  <span className="text-slate-500">NISN</span>
-                  <span className="col-span-2 font-mono text-slate-800">
-                    {student.nisn || '-'}
+                  <span className="text-slate-500">NISN / Kelas</span>
+                  <span className="col-span-2 font-mono text-slate-800 truncate">
+                    : {student.nisn || '-'} / {student.kelas || '-'}
                   </span>
                 </div>
                 <div className="grid grid-cols-3">
-                  <span className="text-slate-500">Kelas</span>
-                  <span className="col-span-2 font-semibold text-slate-800">
-                    {student.kelas || '-'}
+                  <span className="text-slate-500">Ruang Ujian</span>
+                  <span className="col-span-2 text-slate-800 font-semibold truncate">
+                    : {student.ruangUjian || `Ruang Kelas ${student.kelas}`}
                   </span>
                 </div>
                 <div className="grid grid-cols-3">
-                  <span className="text-slate-500">Agama</span>
-                  <span className="col-span-2 font-semibold text-indigo-700">
-                    {student.agama || 'Islam'}
+                  <span className="text-slate-500">Username</span>
+                  <span className="col-span-2 font-mono text-indigo-700 font-bold truncate">
+                    : {student.username}
                   </span>
                 </div>
                 <div className="grid grid-cols-3">
-                  <span className="text-slate-500">Ruang & Sesi</span>
-                  <span className="col-span-2 text-slate-800">
-                    {student.ruangUjian || `Ruang Kelas ${student.kelas}`} · {student.sesiUjian}
+                  <span className="text-slate-500">Password</span>
+                  <span className="col-span-2 font-mono text-emerald-700 font-bold tracking-wider truncate">
+                    : {student.password || 'siswa123'}
                   </span>
                 </div>
-                <div className="grid grid-cols-3">
-                  <span className="text-slate-500">Username CBT</span>
-                  <span className="col-span-2 font-mono text-indigo-700 font-bold">
-                    {student.username}
-                  </span>
-                </div>
-                <div className="grid grid-cols-3">
-                  <span className="text-slate-500">Password CBT</span>
-                  <span className="col-span-2 font-mono text-emerald-700 font-bold tracking-wider">
-                    {student.password || 'siswa123'}
-                  </span>
-                </div>
+              </div>
+
+              {/* Photo Box */}
+              <div className="w-20 h-26 border border-dashed border-slate-400 rounded-lg bg-slate-50 flex flex-col items-center justify-center text-slate-400 shrink-0 text-center p-1.5">
+                <span className="text-[10px] font-semibold leading-tight">Pas Foto</span>
+                <span className="text-[9px] text-slate-400 mt-0.5">2x3</span>
               </div>
             </div>
 
-            {/* Footer Signatures & QR */}
-            <div className="mt-5 pt-3 border-t border-dashed border-slate-300 flex items-end justify-between text-[11px]">
-              <div className="flex items-center gap-2">
-                <div className="p-1 border border-slate-300 rounded bg-slate-50">
-                  <QrCode className="w-9 h-9 text-slate-700" />
-                </div>
-                <div className="text-[9px] text-slate-400 leading-tight">
-                  Verifikasi Validitas
-                  <br />
-                  Sistem CBT Sekolah
-                </div>
+            {/* Footer Signatures (Tanpa QR) */}
+            <div className="pt-2 border-t border-slate-200 flex items-end justify-between text-[10px]">
+              <div className="text-[9px] text-slate-400 italic">
+                * Harap dibawa saat ujian
               </div>
 
-              <div className="text-center">
-                <p className="text-slate-500 text-[10px]">Ketua Panitia Ujian,</p>
-                <div className="h-8"></div>
-                <p className="font-bold underline text-slate-800">Bpk. Suryadi, M.Kom</p>
-                <p className="text-[9px] text-slate-400 font-mono">NIP. 19780512 200501 1 004</p>
+              <div className="text-center leading-tight">
+                <p className="text-slate-600 text-[9.5px]">Kepala Sekolah,</p>
+                <div className="h-5"></div>
+                <p className="font-bold underline text-slate-900 text-[10.5px]">ANWAR SAID, S.Pd, M.M</p>
+                <p className="text-[8.5px] text-slate-500 font-mono">NIP. 19711205 199603 1 002</p>
               </div>
             </div>
           </div>
@@ -231,11 +147,11 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onC
           </button>
           <button
             type="button"
-            onClick={handleDownload}
+            onClick={handleDownloadPdf}
             className="flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors shadow-xs cursor-pointer active:scale-95 text-center"
           >
             <Download className="w-3.5 h-3.5" />
-            Unduh Kartu (HTML/PDF)
+            Unduh Kartu (PDF)
           </button>
           <button
             type="button"
@@ -243,7 +159,7 @@ export const StudentCardModal: React.FC<StudentCardModalProps> = ({ student, onC
             className="flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors shadow-xs cursor-pointer active:scale-95 text-center"
           >
             <Printer className="w-3.5 h-3.5" />
-            Cetak Kartu Peserta
+            Cetak / Download PDF
           </button>
         </div>
       </div>

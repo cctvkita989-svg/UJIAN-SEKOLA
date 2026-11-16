@@ -13,9 +13,9 @@ import {
 } from '../types/cbt';
 
 export const INITIAL_SCHOOL_PROFILE: SchoolProfile = {
-  name: 'SMP NEGERI 1 PANDAN',
+  name: 'UPTD SMP NEGERI 1 PANDAN',
   npsn: '10204682',
-  address: 'Jl. Dr. F.L. Tobing No. 1, Pandan, Kab. Tapanuli Tengah, Sumatera Utara',
+  address: 'JL. Ki Hajar Dewantara No. 2 Pandan RT/RW:000/000 Kec. pandan Kab. Tapanuli Tengah, Prov. Sumatera Utara Telp.0631371664 Fax. 0631371664 Email: smpn1pandan@gmail.com',
   academicYear: '2024/2025',
   semester: 'Semester Genap',
   examTitle: 'Penilaian Akhir Semester (PAS) Berbasis Komputer',
@@ -1108,39 +1108,35 @@ export const INITIAL_EXAM_TYPES: ExamTypeCategory[] = [
 ];
 
 export const INITIAL_CLASSES: ClassItem[] = [
-  // Tingkat VII (VII-1 sampai VII-8)
-  { id: 'cls-7-1', name: 'VII-1', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Bpk. Ahmad Fauzi, S.Pd', ruangLab: 'Ruang Kelas VII-1', totalStudents: 32 },
-  { id: 'cls-7-2', name: 'VII-2', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Ibu Ratna Dewi, S.Pd', ruangLab: 'Ruang Kelas VII-2', totalStudents: 32 },
-  { id: 'cls-7-3', name: 'VII-3', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Bpk. Hendra Saputra, M.Pd', ruangLab: 'Ruang Kelas VII-3', totalStudents: 32 },
-  { id: 'cls-7-4', name: 'VII-4', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Ibu Sri Wahyuni, S.Pd', ruangLab: 'Ruang Kelas VII-4', totalStudents: 32 },
-  { id: 'cls-7-5', name: 'VII-5', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Bpk. Budi Santoso, S.Kom', ruangLab: 'Ruang Kelas VII-5', totalStudents: 32 },
-  { id: 'cls-7-6', name: 'VII-6', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Ibu Siti Nurhaliza, M.Pd', ruangLab: 'Ruang Kelas VII-6', totalStudents: 32 },
-  { id: 'cls-7-7', name: 'VII-7', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Bpk. Danang Prasetyo, M.Hum', ruangLab: 'Ruang Kelas VII-7', totalStudents: 32 },
-  { id: 'cls-7-8', name: 'VII-8', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Ibu Endang Susilowati, M.Si', ruangLab: 'Ruang Kelas VII-8', totalStudents: 32 },
+  // Tingkat VII (VII-1 sampai VII-8) - Total 287 siswa
+  { id: 'cls-7-1', name: 'VII-1', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Bpk. Ahmad Fauzi, S.Pd', ruangLab: 'Ruang Kelas VII-1', totalStudents: 35 },
+  { id: 'cls-7-2', name: 'VII-2', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Ibu Ratna Dewi, S.Pd', ruangLab: 'Ruang Kelas VII-2', totalStudents: 36 },
+  { id: 'cls-7-3', name: 'VII-3', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Bpk. Hendra Saputra, M.Pd', ruangLab: 'Ruang Kelas VII-3', totalStudents: 36 },
+  { id: 'cls-7-4', name: 'VII-4', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Ibu Sri Wahyuni, S.Pd', ruangLab: 'Ruang Kelas VII-4', totalStudents: 36 },
+  { id: 'cls-7-5', name: 'VII-5', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Bpk. Budi Santoso, S.Kom', ruangLab: 'Ruang Kelas VII-5', totalStudents: 36 },
+  { id: 'cls-7-6', name: 'VII-6', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Ibu Siti Nurhaliza, M.Pd', ruangLab: 'Ruang Kelas VII-6', totalStudents: 36 },
+  { id: 'cls-7-7', name: 'VII-7', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Bpk. Danang Prasetyo, M.Hum', ruangLab: 'Ruang Kelas VII-7', totalStudents: 36 },
+  { id: 'cls-7-8', name: 'VII-8', tingkat: 'Kelas VII', jurusan: 'Reguler', waliKelas: 'Ibu Endang Susilowati, M.Si', ruangLab: 'Ruang Kelas VII-8', totalStudents: 36 },
 
-  // Tingkat VIII (VIII-1 sampai VIII-8)
-  { id: 'cls-8-1', name: 'VIII-1', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Agus Wicaksono, M.Pd', ruangLab: 'Ruang Kelas VIII-1', totalStudents: 32 },
-  { id: 'cls-8-2', name: 'VIII-2', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Rina Melati, S.Si', ruangLab: 'Ruang Kelas VIII-2', totalStudents: 32 },
+  // Tingkat VIII (VIII-1 sampai VIII-8) - Total 254 siswa
+  { id: 'cls-8-1', name: 'VIII-1', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Agus Wicaksono, M.Pd', ruangLab: 'Ruang Kelas VIII-1', totalStudents: 30 },
+  { id: 'cls-8-2', name: 'VIII-2', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Rina Melati, S.Si', ruangLab: 'Ruang Kelas VIII-2', totalStudents: 33 },
   { id: 'cls-8-3', name: 'VIII-3', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Arif Rahman, S.Pd', ruangLab: 'Ruang Kelas VIII-3', totalStudents: 32 },
   { id: 'cls-8-4', name: 'VIII-4', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Dewi Astuti, M.Pd', ruangLab: 'Ruang Kelas VIII-4', totalStudents: 32 },
-  { id: 'cls-8-5', name: 'VIII-5', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Ridwan Kamil, S.Pd', ruangLab: 'Ruang Kelas VIII-5', totalStudents: 32 },
+  { id: 'cls-8-5', name: 'VIII-5', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Ridwan Kamil, S.Pd', ruangLab: 'Ruang Kelas VIII-5', totalStudents: 33 },
   { id: 'cls-8-6', name: 'VIII-6', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Tri Wulandari, M.Pd', ruangLab: 'Ruang Kelas VIII-6', totalStudents: 32 },
   { id: 'cls-8-7', name: 'VIII-7', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Joko Susilo, S.Kom', ruangLab: 'Ruang Kelas VIII-7', totalStudents: 32 },
-  { id: 'cls-8-8', name: 'VIII-8', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Maya Safitri, S.Pd', ruangLab: 'Ruang Kelas VIII-8', totalStudents: 32 },
-  { id: 'cls-8-9', name: 'VIII-9', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Bpk. Rizky Ananda, S.Pd', ruangLab: 'Ruang Kelas VIII-9', totalStudents: 32 },
-  { id: 'cls-8-10', name: 'VIII-10', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Nurul Hidayah, M.Pd', ruangLab: 'Ruang Kelas VIII-10', totalStudents: 32 },
+  { id: 'cls-8-8', name: 'VIII-8', tingkat: 'Kelas VIII', jurusan: 'Reguler', waliKelas: 'Ibu Maya Safitri, S.Pd', ruangLab: 'Ruang Kelas VIII-8', totalStudents: 30 },
 
-  // Tingkat IX (IX-1 sampai IX-10)
-  { id: 'cls-9-1', name: 'IX-1', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Suryadi, M.Kom', ruangLab: 'Ruang Kelas IX-1', totalStudents: 32 },
-  { id: 'cls-9-2', name: 'IX-2', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Dian Permata, M.Pd', ruangLab: 'Ruang Kelas IX-2', totalStudents: 32 },
-  { id: 'cls-9-3', name: 'IX-3', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Bambang Pamungkas, S.Pd', ruangLab: 'Ruang Kelas IX-3', totalStudents: 32 },
-  { id: 'cls-9-4', name: 'IX-4', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Yuliana Sari, S.Si', ruangLab: 'Ruang Kelas IX-4', totalStudents: 32 },
-  { id: 'cls-9-5', name: 'IX-5', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Faisal Akbar, M.Pd', ruangLab: 'Ruang Kelas IX-5', totalStudents: 32 },
-  { id: 'cls-9-6', name: 'IX-6', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Anisa Rahma, S.Pd', ruangLab: 'Ruang Kelas IX-6', totalStudents: 32 },
-  { id: 'cls-9-7', name: 'IX-7', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Gunawan Wibisono, S.Pd', ruangLab: 'Ruang Kelas IX-7', totalStudents: 32 },
-  { id: 'cls-9-8', name: 'IX-8', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Linda Marlina, M.Hum', ruangLab: 'Ruang Kelas IX-8', totalStudents: 32 },
-  { id: 'cls-9-9', name: 'IX-9', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Syarif Hidayatullah, S.Pd', ruangLab: 'Ruang Kelas IX-9', totalStudents: 32 },
-  { id: 'cls-9-10', name: 'IX-10', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Putri Handayani, M.Pd', ruangLab: 'Ruang Kelas IX-10', totalStudents: 32 },
+  // Tingkat IX (IX-1 sampai IX-8) - Total 293 siswa
+  { id: 'cls-9-1', name: 'IX-1', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Suryadi, M.Kom', ruangLab: 'Ruang Kelas IX-1', totalStudents: 34 },
+  { id: 'cls-9-2', name: 'IX-2', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Dian Permata, M.Pd', ruangLab: 'Ruang Kelas IX-2', totalStudents: 36 },
+  { id: 'cls-9-3', name: 'IX-3', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Bambang Pamungkas, S.Pd', ruangLab: 'Ruang Kelas IX-3', totalStudents: 38 },
+  { id: 'cls-9-4', name: 'IX-4', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Yuliana Sari, S.Si', ruangLab: 'Ruang Kelas IX-4', totalStudents: 38 },
+  { id: 'cls-9-5', name: 'IX-5', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Faisal Akbar, M.Pd', ruangLab: 'Ruang Kelas IX-5', totalStudents: 37 },
+  { id: 'cls-9-6', name: 'IX-6', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Anisa Rahma, S.Pd', ruangLab: 'Ruang Kelas IX-6', totalStudents: 35 },
+  { id: 'cls-9-7', name: 'IX-7', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Bpk. Gunawan Wibisono, S.Pd', ruangLab: 'Ruang Kelas IX-7', totalStudents: 37 },
+  { id: 'cls-9-8', name: 'IX-8', tingkat: 'Kelas IX', jurusan: 'Reguler', waliKelas: 'Ibu Linda Marlina, M.Hum', ruangLab: 'Ruang Kelas IX-8', totalStudents: 38 },
 ];
 
 export const INITIAL_SUBJECTS: SubjectItem[] = [

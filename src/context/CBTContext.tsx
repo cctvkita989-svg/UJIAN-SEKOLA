@@ -142,60 +142,102 @@ interface CBTContextType {
   run800StudentsSimulation: () => void;
   resetSimulationToStandard: () => void;
 
-  // Global reset & Clear Trial Data (preserve 830 official students + school master data)
+  // Global reset & Clear Trial Data (preserve 834 official students + school master data)
   resetAllData: () => void;
   clearTrialData: () => Promise<{ success: boolean; message: string }>;
 }
 
-export const CBT_STORAGE_VERSION = 'v20_clean_production_ready';
+export const CBT_STORAGE_VERSION = 'v21_real_students_roster';
 
-// Clean official baseline: keep Admin, Teachers, and 830 Official Students (all offline, zero trial exams)
+// Clean official baseline: keep Admin, Teachers, and 834 Official Students (all offline, zero trial exams)
 const CLEAN_OFFICIAL_USERS: User[] = [
   ...INITIAL_USERS.filter(u => u.role !== 'siswa'),
   ...OFFICIAL_STUDENTS_LIST.map(s => ({ ...s, statusLogin: 'offline' as const })),
 ];
 
-// Auto-purge stale trial/simulation storage if upgrading from previous version
+// Auto-migrate storage cleanly on version bump
 if (typeof window !== 'undefined') {
   try {
     const currentVersion = localStorage.getItem('educbt_version');
     if (currentVersion !== CBT_STORAGE_VERSION) {
-      const staleSessionKeys: string[] = [];
-      for (let i = 0; i < localStorage.length; i++) {
-        const k = localStorage.key(i);
-        if (
-          k &&
-          (k.startsWith('educbt_answers_') ||
-            k.startsWith('educbt_progress_') ||
-            k.startsWith('educbt_session_') ||
-            k.startsWith('educbt_submitted_'))
-        ) {
-          staleSessionKeys.push(k);
+      if (currentVersion === 'v20_clean_production_ready') {
+        // Non-destructive upgrade from v20: refresh student roster (834 siswa) & 24 real classes while keeping any created exams/questions/sessions
+        try {
+          const savedUsersRaw = localStorage.getItem('educbt_users');
+          if (savedUsersRaw) {
+            const savedUsers: User[] = JSON.parse(savedUsersRaw);
+            const customNonStudents = savedUsers.filter(u => u.role !== 'siswa');
+            if (customNonStudents.length > 0) {
+              const mergedUsers = [
+                ...customNonStudents,
+                ...OFFICIAL_STUDENTS_LIST.map(s => ({ ...s, statusLogin: 'offline' as const })),
+              ];
+              localStorage.setItem('educbt_users', JSON.stringify(mergedUsers));
+            } else {
+              localStorage.removeItem('educbt_users');
+            }
+          } else {
+            localStorage.removeItem('educbt_users');
+          }
+        } catch {
+          localStorage.removeItem('educbt_users');
         }
-      }
-      staleSessionKeys.forEach(k => localStorage.removeItem(k));
+        // Refresh current logged-in student record if applicable so new kelas/ruangUjian takes effect
+        try {
+          const currRaw = localStorage.getItem('educbt_curr_user');
+          if (currRaw) {
+            const curr: User = JSON.parse(currRaw);
+            if (curr.role === 'siswa') {
+              const updatedSelf = OFFICIAL_STUDENTS_LIST.find(s => s.id === curr.id || (curr.nisn && s.nisn === curr.nisn));
+              if (updatedSelf) {
+                localStorage.setItem('educbt_curr_user', JSON.stringify(updatedSelf));
+              } else {
+                localStorage.removeItem('educbt_auth');
+                localStorage.removeItem('educbt_curr_user');
+              }
+            }
+          }
+        } catch {}
+        localStorage.removeItem('educbt_classes');
+        localStorage.setItem('educbt_version', CBT_STORAGE_VERSION);
+      } else {
+        // Legacy pre-v20 upgrade: clear stale trial/simulation storage
+        const staleSessionKeys: string[] = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (
+            k &&
+            (k.startsWith('educbt_answers_') ||
+              k.startsWith('educbt_progress_') ||
+              k.startsWith('educbt_session_') ||
+              k.startsWith('educbt_submitted_'))
+          ) {
+            staleSessionKeys.push(k);
+          }
+        }
+        staleSessionKeys.forEach(k => localStorage.removeItem(k));
 
-      localStorage.removeItem('educbt_classes');
-      localStorage.removeItem('educbt_subjects');
-      localStorage.removeItem('educbt_users');
-      localStorage.removeItem('educbt_exams');
-      localStorage.removeItem('educbt_questions');
-      localStorage.removeItem('educbt_sessions');
-      localStorage.removeItem('educbt_discipline');
-      localStorage.removeItem('educbt_grades');
-      localStorage.removeItem('educbt_exam_types');
-      localStorage.removeItem('educbt_broadcasts');
-      localStorage.removeItem('educbt_announcements');
-      localStorage.removeItem('educbt_offline_sync_queue');
-      localStorage.removeItem('educbt_curr_user');
-      localStorage.removeItem('educbt_sim_800');
-      localStorage.removeItem('educbt_school');
-      localStorage.removeItem('educbt_submitted_ids');
-      localStorage.removeItem('educbt_known_session_ids');
-      // Ensure user starts at Login Page so students/teachers/admin see login menu
-      localStorage.removeItem('educbt_auth');
-      localStorage.setItem('educbt_version', CBT_STORAGE_VERSION);
-      offlineStorage.clearAllExamCaches().catch(() => {});
+        localStorage.removeItem('educbt_classes');
+        localStorage.removeItem('educbt_subjects');
+        localStorage.removeItem('educbt_users');
+        localStorage.removeItem('educbt_exams');
+        localStorage.removeItem('educbt_questions');
+        localStorage.removeItem('educbt_sessions');
+        localStorage.removeItem('educbt_discipline');
+        localStorage.removeItem('educbt_grades');
+        localStorage.removeItem('educbt_exam_types');
+        localStorage.removeItem('educbt_broadcasts');
+        localStorage.removeItem('educbt_announcements');
+        localStorage.removeItem('educbt_offline_sync_queue');
+        localStorage.removeItem('educbt_curr_user');
+        localStorage.removeItem('educbt_sim_800');
+        localStorage.removeItem('educbt_school');
+        localStorage.removeItem('educbt_submitted_ids');
+        localStorage.removeItem('educbt_known_session_ids');
+        localStorage.removeItem('educbt_auth');
+        localStorage.setItem('educbt_version', CBT_STORAGE_VERSION);
+        offlineStorage.clearAllExamCaches().catch(() => {});
+      }
     }
   } catch (e) {
     console.error('Storage migration error:', e);
@@ -344,7 +386,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (parsed.name && (parsed.name.includes('Teladan') || parsed.name.includes('SMA'))) {
+        if (parsed.name && (parsed.name.includes('Teladan') || parsed.name.includes('SMA') || parsed.name === 'SMP NEGERI 1 PANDAN')) {
           return INITIAL_SCHOOL_PROFILE;
         }
         return {
@@ -1979,7 +2021,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const exam = exams.find(e => e.id === examId);
     if (!exam) return;
     let session = examSessions.find(
-      s => s.examId === examId && (s.studentId === currentUser.id || s.studentNisn === currentUser.nisn)
+      s => s.examId === examId && (s.studentId === currentUser.id || (Boolean(currentUser.nisn) && s.studentNisn === currentUser.nisn))
     );
     // Fail-safe check in local persistent stores
     if (!session || session.status !== 'submitted') {
@@ -2010,7 +2052,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const clearTrialData = async (): Promise<{ success: boolean; message: string }> => {
     try {
-      // 1. Reset student login statuses to offline while preserving ALL 830 students + unique passwords + teachers + admin
+      // 1. Reset student login statuses to offline while preserving ALL 834 students + unique passwords + teachers + admin
       setUsers(prev =>
         prev.map(u => (u.role === 'siswa' ? { ...u, statusLogin: 'offline' } : u))
       );
@@ -2058,8 +2100,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         success: true,
         message:
           firestoreDeletedCount > 0
-            ? `Data uji coba berhasil dikosongkan (${firestoreDeletedCount} dokumen cloud & seluruh cache lokal dibersihkan). Data induk 830 siswa, guru, kelas, dan mapel tetap aman tersimpan.`
-            : 'Seluruh data uji coba berhasil dikosongkan! Data induk 830 siswa, password unik, akun guru, kelas, dan mapel tetap aman tersimpan.',
+            ? `Data uji coba berhasil dikosongkan (${firestoreDeletedCount} dokumen cloud & seluruh cache lokal dibersihkan). Data induk 834 siswa, guru, kelas, dan mapel tetap aman tersimpan.`
+            : 'Seluruh data uji coba berhasil dikosongkan! Data induk 834 siswa, password unik, akun guru, kelas, dan mapel tetap aman tersimpan.',
       };
     } catch (e) {
       console.error('Clear trial data error:', e);

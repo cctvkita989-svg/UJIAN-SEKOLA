@@ -25,6 +25,10 @@ import {
   Info
 } from 'lucide-react';
 import { Exam, ExamSession, Question, StudentSubjectGrade } from '../../types/cbt';
+import {
+  downloadStudentHistoryPdf,
+  downloadStudentReceiptPdf,
+} from '../../utils/pdfGenerator';
 
 export interface MergedExamHistoryItem {
   id: string;
@@ -225,11 +229,19 @@ export const StudentExamHistoryView: React.FC = () => {
   }, [historyItems]);
 
   const handlePrintAllHistory = () => {
-    try {
-      window.print();
-    } catch (e) {
-      console.warn('window.print error:', e);
-    }
+    downloadStudentHistoryPdf({
+      currentUser,
+      items: filteredItems.map(item => ({
+        subject: item.subject,
+        code: item.code,
+        category: item.category,
+        score: item.score,
+        kkm: item.kkm,
+        status: item.status,
+        completedDate: item.completedDate,
+        violationsCount: item.violationsCount,
+      })),
+    });
   };
 
   return (
@@ -254,12 +266,13 @@ export const StudentExamHistoryView: React.FC = () => {
 
           <div className="flex items-center gap-2">
             <button
+              type="button"
               onClick={handlePrintAllHistory}
               className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-2xs cursor-pointer"
-              title="Cetak Seluruh Rekap Riwayat Ujian"
+              title="Download Rekap Riwayat Ujian (PDF)"
             >
               <Printer className="w-4 h-4 text-slate-500" />
-              <span>Cetak Rekap Riwayat</span>
+              <span>Download Rekap PDF</span>
             </button>
           </div>
         </div>
@@ -791,16 +804,26 @@ export const StudentExamHistoryView: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => {
-                    try {
-                      window.print();
-                    } catch (e) {
-                      console.warn('print error:', e);
-                    }
+                    downloadStudentReceiptPdf({
+                      currentUser,
+                      item: {
+                        subject: receiptModalItem.subject,
+                        code: receiptModalItem.code,
+                        category: receiptModalItem.category,
+                        score: receiptModalItem.score,
+                        kkm: receiptModalItem.kkm,
+                        completedDate: receiptModalItem.completedDate,
+                        totalQuestions: receiptModalItem.totalQuestions,
+                        correctCount: receiptModalItem.correctCount,
+                        timeSpentMinutes: receiptModalItem.timeSpentMinutes || 75,
+                        violationsCount: receiptModalItem.violationsCount,
+                      },
+                    });
                   }}
                   className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-600 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer flex items-center gap-1.5 active:scale-95"
                 >
                   <Printer className="w-3.5 h-3.5" />
-                  <span>Cetak / Simpan PDF</span>
+                  <span>Download PDF</span>
                 </button>
                 <button
                   onClick={() => setReceiptModalItem(null)}
@@ -814,15 +837,21 @@ export const StudentExamHistoryView: React.FC = () => {
             {/* Official Printable Certificate Document */}
             <div className="flex-1 overflow-y-auto p-6 sm:p-10 space-y-6 text-stone-900 bg-white print:overflow-visible">
               {/* School Header / Kop Surat */}
-              <div className="border-b-2 border-stone-900 pb-4 text-center space-y-1">
-                <h4 className="text-xs uppercase tracking-widest text-stone-600 font-semibold">
-                  PEMERINTAH KABUPATEN TAPANULI TENGAH · DINAS PENDIDIKAN
+              <div className="border-b-4 border-double border-stone-900 pb-4 text-center space-y-0.5">
+                <h4 className="text-xs uppercase tracking-wider text-stone-800 font-bold">
+                  PEMERINTAH KABUPATEN TAPANULI TENGAH
                 </h4>
-                <h2 className="text-lg font-black tracking-tight text-stone-900 uppercase">
-                  {schoolProfile.name || 'SMP NEGERI 1 PANDAN'}
+                <h4 className="text-xs uppercase tracking-wider text-stone-800 font-bold">
+                  DINAS PENDIDIKAN
+                </h4>
+                <h2 className="text-lg font-black tracking-tight text-stone-950 uppercase">
+                  UPTD SMP NEGERI 1 PANDAN
                 </h2>
-                <p className="text-[11px] text-stone-500">
-                  {schoolProfile.address || 'Jl. Dr. F.L. Tobing No. 12, Pandan'} · NPSN: {schoolProfile.npsn || '10204921'}
+                <p className="text-[11px] text-stone-700 font-medium">
+                  JL. Ki Hajar Dewantara No. 2 Pandan RT/RW:000/000 Kec. pandan Kab. Tapanuli Tengah
+                </p>
+                <p className="text-[10px] text-stone-600 font-medium">
+                  Prov. Sumatera Utara Telp.0631371664 Fax. 0631371664 Email: smpn1pandan@gmail.com
                 </p>
                 <div className="pt-2">
                   <span className="inline-block px-3 py-0.5 bg-stone-100 text-stone-900 text-[11px] font-bold uppercase tracking-wider rounded border border-stone-300">

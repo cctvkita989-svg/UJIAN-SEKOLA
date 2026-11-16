@@ -8,13 +8,19 @@ import {
   Clock,
   School,
   CheckCircle2,
-  QrCode,
   Download,
   X,
   AlertCircle,
   FileCheck
 } from 'lucide-react';
 import { Exam, User } from '../../types/cbt';
+import {
+  downloadDaftarNilaiPdf,
+  downloadKartuPesertaPdf,
+  downloadDaftarHadirPdf,
+  downloadBeritaAcaraPdf,
+  downloadNomorMejaPdf,
+} from '../../utils/pdfGenerator';
 
 export interface ExamAdministrationDocsProps {
   initialDocType?: 'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai';
@@ -209,94 +215,75 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
     });
   };
 
-  const handlePrint = () => {
+  const handleDownloadPdf = () => {
     setIsProcessingPrint(true);
-    const docElement = document.getElementById('printable-exam-document');
-    if (!docElement) {
-      setToast({ message: 'Elemen dokumen tidak ditemukan untuk dicetak.', type: 'error' });
-      setIsProcessingPrint(false);
-      return;
-    }
-
-    let printTriggered = false;
-
-    // Strategy 1: Create isolated hidden iframe to bypass parent sandbox modals restriction
     try {
-      const existingFrame = document.getElementById('print-execution-frame');
-      if (existingFrame) existingFrame.remove();
-
-      const iframe = document.createElement('iframe');
-      iframe.id = 'print-execution-frame';
-      iframe.style.position = 'fixed';
-      iframe.style.right = '0';
-      iframe.style.bottom = '0';
-      iframe.style.width = '0';
-      iframe.style.height = '0';
-      iframe.style.border = 'none';
-      iframe.style.visibility = 'hidden';
-      document.body.appendChild(iframe);
-
-      const iframeDoc = iframe.contentWindow?.document;
-      if (iframeDoc) {
-        iframeDoc.open();
-        iframeDoc.write(`<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8" />
-  <title>${getDocumentTitle().replace(/_/g, ' ')}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @page { size: A4 portrait; margin: 10mm; }
-    body { font-family: sans-serif; margin: 0; padding: 12px; color: #0f172a; background: #fff; }
-    @media print {
-      body { padding: 0 !important; }
-      .print\\:hidden { display: none !important; }
-    }
-  </style>
-</head>
-<body>
-  ${docElement.innerHTML}
-</body>
-</html>`);
-        iframeDoc.close();
-
-        setTimeout(() => {
-          try {
-            iframe.contentWindow?.focus();
-            iframe.contentWindow?.print();
-            printTriggered = true;
-          } catch (iframeErr) {
-            console.warn('Iframe printing blocked by browser:', iframeErr);
-          }
-        }, 400);
+      const counts = {
+        total: filteredStudents.length,
+        cbt: cbtCount,
+        written: writtenCount,
+        sickPermit: sickCount + permitCount,
+        absent: absentCount,
+      };
+      let fileName = '';
+      switch (activeDocType) {
+        case 'daftar_nilai':
+          fileName = downloadDaftarNilaiPdf({
+            selectedClass,
+            selectedExam,
+            classSessions: classSessions.map(cs => ({
+              student: cs.student,
+              attendanceStatus: cs.attendanceStatus,
+              score: cs.score,
+            })),
+            counts,
+          });
+          break;
+        case 'kartu_peserta':
+          fileName = downloadKartuPesertaPdf({
+            selectedClass,
+            students: filteredStudents,
+            schoolProfile,
+          });
+          break;
+        case 'daftar_hadir':
+          fileName = downloadDaftarHadirPdf({
+            selectedClass,
+            selectedExam,
+            students: filteredStudents,
+            counts,
+            schoolProfile,
+          });
+          break;
+        case 'berita_acara':
+          fileName = downloadBeritaAcaraPdf({
+            selectedClass,
+            selectedExam,
+            counts,
+            schoolProfile,
+          });
+          break;
+        case 'nomor_meja':
+          fileName = downloadNomorMejaPdf({
+            selectedClass,
+            students: filteredStudents,
+          });
+          break;
       }
+
+      setToast({
+        message: `File PDF "${fileName}" berhasil dibuat dan langsung diunduh!`,
+        type: 'success',
+      });
     } catch (err) {
-      console.warn('Error setting up print iframe:', err);
-    }
-
-    // Strategy 2: Direct window.print() inside try/catch
-    try {
-      window.print();
-      printTriggered = true;
-    } catch (topErr) {
-      console.warn('Direct window.print() restricted in iframe sandbox:', topErr);
-    }
-
-    setIsProcessingPrint(false);
-
-    // Provide user feedback and safety fallback
-    if (printTriggered) {
+      console.error('Gagal membuat file PDF:', err);
       setToast({
-        message: 'Dialog cetak dibuka. Pilih printer fisik Anda atau opsi "Save as PDF" untuk menyimpan berkas resmi.',
-        type: 'info'
+        message: 'Terjadi kendala saat membuat PDF. Mengalihkan ke unduhan dokumen HTML...',
+        type: 'error',
       });
-    } else {
-      // If browser sandboxing strictly prevents modal print dialogs, automatically download the ready-to-print HTML/PDF
       handleDownloadHtml();
-      setToast({
-        message: 'Browser membatasi dialog cetak di dalam pratinjau. Dokumen resmi (.html siap cetak & simpan PDF) telah otomatis diunduh!',
-        type: 'info'
-      });
+    } finally {
+      setIsProcessingPrint(false);
     }
   };
 
@@ -349,23 +336,23 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
             <button
               type="button"
-              onClick={handlePrint}
+              onClick={handleDownloadPdf}
               disabled={isProcessingPrint}
               className="w-full sm:w-auto px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:opacity-50 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-95"
-              title="Kirim ke printer atau simpan sebagai PDF"
+              title="Buat dan langsung download dokumen resmi dalam format PDF"
             >
               <Printer className="w-4 h-4" />
-              <span>{isProcessingPrint ? 'Menyiapkan...' : 'Cetak Dokumen Sekarang (PDF / Print)'}</span>
+              <span>{isProcessingPrint ? 'Menyiapkan PDF...' : 'Cetak / Download PDF Sekarang'}</span>
             </button>
 
             <button
               type="button"
               onClick={handleDownloadHtml}
               className="w-full sm:w-auto px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow-xs transition-all cursor-pointer active:scale-95"
-              title="Unduh file dokumen mandiri (format HTML/PDF) siap cetak di laptop/PC lain"
+              title="Unduh file cadangan format HTML siap cetak di browser"
             >
               <Download className="w-4 h-4" />
-              <span>Unduh File Siap Cetak (HTML / PDF)</span>
+              <span>Unduh Cadangan (HTML)</span>
             </button>
           </div>
         </div>
@@ -482,17 +469,20 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
                     CBT
                   </div>
                   <div className="flex-1 px-4">
-                    <div className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                      PEMERINTAH DAERAH / KEMENTERIAN AGAMA REPUBLIK INDONESIA
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      PEMERINTAH KABUPATEN TAPANULI TENGAH
+                    </div>
+                    <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                      DINAS PENDIDIKAN
                     </div>
                     <div className="text-lg font-black text-slate-950 uppercase tracking-wide leading-tight">
-                      {schoolProfile.name}
+                      UPTD SMP NEGERI 1 PANDAN
                     </div>
-                    <div className="text-[11px] text-slate-600 font-medium">
-                      NPSN: {schoolProfile.npsn || '10293847'} • {schoolProfile.address || 'Jl. Pendidikan No. 01, Wilayah Terakreditasi'}
+                    <div className="text-[11px] text-slate-700 font-medium">
+                      JL. Ki Hajar Dewantara No. 2 Pandan RT/RW:000/000 Kec. pandan Kab. Tapanuli Tengah
                     </div>
-                    <div className="text-[10px] text-slate-500 font-mono">
-                      Website: cbt.sekolah.sch.id • Email: cbt@{schoolProfile.name.toLowerCase().replace(/[^a-z0-9]/g, '') || 'sekolah'}.sch.id
+                    <div className="text-[10px] text-slate-600 font-medium">
+                      Prov. Sumatera Utara Telp.0631371664 Fax. 0631371664 Email: smpn1pandan@gmail.com
                     </div>
                   </div>
                   <div className="w-16 h-16 rounded-xl border-2 border-slate-900 flex flex-col items-center justify-center font-mono text-[10px] font-bold text-slate-800 shrink-0">
@@ -505,11 +495,8 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
               {/* JUDUL DOKUMEN & IDENTITAS PENILAIAN */}
               <div className="text-center space-y-0.5">
                 <h2 className="text-sm font-black text-slate-900 uppercase tracking-wide underline decoration-slate-400">
-                  DAFTAR NILAI & HASIL EVALUASI SISWA PER RUANG KELAS
+                  DAFTAR NILAI & HASIL EVALUASI SISWA
                 </h2>
-                <p className="text-xs font-semibold text-slate-700">
-                  {selectedExam?.title || 'PENILAIAN AKHIR SEMESTER (PAS) GANJIL'} • TAHUN PELAJARAN {schoolProfile.academicYear} ({schoolProfile.semester})
-                </p>
               </div>
 
               {/* META GRID INFORMASI */}
@@ -593,7 +580,7 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
                               {student.name}
                             </td>
                             <td className="py-2 px-2 border-r border-slate-300 text-center font-mono text-slate-600">
-                              {idx % 2 === 0 ? 'L' : 'P'}
+                              {student.gender || '-'}
                             </td>
                             <td className={`py-2 px-3 border-r border-slate-300 text-center ${statusColor}`}>
                               {statusLabel}
@@ -671,33 +658,33 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
                     Kepala Sekolah,
                   </div>
                   <div>
-                    <div className="font-bold underline text-slate-900">Drs. H. Mulyadi, M.Pd</div>
-                    <div className="font-mono text-slate-500 text-[10px]">NIP. 197405121999031002</div>
+                    <div className="font-bold underline text-slate-900">ANWAR SAID, S.Pd, M.M</div>
+                    <div className="font-mono text-slate-500 text-[10px]">NIP. 19711205 199603 1 002</div>
                   </div>
                 </div>
               </div>
 
               <div className="print:hidden p-3 bg-indigo-50 border border-indigo-200 rounded-lg text-xs text-indigo-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <span>💡 Gunakan tombol di bawah ini atau di bagian atas untuk mencetak dokumen ke printer atau menyimpan sebagai file PDF.</span>
+                <span>💡 Klik tombol di bawah ini atau di bagian atas untuk langsung mengunduh dokumen resmi dalam format PDF.</span>
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={handlePrint}
+                    onClick={handleDownloadPdf}
                     className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 text-white rounded-lg font-bold cursor-pointer transition-colors flex items-center gap-1.5 active:scale-95"
                   >
-                    <Printer className="w-3.5 h-3.5" />
-                    <span>Cetak Sekarang</span>
+                    <Download className="w-3.5 h-3.5" />
+                    <span>Download PDF Resmi</span>
                   </button>
                   <button
                     type="button"
                     onClick={handleDownloadHtml}
                     className="px-3 py-1.5 bg-emerald-700 hover:bg-emerald-800 active:bg-emerald-900 text-white rounded-lg font-bold cursor-pointer transition-colors flex items-center gap-1.5 active:scale-95"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span>Unduh PDF/HTML</span>
+                    <FileText className="w-3.5 h-3.5" />
+                    <span>Unduh HTML</span>
                   </button>
+                </div>
               </div>
-            </div>
           </div>
         )}
 
@@ -710,86 +697,76 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
               </span>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-2 print:gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 print:grid-cols-2 print:gap-4">
               {filteredStudents.map((st, idx) => (
                 <div
                   key={st.id}
-                  className="border-2 border-slate-800 rounded-lg p-4 bg-white relative flex flex-col justify-between page-break-inside-avoid"
-                  style={{ minHeight: '260px' }}
+                  className="border-2 border-slate-800 rounded-xl p-3.5 bg-white relative flex flex-col justify-between page-break-inside-avoid shadow-2xs aspect-[85.6/54]"
                 >
                   {/* KOP KARTU */}
-                  <div className="flex items-center gap-3 pb-2 border-b-2 border-slate-800">
-                    <div className="w-10 h-10 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-sm shrink-0">
+                  <div className="flex items-center gap-2.5 pb-1.5 border-b-2 border-slate-800">
+                    <div className="w-8 h-8 rounded-full bg-slate-900 text-white flex items-center justify-center font-bold text-[11px] shrink-0">
                       CBT
                     </div>
-                    <div className="flex-1 text-center pr-4">
-                      <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-600">
+                    <div className="flex-1 text-center pr-3">
+                      <div className="text-[9px] font-bold uppercase tracking-wider text-slate-600 leading-tight">
                         KARTU TANDA PESERTA UJIAN
                       </div>
-                      <div className="text-xs font-black text-slate-900 leading-tight uppercase">
+                      <div className="text-[11px] font-black text-slate-900 leading-tight uppercase">
                         {schoolProfile.name}
                       </div>
-                      <div className="text-[9px] text-slate-500 font-mono">
+                      <div className="text-[8.5px] text-slate-500 font-mono leading-tight">
                         TA {schoolProfile.academicYear} · Semester {schoolProfile.semester}
                       </div>
                     </div>
                   </div>
 
-                  {/* BODY INFO */}
-                  <div className="grid grid-cols-3 gap-3 my-3">
-                    <div className="col-span-2 space-y-1 text-xs">
-                      <div className="flex">
-                        <span className="w-24 text-slate-500 text-[11px]">No. Peserta</span>
-                        <span className="font-mono font-bold text-slate-900">: {st.nomorPeserta || `U-24-${idx + 100}`}</span>
+                  {/* BODY INFO (GAYA KTP PRESISI - TANPA SESI & QR) */}
+                  <div className="flex items-center gap-3 my-1.5 flex-1">
+                    <div className="flex-1 min-w-0 space-y-0.5 text-[11px]">
+                      <div className="flex items-baseline">
+                        <span className="w-20 text-slate-500 text-[10px] shrink-0">No. Peserta</span>
+                        <span className="font-mono font-bold text-slate-900 truncate">: {st.nomorPeserta || `U-24-${idx + 100}`}</span>
                       </div>
-                      <div className="flex">
-                        <span className="w-24 text-slate-500 text-[11px]">Nama Siswa</span>
+                      <div className="flex items-baseline">
+                        <span className="w-20 text-slate-500 text-[10px] shrink-0">Nama Siswa</span>
                         <span className="font-bold text-slate-900 truncate">: {st.name}</span>
                       </div>
-                      <div className="flex">
-                        <span className="w-24 text-slate-500 text-[11px]">NISN / Kelas</span>
-                        <span className="font-mono text-slate-800">: {st.nisn || '-'} / {st.kelas}</span>
+                      <div className="flex items-baseline">
+                        <span className="w-20 text-slate-500 text-[10px] shrink-0">NISN / Kelas</span>
+                        <span className="font-mono text-slate-800 truncate">: {st.nisn || '-'} / {st.kelas}</span>
                       </div>
-                      <div className="flex">
-                        <span className="w-24 text-slate-500 text-[11px]">Ruang Lab</span>
-                        <span className="font-semibold text-slate-800">: {st.ruangUjian || 'Lab Komputer 01'}</span>
+                      <div className="flex items-baseline">
+                        <span className="w-20 text-slate-500 text-[10px] shrink-0">Ruang Lab</span>
+                        <span className="font-semibold text-slate-800 truncate">: {st.ruangUjian || `Ruang Kelas ${st.kelas}`}</span>
                       </div>
-                      <div className="flex">
-                        <span className="w-24 text-slate-500 text-[11px]">Sesi Ujian</span>
-                        <span className="text-slate-800">: {st.sesiUjian || 'Sesi 1'}</span>
+                      <div className="flex items-baseline">
+                        <span className="w-20 text-slate-500 text-[10px] shrink-0">Username</span>
+                        <span className="font-mono font-bold text-indigo-700 truncate">: {st.username}</span>
                       </div>
-                      <div className="flex">
-                        <span className="w-24 text-slate-500 text-[11px]">Username</span>
-                        <span className="font-mono font-bold text-indigo-700">: {st.username}</span>
-                      </div>
-                      <div className="flex">
-                        <span className="w-24 text-slate-500 text-[11px]">Password</span>
-                        <span className="font-mono font-bold text-slate-900">: {st.password || 'siswa123'}</span>
+                      <div className="flex items-baseline">
+                        <span className="w-20 text-slate-500 text-[10px] shrink-0">Password</span>
+                        <span className="font-mono font-bold text-slate-900 truncate">: {st.password || 'siswa123'}</span>
                       </div>
                     </div>
 
-                    {/* QR CODE & PHOTO BOX */}
-                    <div className="col-span-1 flex flex-col items-center justify-center border border-slate-300 rounded p-1 bg-slate-50">
-                      <div className="w-14 h-14 bg-white border border-slate-300 rounded flex items-center justify-center text-slate-800">
-                        <QrCode className="w-10 h-10" />
-                      </div>
-                      <span className="text-[9px] font-mono text-slate-500 mt-1 uppercase">Scan QR Meja</span>
-                      <div className="w-12 h-8 border border-dashed border-slate-300 rounded mt-1 flex items-center justify-center text-[8px] text-slate-400">
-                        Foto 2x3
-                      </div>
+                    {/* PHOTO BOX ONLY */}
+                    <div className="w-16 h-22 border border-dashed border-slate-400 rounded-md bg-slate-50 flex flex-col items-center justify-center text-[8.5px] text-slate-400 shrink-0 text-center">
+                      <span className="font-semibold">Pas Foto</span>
+                      <span>2x3</span>
                     </div>
                   </div>
 
-                  {/* TANDA TANGAN KEPSEK / PANITIA */}
-                  <div className="pt-2 border-t border-slate-200 flex items-end justify-between text-[10px]">
-                    <div className="text-slate-400 italic text-[9px]">
-                      * Harap dibawa saat sesi ujian berlangsung
+                  {/* TANDA TANGAN KEPSEK */}
+                  <div className="pt-1.5 border-t border-slate-200 flex items-end justify-between text-[9px]">
+                    <div className="text-slate-400 italic text-[8.5px]">
+                      * Harap dibawa saat ujian
                     </div>
-                    <div className="text-center font-medium">
-                      <div>Kepala Sekolah / Ketua Panitia</div>
-                      <div className="h-6" />
-                      <div className="font-bold underline text-slate-900">Drs. H. Mulyadi, M.Pd</div>
-                      <div className="font-mono text-[9px] text-slate-500">NIP. 197405121999031002</div>
+                    <div className="text-center font-medium leading-tight">
+                      <div className="text-slate-600">Kepala Sekolah,</div>
+                      <div className="h-4" />
+                      <div className="font-bold underline text-slate-900">ANWAR SAID, S.Pd, M.M</div>
+                      <div className="font-mono text-[8px] text-slate-500">NIP. 19711205 199603 1 002</div>
                     </div>
                   </div>
                 </div>
@@ -802,15 +779,21 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
         {activeDocType === 'daftar_hadir' && (
           <div className="space-y-6">
             {/* KOP SURAT RESMI */}
-            <div className="text-center pb-4 border-b-2 border-slate-900">
-              <div className="text-sm font-bold uppercase tracking-wider text-slate-700">
-                PEMERINTAH PROVINSI / DINAS PENDIDIKAN
+            <div className="text-center pb-4 border-b-4 border-double border-slate-900 space-y-0.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                PEMERINTAH KABUPATEN TAPANULI TENGAH
               </div>
-              <div className="text-lg font-black uppercase text-slate-900">
-                {schoolProfile.name}
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                DINAS PENDIDIKAN
               </div>
-              <div className="text-xs text-slate-600">
-                {schoolProfile.address} · NPSN: {schoolProfile.npsn}
+              <div className="text-lg font-black uppercase text-slate-950">
+                UPTD SMP NEGERI 1 PANDAN
+              </div>
+              <div className="text-[11px] text-slate-700 font-medium">
+                JL. Ki Hajar Dewantara No. 2 Pandan RT/RW:000/000 Kec. pandan Kab. Tapanuli Tengah
+              </div>
+              <div className="text-[10px] text-slate-600 font-medium">
+                Prov. Sumatera Utara Telp.0631371664 Fax. 0631371664 Email: smpn1pandan@gmail.com
               </div>
               <div className="mt-2 text-sm font-black underline uppercase text-slate-900">
                 DAFTAR HADIR PESERTA ASESMEN / UJIAN CBT
@@ -867,7 +850,7 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
                           {!isEven ? `${idx + 1}. .........` : ''}
                         </td>
                         <td className="py-1 px-2 text-center text-[10px] font-semibold text-slate-700">
-                          Hadir
+                          
                         </td>
                       </tr>
                     );
@@ -878,13 +861,19 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
 
             {/* FOOTER PENGAWAS */}
             <div className="grid grid-cols-2 gap-8 pt-8 text-xs font-medium">
-              <div>
+              <div className="space-y-1">
                 <p className="font-bold mb-1">Rekapitulasi Kehadiran Peserta:</p>
-                <p>• Jumlah Siswa : <strong>{filteredStudents.length}</strong> orang</p>
-                <p>• Hadir Ujian CBT : <strong>{cbtCount}</strong> orang</p>
-                <p>• Ujian Tertulis : <strong>{writtenCount}</strong> orang</p>
-                <p>• Sakit / Izin : <strong>{sickCount + permitCount}</strong> orang</p>
-                <p>• Absen / Alpa : <strong>{absentCount}</strong> orang</p>
+                <p>• Jumlah Siswa : <span className="font-mono text-slate-400">............</span> orang</p>
+                <p>• Hadir Ujian CBT : <span className="font-mono text-slate-400">............</span> orang</p>
+                <p>• Ujian Tertulis : <span className="font-mono text-slate-400">............</span> orang</p>
+                <p>• Sakit / Izin : <span className="font-mono text-slate-400">............</span> orang</p>
+                <p>• Absen / Alpa : <span className="font-mono text-slate-400">............</span> orang</p>
+                <div className="mt-3 pt-2.5 border-t border-slate-200 text-[11px] text-slate-700 bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <strong className="text-slate-900">Keterangan Pengisian Kolom Ket:</strong>
+                  <p className="mt-0.5 text-slate-600">
+                    Centang (✓) jika menggunakan Android, tulisan tangan jika menggunakan ujian tertulis.
+                  </p>
+                </div>
               </div>
 
               <div className="text-center space-y-12">
@@ -901,15 +890,21 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
         {/* 3. BERITA ACARA PELAKSANAAN (BAP) */}
         {activeDocType === 'berita_acara' && (
           <div className="space-y-6">
-            <div className="text-center pb-4 border-b-2 border-slate-900">
-              <div className="text-xs font-bold uppercase tracking-wider text-slate-600">
-                PANITIA PELAKSANA ASESMEN / UJIAN CBT
+            <div className="text-center pb-4 border-b-4 border-double border-slate-900 space-y-0.5">
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                PEMERINTAH KABUPATEN TAPANULI TENGAH
               </div>
-              <div className="text-lg font-black uppercase text-slate-900">
-                {schoolProfile.name}
+              <div className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                DINAS PENDIDIKAN
               </div>
-              <div className="text-xs text-slate-600">
-                {schoolProfile.address} · NPSN: {schoolProfile.npsn}
+              <div className="text-lg font-black uppercase text-slate-950">
+                UPTD SMP NEGERI 1 PANDAN
+              </div>
+              <div className="text-[11px] text-slate-700 font-medium">
+                JL. Ki Hajar Dewantara No. 2 Pandan RT/RW:000/000 Kec. pandan Kab. Tapanuli Tengah
+              </div>
+              <div className="text-[10px] text-slate-600 font-medium">
+                Prov. Sumatera Utara Telp.0631371664 Fax. 0631371664 Email: smpn1pandan@gmail.com
               </div>
               <div className="mt-3 text-sm font-black underline uppercase text-slate-900">
                 BERITA ACARA PELAKSANAAN ASESMEN BERBASIS KOMPUTER (CBT)
@@ -986,8 +981,8 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
               <div className="space-y-14">
                 <div>Kepala Sekolah,</div>
                 <div>
-                  <div className="font-bold underline text-slate-900">Drs. H. Mulyadi, M.Pd</div>
-                  <div className="font-mono text-slate-500 text-[10px]">NIP. 197405121999031002</div>
+                  <div className="font-bold underline text-slate-900">ANWAR SAID, S.Pd, M.M</div>
+                  <div className="font-mono text-slate-500 text-[10px]">NIP. 19711205 199603 1 002</div>
                 </div>
               </div>
             </div>

@@ -156,12 +156,15 @@ export const SiswaDashboard: React.FC = () => {
   const studentAgama = currentUser.agama || 'Islam';
   const studentKelas = currentUser.kelas || '';
 
+  const normalizeAgama = (a: string) => a.toLowerCase().replace('katholik', 'katolik').trim();
+  const studentAgamaNorm = normalizeAgama(studentAgama);
+
   const relevantExams = exams.filter(e => {
     // 1. Filter Agama
     if (e.requiredAgama) {
-      if (e.requiredAgama !== studentAgama) return false;
+      if (normalizeAgama(e.requiredAgama) !== studentAgamaNorm) return false;
     } else if (e.subject.toLowerCase().includes('agama')) {
-      if (!e.subject.toLowerCase().includes(studentAgama.toLowerCase())) return false;
+      if (!normalizeAgama(e.subject).includes(studentAgamaNorm)) return false;
     }
 
     // 2. Filter Kelas / Target Rombel
@@ -184,7 +187,7 @@ export const SiswaDashboard: React.FC = () => {
   // Helper to determine student's personal completion state for an exam
   const getExamStudentState = (examId: string) => {
     let session = examSessions.find(
-      s => s.examId === examId && (s.studentId === currentUser.id || s.studentNisn === currentUser.nisn)
+      s => s.examId === examId && (s.studentId === currentUser.id || (Boolean(currentUser.nisn) && s.studentNisn === currentUser.nisn))
     );
 
     // Fail-safe check: Always inspect local persistent storage for any submitted session
@@ -229,7 +232,7 @@ export const SiswaDashboard: React.FC = () => {
     // Find student's completed session if available
     let session = examSessions.find(
       s => (s.examId === examId || s.examId === matchedExam?.id) &&
-           (s.studentId === currentUser.id || s.studentNisn === currentUser.nisn) &&
+           (s.studentId === currentUser.id || (Boolean(currentUser.nisn) && s.studentNisn === currentUser.nisn)) &&
            s.status === 'submitted'
     );
 

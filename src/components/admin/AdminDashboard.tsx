@@ -73,6 +73,7 @@ import { ImportStudentsBulkModal } from './ImportStudentsBulkModal';
 import { QuestionEditorModal } from '../guru/QuestionEditorModal';
 import { User, Exam, ExamSession, Question, AttendanceStatus } from '../../types/cbt';
 import { AttendanceStatusModal } from '../common/AttendanceStatusModal';
+import { downloadLegerNilaiPdf } from '../../utils/pdfGenerator';
 
 export type AdminTab =
   // MENU UTAMA
@@ -649,94 +650,28 @@ export const AdminDashboard: React.FC = () => {
     showScheduleToast(`Berhasil mengunduh daftar akun & password untuk ${students.length} siswa.`);
   };
 
-  // Print & Download Leger Nilai
+  // Print & Download Leger Nilai (Langsung Generate & Unduh PDF)
   const handleDownloadLeger = () => {
-    const el = document.getElementById('printable-leger-matrix');
-    if (!el) return;
-
-    const title = `Leger_Nilai_Kelas_${selectedLegerClass}`;
-    const html = `<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="utf-8" />
-  <title>${title} - ${schoolProfile.name}</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <style>
-    @page { size: A4 landscape; margin: 10mm; }
-    body { font-family: sans-serif; padding: 20px; background: #fff; color: #1e293b; }
-    @media print { body { padding: 0 !important; } }
-  </style>
-</head>
-<body>
-  <div style="max-width: 1200px; margin: 0 auto;">
-    <div style="text-align: center; margin-bottom: 16px; border-bottom: 2px solid #334155; padding-bottom: 10px;">
-      <h2 style="font-size: 16px; font-weight: bold; margin: 0;">LEGER REKAPITULASI NILAI ASESMEN SEMUA MATA PELAJARAN</h2>
-      <p style="font-size: 13px; font-weight: 600; margin: 4px 0 0 0;">${schoolProfile.name} · KELAS ${selectedLegerClass} · TAHUN AJARAN ${schoolProfile.academicYear}</p>
-    </div>
-    ${el.innerHTML}
-  </div>
-  <script>
-    window.addEventListener('load', function() {
-      setTimeout(function() { window.print(); }, 400);
-    });
-  </script>
-</body>
-</html>`;
-
-    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title}.html`;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }, 1000);
-
-    showScheduleToast(`File Leger Nilai Kelas ${selectedLegerClass} berhasil diunduh (siap cetak / simpan PDF).`);
+    try {
+      const classStudents = students.filter(s => s.kelas === selectedLegerClass);
+      const displayStudents = classStudents.length > 0 ? classStudents : students.slice(0, 7);
+      const fileName = downloadLegerNilaiPdf({
+        selectedLegerClass,
+        students: displayStudents,
+        subjects,
+        exams,
+        examSessions,
+        schoolProfile,
+      });
+      showScheduleToast(`File Leger PDF "${fileName}" berhasil dibuat dan langsung diunduh!`);
+    } catch (err) {
+      console.error('Gagal membuat PDF Leger:', err);
+      showScheduleToast(`Gagal mengunduh PDF Leger Kelas ${selectedLegerClass}. Silakan coba kembali.`);
+    }
   };
 
   const handlePrintLeger = () => {
-    const el = document.getElementById('printable-leger-matrix');
-    let printed = false;
-    try {
-      if (el) {
-        const iframe = document.createElement('iframe');
-        iframe.style.position = 'fixed';
-        iframe.style.right = '0';
-        iframe.style.bottom = '0';
-        iframe.style.width = '0';
-        iframe.style.height = '0';
-        iframe.style.border = 'none';
-        document.body.appendChild(iframe);
-        const doc = iframe.contentWindow?.document;
-        if (doc) {
-          doc.open();
-          doc.write(`<!DOCTYPE html><html><head><script src="https://cdn.tailwindcss.com"></script><style>@page { size: landscape; }</style></head><body style="padding:15px;">${el.innerHTML}</body></html>`);
-          doc.close();
-          setTimeout(() => {
-            try {
-              iframe.contentWindow?.focus();
-              iframe.contentWindow?.print();
-              printed = true;
-            } catch (e) {}
-          }, 350);
-        }
-      }
-    } catch (e) {}
-
-    try {
-      window.print();
-      printed = true;
-    } catch (e) {}
-
-    if (printed) {
-      showScheduleToast('Dialog cetak Leger Kelas dibuka.');
-    } else {
-      handleDownloadLeger();
-    }
+    handleDownloadLeger();
   };
 
   // 5 Main Navigation Categories with sub-items
@@ -3600,8 +3535,9 @@ export const AdminDashboard: React.FC = () => {
                         onClick={() => {
                           setOpenSections(prev => ({ ...prev, nilai_laporan: true }));
                           setSelectedDocType('daftar_nilai');
+                          if (currentExam) setSelectedDocExamId(currentExam.id);
                           setActiveTab('dokumen_ujian');
-                          showScheduleToast('Membuka Dokumen Daftar Nilai Siswa Per Kelas siap cetak & bagikan ke orang tua.');
+                          showScheduleToast('Membuka Dokumen Daftar Nilai Siswa Per Kelas siap download PDF.');
                         }}
                         className="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors active:scale-95"
                         title="Buka Dokumen Resmi untuk mencetak Nilai Per Ruang Kelas Siap Dibagikan ke Orang Tua Siswa"
@@ -4380,16 +4316,17 @@ export const AdminDashboard: React.FC = () => {
                       type="button"
                       onClick={handleDownloadLeger}
                       className="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
-                      title="Unduh file Leger format HTML siap cetak/simpan PDF"
+                      title="Buat dan langsung download Leger Nilai Kelas dalam format PDF"
                     >
-                      <Download className="w-4 h-4" /> Unduh Leger (HTML/PDF)
+                      <Download className="w-4 h-4" /> Unduh Leger (PDF)
                     </button>
                     <button
                       type="button"
                       onClick={handlePrintLeger}
                       className="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs transition-colors cursor-pointer active:scale-95"
+                      title="Cetak / Download Leger Nilai Kelas format PDF Landscape"
                     >
-                      <Printer className="w-4 h-4" /> Cetak Leger Kelas
+                      <Printer className="w-4 h-4" /> Cetak Leger PDF
                     </button>
                   </div>
                 </div>

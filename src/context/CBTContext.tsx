@@ -592,6 +592,61 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const isAuthenticatedRef = useRef<boolean>(isAuthenticated);
   isAuthenticatedRef.current = isAuthenticated;
 
+  const activeExamTakingRef = useRef(activeExamTaking);
+  activeExamTakingRef.current = activeExamTaking;
+
+  const currentUserRef = useRef(currentUser);
+  currentUserRef.current = currentUser;
+
+  const submitExamRef = useRef<() => void>(() => {});
+
+  const calculateExamScore = (examQList: Question[], answersMap: ExamSession['answers']) => {
+    let correctCount = 0;
+    let wrongCount = 0;
+    let totalScore = 0;
+
+    examQList.forEach(q => {
+      const studentAnsObj = answersMap[q.id];
+      const studentAns = studentAnsObj?.selectedOption || '';
+      let isCorrect = false;
+
+      if (q.type === 'pg_kompleks') {
+        const cleanStudent = studentAns.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).sort().join(',');
+        const cleanCorrect = q.correctAnswer.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).sort().join(',');
+        isCorrect = cleanStudent.length > 0 && cleanStudent === cleanCorrect;
+      } else if (q.type === 'benar_salah') {
+        try {
+          const parsed = JSON.parse(studentAns);
+          const allCorrect = (q.statements || []).every(stmt => parsed[stmt.id] === stmt.correctAnswer);
+          isCorrect = (q.statements || []).length > 0 && allCorrect;
+        } catch {
+          isCorrect = false;
+        }
+      } else if (q.type === 'menjodohkan') {
+        try {
+          const parsed = JSON.parse(studentAns);
+          const allMatched = (q.matchingPairs || []).every(pair => parsed[pair.id] === pair.correctMatch);
+          isCorrect = (q.matchingPairs || []).length > 0 && allMatched;
+        } catch {
+          isCorrect = false;
+        }
+      } else {
+        isCorrect = !!studentAns && studentAns.trim().toUpperCase() === q.correctAnswer.trim().toUpperCase();
+      }
+
+      if (isCorrect) {
+        correctCount++;
+        totalScore += q.points;
+      } else {
+        wrongCount++;
+      }
+    });
+
+    const totalMaxPoints = examQList.reduce((acc, q) => acc + q.points, 0) || 100;
+    const finalScore = Math.round((totalScore / totalMaxPoints) * 100);
+    return { correctCount, wrongCount, finalScore };
+  };
+
   const fetchedQuestionKeysRef = useRef<Map<string, number>>(new Map());
   const dirtySessionRef = useRef<ExamSession | null>(null);
   const answerSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1001,9 +1056,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setActiveExamTaking(prev => {
         if (!prev) return null;
         if (prev.session.remainingSeconds <= 1) {
-          // Auto submit when time runs out
+          // Auto submit via latest ref so latest answers are preserved when timer hits 0
           clearInterval(timer);
-          setTimeout(() => submitCurrentExam(), 100);
+          setTimeout(() => submitExamRef.current(), 50);
           return {
             ...prev,
             session: {
@@ -1439,26 +1494,11 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const forceSubmitStudentSession = (studentId: string) => {
-    const targetSession = examSessions.find(s => s.studentId === studentId);
+    const targetSession = examSessionsRef.current.find(s => s.studentId === studentId);
     if (!targetSession) return;
 
-    const examQList = questions[targetSession.examId] || [];
-    let correctCount = 0;
-    let wrongCount = 0;
-    let totalScore = 0;
-
-    examQList.forEach(q => {
-      const studentAns = targetSession.answers[q.id]?.selectedOption;
-      if (studentAns && studentAns.trim().toUpperCase() === q.correctAnswer.trim().toUpperCase()) {
-        correctCount++;
-        totalScore += q.points;
-      } else {
-        wrongCount++;
-      }
-    });
-
-    const totalMaxPoints = examQList.reduce((acc, q) => acc + q.points, 0) || 100;
-    const finalScore = Math.round((totalScore / totalMaxPoints) * 100);
+    const examQList = questionsRef.current[targetSession.examId] || [];
+    const { correctCount, wrongCount, finalScore } = calculateExamScore(examQList, targetSession.answers);
 
     const updatedSession: ExamSession = {
       ...targetSession,
@@ -2080,65 +2120,19 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const submitCurrentExam = () => {
-    if (!activeExamTaking) return;
+    const latestTaking = activeExamTakingRef.current;
+    if (!latestTaking) return;
 
-    const examQList = questions[activeExamTaking.exam.id] || [];
-    let correctCount = 0;
-    let wrongCount = 0;
-    let totalScore = 0;
-
-    examQList.forEach(q => {
-      const studentAnsObj = activeExamTaking.session.answers[q.id];
-      const studentAns = studentAnsObj?.selectedOption || '';
-      
-      let isCorrect = false;
-
-      if (q.type === 'pg_kompleks') {
-        // Compare sorted comma-separated keys, e.g. "A,C"
-        const cleanStudent = studentAns.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).sort().join(',');
-        const cleanCorrect = q.correctAnswer.split(',').map(s => s.trim().toUpperCase()).filter(Boolean).sort().join(',');
-        isCorrect = cleanStudent.length > 0 && cleanStudent === cleanCorrect;
-      } else if (q.type === 'benar_salah') {
-        // studentAns is JSON string record { [stmtId]: boolean }
-        try {
-          const parsed = JSON.parse(studentAns);
-          const allCorrect = (q.statements || []).every(stmt => parsed[stmt.id] === stmt.correctAnswer);
-          isCorrect = (q.statements || []).length > 0 && allCorrect;
-        } catch {
-          isCorrect = false;
-        }
-      } else if (q.type === 'menjodohkan') {
-        // studentAns is JSON string record { [premiseId]: chosenMatch }
-        try {
-          const parsed = JSON.parse(studentAns);
-          const allMatched = (q.matchingPairs || []).every(pair => parsed[pair.id] === pair.correctMatch);
-          isCorrect = (q.matchingPairs || []).length > 0 && allMatched;
-        } catch {
-          isCorrect = false;
-        }
-      } else {
-        // 'pg' or 'essay'
-        isCorrect = !!studentAns && studentAns.trim().toUpperCase() === q.correctAnswer.trim().toUpperCase();
-      }
-
-      if (isCorrect) {
-        correctCount++;
-        totalScore += q.points;
-      } else {
-        wrongCount++;
-      }
-    });
-
-    // Normalize to 100 scale if needed, or based on points sum
-    const totalMaxPoints = examQList.reduce((acc, q) => acc + q.points, 0) || 100;
-    const finalScore = Math.round((totalScore / totalMaxPoints) * 100);
+    const latestUser = currentUserRef.current;
+    const examQList = questionsRef.current[latestTaking.exam.id] || [];
+    const { correctCount, wrongCount, finalScore } = calculateExamScore(examQList, latestTaking.session.answers);
 
     const completedTimestamp = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
 
     const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
     const completedSession: ExamSession = {
-      ...activeExamTaking.session,
+      ...latestTaking.session,
       status: 'submitted',
       finishedAt: completedTimestamp,
       score: finalScore,
@@ -2154,7 +2148,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       localStorage.setItem(`educbt_submitted_${completedSession.id}`, JSON.stringify(completedSession));
       localStorage.setItem(`educbt_session_${completedSession.id}`, JSON.stringify(completedSession));
-      if (completedSession.examId === 'exam-mat-01' && (currentUser.id === 'usr-siswa-1' || currentUser.username === 'ahmad.fauzi')) {
+      if (completedSession.examId === 'exam-mat-01' && (latestUser.id === 'usr-siswa-1' || latestUser.username === 'ahmad.fauzi')) {
         localStorage.setItem('educbt_submitted_ses-1', JSON.stringify(completedSession));
       }
       const submittedIds: string[] = JSON.parse(localStorage.getItem('educbt_submitted_ids') || '[]');
@@ -2173,17 +2167,17 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     
     // Also update studentGrades so history stays in sync
     setStudentGrades(prev => {
-      const currentList = prev[currentUser.id] || [];
+      const currentList = prev[latestUser.id] || [];
       const existingIdx = currentList.findIndex(
-        g => g.subject.toLowerCase() === activeExamTaking.exam.subject.toLowerCase() || g.code === activeExamTaking.exam.id.toUpperCase()
+        g => g.subject.toLowerCase() === latestTaking.exam.subject.toLowerCase() || g.code === latestTaking.exam.id.toUpperCase()
       );
       const newGradeEntry: StudentSubjectGrade = {
-        subject: activeExamTaking.exam.subject,
-        code: activeExamTaking.exam.id.toUpperCase(),
-        examTitle: activeExamTaking.exam.title,
+        subject: latestTaking.exam.subject,
+        code: latestTaking.exam.id.toUpperCase(),
+        examTitle: latestTaking.exam.title,
         score: finalScore,
-        kkm: activeExamTaking.exam.kkm || 75,
-        status: finalScore >= (activeExamTaking.exam.kkm || 75) ? 'Tuntas' : 'Remedial',
+        kkm: latestTaking.exam.kkm || 75,
+        status: finalScore >= (latestTaking.exam.kkm || 75) ? 'Tuntas' : 'Remedial',
         completedDate: completedTimestamp,
         violationsCount: completedSession.violationsCount || 0,
       };
@@ -2191,13 +2185,13 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (existingIdx >= 0) {
         const nextList = [...currentList];
         nextList[existingIdx] = newGradeEntry;
-        return { ...prev, [currentUser.id]: nextList };
+        return { ...prev, [latestUser.id]: nextList };
       } else {
-        return { ...prev, [currentUser.id]: [newGradeEntry, ...currentList] };
+        return { ...prev, [latestUser.id]: [newGradeEntry, ...currentList] };
       }
     });
 
-    updateUser(currentUser.id, { statusLogin: 'online' });
+    updateUser(latestUser.id, { statusLogin: 'online' });
 
     // Cancel any scheduled answer checkpoint and sync final submitted result immediately
     clearScheduledAnswerSync();
@@ -2214,6 +2208,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
   };
+  submitExamRef.current = submitCurrentExam;
 
   const viewStudentExamResult = (examId: string) => {
     const exam = exams.find(e => e.id === examId);

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import {
   Role,
   User,
@@ -33,8 +33,12 @@ import {
   doc,
   setDoc,
   deleteDoc,
+  getDoc,
   getDocs,
   onSnapshot,
+  query,
+  where,
+  limit,
 } from 'firebase/firestore';
 import { offlineStorage } from '../lib/offlineStorage';
 
@@ -579,6 +583,21 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOfflineQueue(newQueue);
   };
 
+  const examSessionsRef = useRef<ExamSession[]>(examSessions);
+  examSessionsRef.current = examSessions;
+
+  const questionsRef = useRef<Record<string, Question[]>>(questions);
+  questionsRef.current = questions;
+
+  const isAuthenticatedRef = useRef<boolean>(isAuthenticated);
+  isAuthenticatedRef.current = isAuthenticated;
+
+  const fetchedQuestionKeysRef = useRef<Map<string, number>>(new Map());
+  const dirtySessionRef = useRef<ExamSession | null>(null);
+  const answerSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingAnswerClicksRef = useRef<number>(0);
+  const questionSyncTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
   // Firestore Sync Helpers for Multi-Device Real-Time Exam
   const syncSessionToFirestore = async (session: ExamSession) => {
     try {
@@ -586,6 +605,95 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.warn('[Firestore] Sync session note (device might be offline):', e);
     }
+  };
+
+  const loadExamQuestionsFromFirestore = async (examId: string, forceRefresh = false) => {
+    if (!examId || (typeof navigator !== 'undefined' && !navigator.onLine)) return;
+    const lastFetched = fetchedQuestionKeysRef.current.get(examId) || 0;
+    const hasLocalQuestions = (questionsRef.current[examId]?.length || 0) > 0;
+    if (!forceRefresh && hasLocalQuestions && Date.now() - lastFetched < 120000) {
+      return;
+    }
+    fetchedQuestionKeysRef.current.set(examId, Date.now());
+    try {
+      const snap = await getDoc(doc(db, 'examQuestions', examId));
+      if (snap.exists()) {
+        const data = snap.data() as { questions?: Question[] };
+        if (Array.isArray(data?.questions)) {
+          setQuestions(prev => ({
+            ...prev,
+            [examId]: data.questions!,
+          }));
+        }
+      }
+    } catch (e) {
+      console.warn('[Firestore] Load examQuestions note:', e);
+    }
+  };
+
+  // Throttled checkpoint sync for answers (every 8 min OR every 25 clicks) to stay safely inside Firebase Spark 20k writes/day limit
+  const scheduleAnswerSyncToFirestore = (session: ExamSession) => {
+    dirtySessionRef.current = session;
+    pendingAnswerClicksRef.current += 1;
+
+    if (pendingAnswerClicksRef.current >= 25) {
+      pendingAnswerClicksRef.current = 0;
+      if (answerSyncTimerRef.current) {
+        clearTimeout(answerSyncTimerRef.current);
+        answerSyncTimerRef.current = null;
+      }
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        dirtySessionRef.current = null;
+        syncSessionToFirestore(session).then(() => {
+          offlineStorage.markAnswersSynced(session.id);
+        });
+      }
+      return;
+    }
+
+    if (answerSyncTimerRef.current) return;
+    answerSyncTimerRef.current = setTimeout(() => {
+      answerSyncTimerRef.current = null;
+      pendingAnswerClicksRef.current = 0;
+      const pending = dirtySessionRef.current;
+      if (pending && (typeof navigator === 'undefined' || navigator.onLine)) {
+        dirtySessionRef.current = null;
+        syncSessionToFirestore(pending).then(() => {
+          offlineStorage.markAnswersSynced(pending.id);
+        });
+      }
+    }, 480000);
+  };
+
+  const clearScheduledAnswerSync = () => {
+    if (answerSyncTimerRef.current) {
+      clearTimeout(answerSyncTimerRef.current);
+      answerSyncTimerRef.current = null;
+    }
+    pendingAnswerClicksRef.current = 0;
+    dirtySessionRef.current = null;
+  };
+
+  const syncQuestionsToFirestoreDebounced = (examId: string, qList: Question[]) => {
+    if (questionSyncTimersRef.current[examId]) {
+      clearTimeout(questionSyncTimersRef.current[examId]);
+    }
+    questionSyncTimersRef.current[examId] = setTimeout(() => {
+      delete questionSyncTimersRef.current[examId];
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        setDoc(
+          doc(db, 'examQuestions', examId),
+          {
+            examId,
+            questions: qList,
+            updatedAt: new Date().toISOString(),
+          },
+          { merge: true }
+        ).catch(e => {
+          console.warn('[Firestore] Sync examQuestions note:', e);
+        });
+      }
+    }, 800);
   };
 
   const syncPendingOfflineData = async (): Promise<{ success: boolean; message: string; count: number }> => {
@@ -601,10 +709,20 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     let syncedCount = 0;
 
     try {
-      // 1. Process items from offline queue
+      // 1. Flush any dirty active session checkpoint first
+      if (dirtySessionRef.current) {
+        const pendingActive = dirtySessionRef.current;
+        dirtySessionRef.current = null;
+        await syncSessionToFirestore(pendingActive);
+        offlineStorage.markAnswersSynced(pendingActive.id);
+        syncedCount++;
+      }
+
+      // 2. Process items from offline queue
+      const latestSessions = examSessionsRef.current;
       if (queue.length > 0) {
         for (const item of queue) {
-          const currentInState = examSessions.find(s => s.id === item.sessionId);
+          const currentInState = latestSessions.find(s => s.id === item.sessionId);
           const sessionToUpload: ExamSession = {
             ...(currentInState || item.sessionData),
             isOfflineSynced: true,
@@ -615,8 +733,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setOfflineQueue([]);
       }
 
-      // 2. Also ensure any submitted sessions in state marked as isOfflineSynced === false are pushed
-      const unsyncedSessions = examSessions.filter(
+      // 3. Also ensure any submitted sessions in state marked as isOfflineSynced === false are pushed
+      const unsyncedSessions = latestSessions.filter(
         s => s.status === 'submitted' && (s.isOfflineSynced === false || s.lastActive?.includes('Offline'))
       );
 
@@ -656,40 +774,52 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Real-time network listeners: detect online / offline and auto-sync immediately
+  // Real-time network listeners: native online/offline events + low-frequency (4 min) visible heartbeat
   useEffect(() => {
     const handleOnline = () => {
       setIsOnline(true);
-      // Auto-sync as soon as connection returns
       setTimeout(() => {
         syncPendingOfflineData();
-      }, 300);
+      }, 400);
     };
 
     const handleOffline = () => {
       setIsOnline(false);
     };
 
+    const handleVisibilityOrPageHide = () => {
+      if ((document.visibilityState === 'hidden') && dirtySessionRef.current && navigator.onLine) {
+        const pending = dirtySessionRef.current;
+        clearScheduledAnswerSync();
+        syncSessionToFirestore(pending);
+      }
+    };
+
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
+    document.addEventListener('visibilitychange', handleVisibilityOrPageHide);
+    window.addEventListener('pagehide', handleVisibilityOrPageHide);
 
-    // Active heartbeat probe to detect silent stream drops or dead WiFi links
+    // Lightweight CDN probe every 5 minutes ONLY when tab is visible & authenticated (cuts Vercel CDN requests by >98%)
     const probe = async () => {
       if (typeof navigator !== 'undefined' && !navigator.onLine) {
         setIsOnline(false);
         return;
       }
+      if (!isAuthenticatedRef.current || document.visibilityState !== 'visible') {
+        return;
+      }
       try {
         const controller = new AbortController();
-        const tid = setTimeout(() => controller.abort(), 2500);
-        await fetch('/metadata.json?_t=' + Date.now(), { method: 'HEAD', signal: controller.signal });
+        const tid = setTimeout(() => controller.abort(), 3000);
+        await fetch('/manifest.json?_t=' + Date.now(), { method: 'HEAD', signal: controller.signal });
         clearTimeout(tid);
         setIsOnline(true);
       } catch {
         setIsOnline(false);
       }
     };
-    const heartbeatTimer = setInterval(probe, 6000);
+    const heartbeatTimer = setInterval(probe, 300000);
 
     // Initial sync check on mount if online
     if (typeof navigator !== 'undefined' && navigator.onLine) {
@@ -703,6 +833,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       clearInterval(heartbeatTimer);
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
+      document.removeEventListener('visibilitychange', handleVisibilityOrPageHide);
+      window.removeEventListener('pagehide', handleVisibilityOrPageHide);
     };
   }, []);
 
@@ -722,12 +854,12 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Real-time Firestore Listeners: Sync exams, student sessions, and proctor broadcasts across devices
+  // Real-time Firestore Listeners (Quota-Optimized: active only when signed in, student-scoped sessions)
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     try {
       const handleStreamError = (error: any) => {
-        // Firebase automatically reconnects on transport or stream interruptions.
-        // Only mark offline if device network is actually disconnected.
         console.warn('[Firestore] Stream transport interrupted (auto-reconnecting):', error?.message || error);
         if (typeof navigator !== 'undefined' && !navigator.onLine) {
           setIsOnline(false);
@@ -754,7 +886,40 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, handleStreamError);
 
-      const unsubSessions = onSnapshot(collection(db, 'examSessions'), snap => {
+      // Sync exam questions bundles:
+      // Staff (admin/guru) subscribe in real time; Students fetch ONLY their active ongoing exam bundle on demand (1 read/exam)
+      const unsubQuestions =
+        currentUser.role !== 'siswa'
+          ? onSnapshot(collection(db, 'examQuestions'), snap => {
+              setIsOnline(true);
+              const changes = snap.docChanges();
+              if (changes.length > 0) {
+                setQuestions(prev => {
+                  const next = { ...prev };
+                  changes.forEach(change => {
+                    if (change.type === 'removed') {
+                      delete next[change.doc.id];
+                    } else {
+                      const data = change.doc.data() as { examId?: string; questions?: Question[] };
+                      const targetExamId = data.examId || change.doc.id;
+                      if (Array.isArray(data.questions)) {
+                        next[targetExamId] = data.questions;
+                      }
+                    }
+                  });
+                  return next;
+                });
+              }
+            }, handleStreamError)
+          : () => {};
+
+      // Students subscribe ONLY to their own examSessions (prevents O(N^2) read explosion across 834 devices!)
+      const sessionsSource =
+        currentUser.role === 'siswa'
+          ? query(collection(db, 'examSessions'), where('studentId', '==', currentUser.id))
+          : collection(db, 'examSessions');
+
+      const unsubSessions = onSnapshot(sessionsSource, snap => {
         setIsOnline(true);
         const changes = snap.docChanges();
         if (changes.length > 0) {
@@ -767,8 +932,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               } else {
                 const remoteSession = change.doc.data() as ExamSession;
                 const localSession = map.get(remoteSession.id);
-                // CRITICAL CONFLICT GUARD:
-                // If local session is already submitted, never let remote stale 'in_progress' overwrite it!
+                // Guard: never let stale remote 'in_progress' overwrite locally submitted session
                 if (localSession && localSession.status === 'submitted' && remoteSession.status !== 'submitted') {
                   if (typeof navigator !== 'undefined' && navigator.onLine) {
                     syncSessionToFirestore(localSession);
@@ -783,7 +947,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       }, handleStreamError);
 
-      const unsubBroadcasts = onSnapshot(collection(db, 'broadcasts'), snap => {
+      const unsubBroadcasts = onSnapshot(query(collection(db, 'broadcasts'), limit(15)), snap => {
         setIsOnline(true);
         const changes = snap.docChanges();
         if (changes.length > 0) {
@@ -805,15 +969,31 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       return () => {
         unsubExams();
+        unsubQuestions();
         unsubSessions();
         unsubBroadcasts();
       };
     } catch (e) {
       console.warn('[Firestore] Subscriptions setup note:', e);
     }
-  }, []);
+  }, [isAuthenticated, currentUser.id, currentUser.role]);
 
-  // Exam timer countdown effect during active test
+  // For logged-in students, pre-fetch only currently 'ongoing' exam question bundles matching their grade (1 read per ongoing exam)
+  useEffect(() => {
+    if (!isAuthenticated || currentUser.role !== 'siswa') return;
+    const studentKelas = currentUser.kelas || '';
+    exams.forEach(exam => {
+      if (exam.status !== 'ongoing') return;
+      if (studentKelas && exam.targetClasses && exam.targetClasses.length > 0 && !exam.targetClasses.includes(studentKelas)) {
+        return;
+      }
+      if (!fetchedQuestionKeysRef.current.has(exam.id)) {
+        loadExamQuestionsFromFirestore(exam.id);
+      }
+    });
+  }, [isAuthenticated, currentUser.role, currentUser.kelas, exams]);
+
+  // Exam timer countdown effect during active test (updates global examSessions every 15s to prevent 1s localStorage thrashing on Android)
   useEffect(() => {
     if (!activeExamTaking || activeExamTaking.session.status !== 'in_progress') return;
 
@@ -837,11 +1017,12 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           ...prev.session,
           remainingSeconds: updatedRemaining,
         };
-        
-        // update in global examSessions too
-        setExamSessions(all =>
-          all.map(s => (s.id === updatedSession.id ? updatedSession : s))
-        );
+
+        if (updatedRemaining % 15 === 0 || updatedRemaining <= 5) {
+          setExamSessions(all =>
+            all.map(s => (s.id === updatedSession.id ? updatedSession : s))
+          );
+        }
 
         return {
           ...prev,
@@ -1134,12 +1315,14 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setExamSessions(prev =>
       prev.map(s => {
         if (s.studentId === studentId) {
-          return {
+          const updated: ExamSession = {
             ...s,
             status: 'not_started',
             violationsCount: 0,
             lastActive: 'Direset oleh Admin/Proktor',
           };
+          if (typeof navigator === 'undefined' || navigator.onLine) syncSessionToFirestore(updated);
+          return updated;
         }
         return s;
       })
@@ -1153,12 +1336,14 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setExamSessions(prev =>
       prev.map(s => {
         if (s.studentId === studentId) {
-          return {
+          const updated: ExamSession = {
             ...s,
             status: 'in_progress',
             violationsCount: 0,
             lastActive: 'Dibuka kembali oleh Guru/Proktor',
           };
+          if (typeof navigator === 'undefined' || navigator.onLine) syncSessionToFirestore(updated);
+          return updated;
         }
         return s;
       })
@@ -1194,7 +1379,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               : attendanceStatus === 'tertulis'
               ? 'submitted'
               : 'not_started';
-          return {
+          const updated: ExamSession = {
             ...s,
             attendanceStatus,
             attendanceNotes: notes || (attendanceStatus === 'tertulis' ? 'Ujian Tertulis (Manual)' : attendanceStatus.toUpperCase()),
@@ -1211,6 +1396,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
                 ? 'Status: Absen / Alpa'
                 : 'Ujian CBT Online',
           };
+          if (typeof navigator === 'undefined' || navigator.onLine) syncSessionToFirestore(updated);
+          return updated;
         }
         return s;
       })
@@ -1223,11 +1410,13 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prev.map(s => {
         if (s.studentId === studentId) {
           const newRemaining = (s.remainingSeconds || 0) + additionalSeconds;
-          return {
+          const updated: ExamSession = {
             ...s,
             remainingSeconds: newRemaining,
             lastActive: `Waktu ditambah +${additionalMinutes} menit oleh Proktor`,
           };
+          if (typeof navigator === 'undefined' || navigator.onLine) syncSessionToFirestore(updated);
+          return updated;
         }
         return s;
       })
@@ -1283,6 +1472,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     setExamSessions(prev => prev.map(s => (s.id === updatedSession.id ? updatedSession : s)));
     setUsers(prev => prev.map(u => (u.id === studentId ? { ...u, statusLogin: 'online' } : u)));
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      syncSessionToFirestore(updatedSession);
+    }
 
     if (activeExamTaking && activeExamTaking.session.studentId === studentId) {
       setActiveExamTaking(prev => (prev ? { ...prev, session: updatedSession } : null));
@@ -1394,6 +1586,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       deleteDoc(doc(db, 'exams', examId)).catch(e =>
         console.warn('[Firestore] Delete exam note:', e)
       );
+      deleteDoc(doc(db, 'examQuestions', examId)).catch(e =>
+        console.warn('[Firestore] Delete examQuestions note:', e)
+      );
     }
   };
 
@@ -1411,6 +1606,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       examIds.forEach(id => {
         deleteDoc(doc(db, 'exams', id)).catch(e =>
           console.warn('[Firestore] Bulk delete exam note:', e)
+        );
+        deleteDoc(doc(db, 'examQuestions', id)).catch(e =>
+          console.warn('[Firestore] Bulk delete examQuestions note:', e)
         );
       });
     }
@@ -1433,32 +1631,38 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Question Actions
+  // Question Actions (Ref-backed + debounced Firestore bundle sync)
   const addQuestion = (examId: string, qData: Omit<Question, 'id' | 'number'>) => {
-    const existing = questions[examId] || [];
+    const existing = questionsRef.current[examId] || [];
     const newQ: Question = {
       ...qData,
-      id: `q-${examId}-${Date.now()}`,
+      id: `q-${examId}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
       examId,
       number: existing.length + 1,
     };
     const updated = [...existing, newQ];
+    questionsRef.current = { ...questionsRef.current, [examId]: updated };
     setQuestions(prev => ({ ...prev, [examId]: updated }));
+    syncQuestionsToFirestoreDebounced(examId, updated);
     updateExam(examId, { totalQuestions: updated.length });
   };
 
   const updateQuestion = (examId: string, questionId: string, data: Partial<Question>) => {
-    const existing = questions[examId] || [];
+    const existing = questionsRef.current[examId] || [];
     const updated = existing.map(q => (q.id === questionId ? { ...q, ...data } : q));
+    questionsRef.current = { ...questionsRef.current, [examId]: updated };
     setQuestions(prev => ({ ...prev, [examId]: updated }));
+    syncQuestionsToFirestoreDebounced(examId, updated);
   };
 
   const deleteQuestion = (examId: string, questionId: string) => {
-    const existing = questions[examId] || [];
+    const existing = questionsRef.current[examId] || [];
     const filtered = existing
       .filter(q => q.id !== questionId)
       .map((q, idx) => ({ ...q, number: idx + 1 }));
+    questionsRef.current = { ...questionsRef.current, [examId]: filtered };
     setQuestions(prev => ({ ...prev, [examId]: filtered }));
+    syncQuestionsToFirestoreDebounced(examId, filtered);
     updateExam(examId, { totalQuestions: filtered.length });
   };
 
@@ -1592,6 +1796,10 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       );
     }
 
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      syncSessionToFirestore(session);
+    }
+
     // OTOMATIS SISTEM: Deteksi Keterlambatan Waktu Masuk Ujian
     if (isFirstStart) {
       const now = new Date();
@@ -1628,6 +1836,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         session.answers = { ...session.answers, ...cached };
       }
     } catch {}
+
+    // Ensure latest question bundle for this exam is fetched (uses cache if already loaded)
+    loadExamQuestionsFromFirestore(examId, !(questionsRef.current[examId]?.length));
 
     // Update user login status
     updateUser(currentUser.id, { statusLogin: 'ujian' });
@@ -1671,7 +1882,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       all.map(s => (s.id === updatedSession.id ? updatedSession : s))
     );
 
-    // Persist real-time to IndexedDB & localStorage
+    // Persist real-time 100% locally to IndexedDB & localStorage (instant, zero quota cost)
     offlineStorage.cacheAnswerRealtime(
       updatedSession.id,
       questionId,
@@ -1681,22 +1892,10 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeExamTaking.currentQuestionIndex
     );
 
-    // Real-time synchronization
+    // Throttled cloud checkpoint (every 8 minutes) or offline queue
     if (typeof navigator !== 'undefined' && navigator.onLine) {
-      syncSessionToFirestore(updatedSession).then(() => {
-        offlineStorage.markAnswersSynced(updatedSession.id);
-      }).catch(() => {
-        setIsOnline(false);
-        enqueueOfflineSync({
-          id: `ans-${updatedSession.id}-${questionId}-${Date.now()}`,
-          type: 'answer',
-          sessionId: updatedSession.id,
-          sessionData: updatedSession,
-          timestamp: Date.now(),
-        });
-      });
+      scheduleAnswerSyncToFirestore(updatedSession);
     } else {
-      // Offline: save to sync queue
       enqueueOfflineSync({
         id: `ans-${updatedSession.id}-${questionId}-${Date.now()}`,
         type: 'answer',
@@ -1743,7 +1942,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     );
 
     if (typeof navigator !== 'undefined' && navigator.onLine) {
-      syncSessionToFirestore(updatedSession);
+      scheduleAnswerSyncToFirestore(updatedSession);
     } else {
       enqueueOfflineSync({
         id: `doubt-${updatedSession.id}-${questionId}-${Date.now()}`,
@@ -1871,9 +2070,6 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         currentAudioLevel: decibelLevel,
       }
     } : null));
-    setExamSessions(all =>
-      all.map(s => (s.id === activeExamTaking.session.id ? { ...s, currentAudioLevel: decibelLevel } : s))
-    );
   };
 
   const updateAudioProctoringSettings = (enabled: boolean, sensitivity: 'low' | 'medium' | 'high' = 'medium') => {
@@ -2003,7 +2199,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     updateUser(currentUser.id, { statusLogin: 'online' });
 
-    // Handle online sync or queue for offline
+    // Cancel any scheduled answer checkpoint and sync final submitted result immediately
+    clearScheduledAnswerSync();
+
     if (onlineNow) {
       syncSessionToFirestore(completedSession);
     } else {
@@ -2038,6 +2236,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       } catch {}
     }
     if (!session) return;
+    if (!(questionsRef.current[examId]?.length)) {
+      loadExamQuestionsFromFirestore(examId, true);
+    }
     setActiveExamTaking({
       exam,
       session,
@@ -2083,7 +2284,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       let firestoreDeletedCount = 0;
       if (typeof navigator === 'undefined' || navigator.onLine) {
         try {
-          const collectionsToClear = ['exams', 'examSessions', 'broadcasts'];
+          const collectionsToClear = ['exams', 'examQuestions', 'examSessions', 'broadcasts'];
           for (const colName of collectionsToClear) {
             const snap = await getDocs(collection(db, colName));
             if (!snap.empty) {

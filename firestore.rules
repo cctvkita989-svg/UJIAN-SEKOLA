@@ -16,6 +16,11 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    match /examQuestions/{examId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     match /examSessions/{sessionId} {
       allow read: if true;
       allow write: if true;

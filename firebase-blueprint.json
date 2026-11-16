@@ -70,6 +70,17 @@
         "timestamp": { "type": "string" }
       },
       "required": ["id", "sender", "content"]
+    },
+    "ExamQuestions": {
+      "title": "ExamQuestions",
+      "description": "Bundled question list per exam package for low-read multi-device sync",
+      "type": "object",
+      "properties": {
+        "examId": { "type": "string" },
+        "questions": { "type": "array" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["examId", "questions"]
     }
   },
   "firestore": {
@@ -80,6 +91,10 @@
     "/exams/{examId}": {
       "schema": "Exam",
       "description": "Exam schedules, tokens, and packages"
+    },
+    "/examQuestions/{examId}": {
+      "schema": "ExamQuestions",
+      "description": "Questions bundled per exam ID for 1-read student fetch"
     },
     "/examSessions/{sessionId}": {
       "schema": "ExamSession",

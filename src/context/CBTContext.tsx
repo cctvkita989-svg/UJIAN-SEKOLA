@@ -304,8 +304,15 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {}
   }, [theme]);
 
-  // Default to false so menu login opens on first load / Netlify
+  // On Android (APK / Exambro / PWA / Mobile), opening the app fresh always starts at the Login Menu
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    try {
+      const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+      const isAndroidDevice = /android|exambrokiosk|; wv\)/i.test(ua);
+      if (isAndroidDevice) {
+        return sessionStorage.getItem('educbt_tab_auth') === 'true';
+      }
+    } catch {}
     const savedAuth = localStorage.getItem('educbt_auth');
     return savedAuth === 'true';
   });
@@ -1148,6 +1155,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setCurrentUserState(matchedUser);
     setIsAuthenticated(true);
     localStorage.setItem('educbt_auth', 'true');
+    try {
+      sessionStorage.setItem('educbt_tab_auth', 'true');
+    } catch {}
     localStorage.setItem('educbt_curr_user', JSON.stringify(matchedUser));
 
     return {
@@ -1160,6 +1170,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = () => {
     setIsAuthenticated(false);
     localStorage.removeItem('educbt_auth');
+    try {
+      sessionStorage.removeItem('educbt_tab_auth');
+    } catch {}
     if (activeExamTaking) {
       setActiveExamTaking(null);
     }

@@ -6,11 +6,8 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  AlertCircle,
-  Download,
-  KeyRound
+  AlertCircle
 } from 'lucide-react';
-import { ResetPasswordModal } from './ResetPasswordModal';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { PWAInstallButton } from '../common/PWAInstallButton';
 
@@ -22,7 +19,6 @@ export const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -149,19 +145,6 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Reset Password Link */}
-            <div className="flex items-center justify-between text-xs pt-1">
-              <span className="text-slate-400 text-[11px]">Kendala login ujian?</span>
-              <button
-                type="button"
-                onClick={() => setIsResetModalOpen(true)}
-                className="text-[11px] font-semibold text-blue-700 hover:text-blue-900 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
-              >
-                <KeyRound className="w-3.5 h-3.5 text-blue-600" />
-                <span>Reset Password (Siswa / Admin)</span>
-              </button>
-            </div>
-
             <div className="pt-2">
               <button
                 type="submit"
@@ -175,44 +158,12 @@ export const LoginPage: React.FC = () => {
           </form>
         </div>
 
-        {/* Tombol Unduh dist.zip untuk Proktor/Pengelola */}
-        <div className="mt-5 p-3.5 bg-white border border-slate-200/90 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3 shadow-2xs">
-          <div className="flex items-center gap-2.5 text-left">
-            <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
-              <Download className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900">File Paket Web (dist.zip)</div>
-              <div className="text-[11px] text-slate-500">Unduh paket siap pakai untuk Netlify / server sekolah</div>
-            </div>
-          </div>
-          <a
-            href="/dist.zip"
-            download="dist.zip"
-            className="w-full sm:w-auto px-3.5 py-1.5 bg-emerald-800 hover:bg-emerald-900 active:scale-[0.99] text-white text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5 shadow-2xs shrink-0 cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Unduh dist.zip</span>
-          </a>
-        </div>
-
         {/* Footer info */}
         <div className="mt-6 text-center text-[11px] text-stone-400 space-y-1">
           <div>NPSN: {schoolProfile.npsn} · Tahun Pelajaran {schoolProfile.academicYear}</div>
           <div>Sistem Ujian Sekolah Berbasis Komputer (CBT) Mandiri</div>
         </div>
       </div>
-
-      {/* Modal Reset Password */}
-      <ResetPasswordModal
-        isOpen={isResetModalOpen}
-        onClose={() => setIsResetModalOpen(false)}
-        onSuccessLogin={(userLogin, passLogin) => {
-          setUsername(userLogin);
-          setPassword(passLogin);
-          setErrorMessage('');
-        }}
-      />
     </div>
   );
 };

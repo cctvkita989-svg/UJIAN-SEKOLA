@@ -6,6 +6,7 @@ import android.app.ActivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -14,6 +15,7 @@ import android.text.InputType
 import android.view.ActionMode
 import android.view.View
 import android.view.WindowManager
+import android.webkit.JavascriptInterface
 import android.webkit.PermissionRequest
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
@@ -48,13 +50,20 @@ class MainActivity : AppCompatActivity() {
 
     private var isProctorUnlocked = false
     private var hasAttemptedAutoPin = false
+    private var wasDevicePinned = false
+    @Volatile
+    private var isExamActive = false
+    private var examStartedAtMs = 0L
     private var pendingAudioPermissionRequest: PermissionRequest? = null
 
     private val handler = Handler(Looper.getMainLooper())
     private val pinCheckRunnable = object : Runnable {
         override fun run() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isInMultiWindowMode && isExamActive && !isProctorUnlocked) {
+                finishExamInWeb("Membuka layar belah (Split Screen) saat ujian")
+            }
             syncPinningUiState()
-            handler.postDelayed(this, 1500L)
+            handler.postDelayed(this, 750L)
         }
     }
 
@@ -68,6 +77,26 @@ class MainActivity : AppCompatActivity() {
                 req.grant(arrayOf(PermissionRequest.RESOURCE_AUDIO_CAPTURE))
             } else {
                 req.deny()
+            }
+        }
+    }
+
+    inner class KioskBridge {
+        @JavascriptInterface
+        fun setExamActive(active: Boolean) {
+            runOnUiThread {
+                isExamActive = active
+                if (active) {
+                    examStartedAtMs = System.currentTimeMillis()
+                    if (isDevicePinned()) {
+                        wasDevicePinned = true
+                    } else {
+                        triggerScreenPinning()
+                    }
+                } else {
+                    examStartedAtMs = 0L
+                }
+                syncPinningUiState()
             }
         }
     }
@@ -104,7 +133,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnProctorExit.setOnClickListener {
-            showProctorPinDialog(allowStayUnpinned = false)
+            showProctorPinDialog()
         }
 
         btnActivatePinning.setOnClickListener {
@@ -120,7 +149,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         btnOverlayProctorBypass.setOnClickListener {
-            showProctorPinDialog(allowStayUnpinned = true)
+            showProctorPinDialog()
         }
 
         // Disable hardware/gesture Back button escape
@@ -152,6 +181,8 @@ class MainActivity : AppCompatActivity() {
             allowContentAccess = false
             userAgentString = "$userAgentString ExambroKiosk/1.0"
         }
+
+        webView.addJavascriptInterface(KioskBridge(), "AndroidKiosk")
 
         // Disable long press copy/paste/context popup in WebView
         webView.isLongClickable = false
@@ -208,10 +239,39 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun finishExamInWeb(reason: String) {
+        if (!isExamActive) return
+        isExamActive = false
+        val safeReason = reason.replace("\\", "\\\\").replace("'", "\\'")
+        runOnUiThread {
+            try {
+                webView.evaluateJavascript(
+                    "window.__finishExamFromKiosk && window.__finishExamFromKiosk('$safeReason');",
+                    null
+                )
+            } catch (_: Exception) {
+            }
+        }
+    }
+
     // Block Android floating text selection toolbar (Copy / Paste / Web Search)
     override fun onActionModeStarted(mode: ActionMode?) {
         super.onActionModeStarted(mode)
         mode?.finish()
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (isExamActive && !isProctorUnlocked) {
+            finishExamInWeb("Keluar dari aplikasi saat ujian berlangsung")
+        }
+    }
+
+    override fun onStop() {
+        super.onStop()
+        if (isExamActive && !isProctorUnlocked) {
+            finishExamInWeb("Aplikasi ditutup atau dipindah ke latar belakang saat ujian")
+        }
     }
 
     override fun onWindowFocusChanged(hasFocus: Boolean) {
@@ -220,7 +280,16 @@ class MainActivity : AppCompatActivity() {
             hideSystemBars()
             if (!hasAttemptedAutoPin && !isProctorUnlocked) {
                 hasAttemptedAutoPin = true
-                handler.postDelayed({ triggerScreenPinning() }, 400L)
+                handler.postDelayed({
+                    try {
+                        startLockTask()
+                    } catch (_: Exception) {
+                    }
+                    syncPinningUiState()
+                }, 400L)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && isInMultiWindowMode && isExamActive && !isProctorUnlocked) {
+                finishExamInWeb("Membuka layar belah (Split Screen) saat ujian")
             }
             syncPinningUiState()
         }
@@ -231,12 +300,15 @@ class MainActivity : AppCompatActivity() {
         hideSystemBars()
         syncPinningUiState()
         handler.removeCallbacks(pinCheckRunnable)
-        handler.postDelayed(pinCheckRunnable, 1000L)
+        handler.postDelayed(pinCheckRunnable, 750L)
     }
 
     override fun onPause() {
         super.onPause()
         handler.removeCallbacks(pinCheckRunnable)
+        if (isExamActive && !isProctorUnlocked && wasDevicePinned && !isDevicePinned()) {
+            finishExamInWeb("Mencoba melepas mode sematkan (Pinning) saat ujian")
+        }
     }
 
     private fun hideSystemBars() {
@@ -271,22 +343,36 @@ class MainActivity : AppCompatActivity() {
 
     private fun syncPinningUiState() {
         val pinned = isDevicePinned()
+        val examNeedsPinning = isExamActive &&
+            examStartedAtMs > 0L &&
+            (System.currentTimeMillis() - examStartedAtMs) > 4500L
+
         if (pinned) {
+            wasDevicePinned = true
             tvPinStatus.text = "PINNING AKTIF • ANTI-SCREENSHOT & ANTI-COPAS"
             tvPinStatus.setTextColor(0xFF34D399.toInt())
             pinningOverlay.visibility = View.GONE
-        } else if (isProctorUnlocked) {
-            tvPinStatus.text = "MODE PENGAWAS (UNPINNED)"
-            tvPinStatus.setTextColor(0xFFFBBF24.toInt())
-            pinningOverlay.visibility = View.GONE
-        } else {
-            tvPinStatus.text = "PINNING TIDAK AKTIF!"
+        } else if (wasDevicePinned) {
+            if (isExamActive && !isProctorUnlocked) {
+                finishExamInWeb("Mencoba melepas mode sematkan (Pinning) saat ujian")
+            }
+            tvPinStatus.text = "PINNING DILEPAS • UJIAN SELESAI"
             tvPinStatus.setTextColor(0xFFFB7185.toInt())
+            tvPinOverlayDesc.text = "Mode sematkan (Screen Pinning) dilepas atau tidak aktif.\n\nJika dilakukan saat ujian berlangsung, sesi ujian otomatis diselesaikan. Klik tombol di bawah untuk mengaktifkan kembali pinning."
             pinningOverlay.visibility = View.VISIBLE
+        } else if (examNeedsPinning) {
+            tvPinStatus.text = "WAJIB PINNING SAAT UJIAN"
+            tvPinStatus.setTextColor(0xFFFB7185.toInt())
+            tvPinOverlayDesc.text = "Untuk mengerjakan ujian, mode sematkan (Screen Pinning) wajib aktif. Klik tombol di bawah lalu pilih 'Mengerti / Ya' pada dialog sistem Android."
+            pinningOverlay.visibility = View.VISIBLE
+        } else {
+            tvPinStatus.text = "CBT KIOSK SIAP • ANTI-SCREENSHOT"
+            tvPinStatus.setTextColor(0xFF34D399.toInt())
+            pinningOverlay.visibility = View.GONE
         }
     }
 
-    private fun showProctorPinDialog(allowStayUnpinned: Boolean) {
+    private fun showProctorPinDialog() {
         val input = EditText(this).apply {
             inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_VARIATION_PASSWORD
             hint = "Masukkan PIN Pengawas"
@@ -298,35 +384,37 @@ class MainActivity : AppCompatActivity() {
             addView(input)
         }
 
-        val builder = AlertDialog.Builder(this)
+        AlertDialog.Builder(this)
             .setTitle("Verifikasi PIN Pengawas")
-            .setMessage("Masukkan PIN Pengawas untuk membuka kunci kiosk atau keluar dari aplikasi ujian.")
+            .setMessage("Masukkan PIN Pengawas untuk keluar dari aplikasi ujian. Jika siswa sedang mengerjakan ujian, sesi akan langsung diselesaikan.")
             .setView(container)
             .setPositiveButton("Keluar Aplikasi") { _, _ ->
                 if (input.text.toString().trim() == PROCTOR_EXIT_PIN) {
-                    isProctorUnlocked = true
-                    try {
-                        stopLockTask()
-                    } catch (_: Exception) {
+                    val hadExam = isExamActive
+                    if (hadExam) {
+                        finishExamInWeb("Keluar aplikasi saat ujian berlangsung")
                     }
-                    finishAndRemoveTask()
+                    isProctorUnlocked = true
+                    if (hadExam) {
+                        handler.postDelayed({
+                            try {
+                                stopLockTask()
+                            } catch (_: Exception) {
+                            }
+                            finishAndRemoveTask()
+                        }, 350L)
+                    } else {
+                        try {
+                            stopLockTask()
+                        } catch (_: Exception) {
+                        }
+                        finishAndRemoveTask()
+                    }
                 } else {
                     Toast.makeText(this, "PIN Pengawas salah!", Toast.LENGTH_SHORT).show()
                 }
             }
             .setNegativeButton("Batal", null)
-
-        if (allowStayUnpinned) {
-            builder.setNeutralButton("Izinkan Tanpa Pinning") { _, _ ->
-                if (input.text.toString().trim() == PROCTOR_EXIT_PIN) {
-                    isProctorUnlocked = true
-                    syncPinningUiState()
-                } else {
-                    Toast.makeText(this, "PIN Pengawas salah!", Toast.LENGTH_SHORT).show()
-                }
-            }
-        }
-
-        builder.show()
+            .show()
     }
 }

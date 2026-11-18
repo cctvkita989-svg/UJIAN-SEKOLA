@@ -33,6 +33,7 @@ import { CBTExamRoom } from './CBTExamRoom';
 import { Exam, StudentSubjectGrade } from '../../types/cbt';
 import { StudentCardModal } from '../admin/StudentCardModal';
 import { StudentExamHistoryView } from './StudentExamHistoryView';
+import { isInsideExamApp } from '../../utils/examAppGuard';
 
 export const SiswaDashboard: React.FC = () => {
   const {
@@ -655,53 +656,65 @@ export const SiswaDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Input Token & Start */}
+                  {/* Input Token & Start (Hanya melalui Aplikasi Ujian Android) */}
                   <div className="mt-6 pt-4 border-t border-slate-200 space-y-3">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">
-                        Masukkan Token Ujian (Dari Pengawas Ruang)
-                      </label>
-                      <div className="flex items-center gap-2">
-                        <div className="relative flex-1">
-                          <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-                          <input
-                            type="text"
-                            maxLength={8}
-                            value={enteredToken[ongoingExam.id] || ''}
-                            onChange={e =>
-                              setEnteredToken(prev => ({
-                                ...prev,
-                                [ongoingExam.id]: e.target.value.toUpperCase(),
-                              }))
-                            }
-                            placeholder="Ketik Token..."
-                            className="w-full pl-9 pr-3 py-2 text-sm font-mono font-bold tracking-widest uppercase bg-white border border-blue-200 rounded-lg focus:outline-hidden focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20"
-                          />
+                    {!isInsideExamApp() ? (
+                      <div className="p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-900 space-y-1.5">
+                        <div className="flex items-center gap-1.5 font-bold text-rose-800">
+                          <ShieldAlert className="w-4 h-4 text-rose-600 shrink-0" />
+                          <span>Ujian Melalui Browser Web Dilarang</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-rose-800/90">
+                          Anda sedang membuka lewat browser web. Ujian <strong>hanya boleh dikerjakan melalui Aplikasi Ujian Android (APK Kiosk / Exambro)</strong> resmi sekolah. Silakan login lewat aplikasi di HP Android Anda.
+                        </p>
+                      </div>
+                    ) : (
+                      <div>
+                        <label className="block text-xs font-semibold text-slate-700 mb-1">
+                          Masukkan Token Ujian (Dari Pengawas Ruang)
+                        </label>
+                        <div className="flex items-center gap-2">
+                          <div className="relative flex-1">
+                            <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                            <input
+                              type="text"
+                              maxLength={8}
+                              value={enteredToken[ongoingExam.id] || ''}
+                              onChange={e =>
+                                setEnteredToken(prev => ({
+                                  ...prev,
+                                  [ongoingExam.id]: e.target.value.toUpperCase(),
+                                }))
+                              }
+                              placeholder="Ketik Token..."
+                              className="w-full pl-9 pr-3 py-2 text-sm font-mono font-bold tracking-widest uppercase bg-white border border-blue-200 rounded-lg focus:outline-hidden focus:border-blue-600 focus:ring-2 focus:ring-blue-500/20"
+                            />
+                          </div>
+
+                          <button
+                            onClick={() => handleStartExam(ongoingExam)}
+                            className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-blue-600/20 cursor-pointer"
+                          >
+                            <span>Mulai Kerjakan</span>
+                            <ArrowRight className="w-3.5 h-3.5" />
+                          </button>
                         </div>
 
-                        <button
-                          onClick={() => handleStartExam(ongoingExam)}
-                          className="flex items-center gap-1.5 px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors shadow-sm shadow-blue-600/20 cursor-pointer"
-                        >
-                          <span>Mulai Kerjakan</span>
-                          <ArrowRight className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
+                        {tokenError[ongoingExam.id] && (
+                          <p className="text-[11px] text-rose-600 flex items-center gap-1 mt-1.5">
+                            <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                            <span>{tokenError[ongoingExam.id]}</span>
+                          </p>
+                        )}
 
-                      {tokenError[ongoingExam.id] && (
-                        <p className="text-[11px] text-rose-600 flex items-center gap-1 mt-1.5">
-                          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
-                          <span>{tokenError[ongoingExam.id]}</span>
-                        </p>
-                      )}
-
-                      <div className="text-[11px] text-slate-400 mt-2 flex items-center justify-between">
-                        <span>
-                          Token Ujian Aktif: <strong className="font-mono text-indigo-700">{ongoingExam.token}</strong>
-                        </span>
-                        <span className="text-emerald-700 font-semibold">Siap Dikerjakan</span>
+                        <div className="text-[11px] text-slate-400 mt-2 flex items-center justify-between">
+                          <span>
+                            Token Ujian Aktif: <strong className="font-mono text-indigo-700">{ongoingExam.token}</strong>
+                          </span>
+                          <span className="text-emerald-700 font-semibold">Siap Dikerjakan</span>
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               );

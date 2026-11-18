@@ -41,6 +41,7 @@ import {
   limit,
 } from 'firebase/firestore';
 import { offlineStorage } from '../lib/offlineStorage';
+import { isInsideExamApp, notifyKioskExamActive } from '../utils/examAppGuard';
 
 interface CBTContextType {
   isAuthenticated: boolean;
@@ -113,10 +114,11 @@ interface CBTContextType {
   resetAdminPassword: (recoveryKey: string, newPassword?: string) => { success: boolean; message: string; newPassword?: string };
   batchResetAllStudentsPassword: (defaultPassword?: string) => { success: boolean; count: number; message: string };
   recordExamViolation: () => void;
+  finishExamDueToViolation: (reason: string) => void;
   recordAudioViolation: (decibelLevel: number, incidentType?: 'bisikan' | 'suara_keras') => void;
   reportCurrentAudioLevel: (decibelLevel: number) => void;
   updateAudioProctoringSettings: (enabled: boolean, sensitivity?: 'low' | 'medium' | 'high') => void;
-  submitCurrentExam: () => void;
+  submitCurrentExam: (forcedReason?: string) => void;
   exitExamView: () => void;
   viewStudentExamResult: (examId: string) => void;
   isOnline: boolean;
@@ -605,7 +607,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const currentUserRef = useRef(currentUser);
   currentUserRef.current = currentUser;
 
-  const submitExamRef = useRef<() => void>(() => {});
+  const submitExamRef = useRef<(forcedReason?: string) => void>(() => {});
+  const finishExamViolationRef = useRef<(reason: string) => void>(() => {});
 
   const calculateExamScore = (examQList: Question[], answersMap: ExamSession['answers']) => {
     let correctCount = 0;
@@ -1095,6 +1098,25 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     return () => clearInterval(timer);
   }, [activeExamTaking?.session?.id, activeExamTaking?.session?.status]);
+
+  // Sync active exam state with Android Kiosk APK & expose instant-finish hook for exit/unpin detection
+  useEffect(() => {
+    const isTakingNow = activeExamTaking?.session?.status === 'in_progress';
+    notifyKioskExamActive(Boolean(isTakingNow));
+
+    const win = window as unknown as {
+      __finishExamFromKiosk?: (reason: string) => void;
+    };
+    win.__finishExamFromKiosk = (reason: string) => {
+      finishExamViolationRef.current(reason);
+    };
+
+    return () => {
+      if (!activeExamTaking || activeExamTaking.session.status !== 'in_progress') {
+        notifyKioskExamActive(false);
+      }
+    };
+  }, [activeExamTaking?.session?.status]);
 
   const setCurrentUser = (user: User) => {
     setCurrentUserState(user);
@@ -1774,6 +1796,13 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   // Student CBT Actions
   const startExamForStudent = (examId: string, tokenEntered: string) => {
+    if (!isInsideExamApp()) {
+      return {
+        success: false,
+        message: 'Ujian melalui browser web tidak diperbolehkan! Silakan masuk menggunakan Aplikasi Ujian Android sekolah.',
+      };
+    }
+
     const exam = exams.find(e => e.id === examId);
     if (!exam) return { success: false, message: 'Ujian tidak ditemukan.' };
 
@@ -2132,9 +2161,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
-  const submitCurrentExam = () => {
+  const submitCurrentExam = (forcedReason?: string) => {
     const latestTaking = activeExamTakingRef.current;
-    if (!latestTaking) return;
+    if (!latestTaking || latestTaking.session.status === 'submitted') return;
 
     const latestUser = currentUserRef.current;
     const examQList = questionsRef.current[latestTaking.exam.id] || [];
@@ -2151,7 +2180,11 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       score: finalScore,
       correctCount,
       wrongCount,
-      lastActive: onlineNow ? 'Selesai Mengumpulkan' : 'Selesai (Tersimpan Offline)',
+      lastActive: forcedReason
+        ? `Selesai Otomatis (${forcedReason})`
+        : onlineNow
+        ? 'Selesai Mengumpulkan'
+        : 'Selesai (Tersimpan Offline)',
       isOfflineSynced: onlineNow,
       offlineSubmittedAt: completedTimestamp,
     };
@@ -2172,6 +2205,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch (e) {
       console.warn('Storage save error:', e);
     }
+
+    notifyKioskExamActive(false);
 
     setActiveExamTaking(prev => (prev ? { ...prev, session: completedSession } : null));
     setExamSessions(all =>
@@ -2222,6 +2257,31 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
   submitExamRef.current = submitCurrentExam;
+
+  const finishExamDueToViolation = (reason: string) => {
+    const latestTaking = activeExamTakingRef.current;
+    if (!latestTaking || latestTaking.session.status !== 'in_progress') return;
+
+    const now = new Date();
+    const autoFinishNote: StudentDisciplineNote = {
+      id: `auto-exit-${Date.now()}`,
+      studentId: latestTaking.session.studentId,
+      studentName: latestTaking.session.studentName,
+      studentNisn: latestTaking.session.studentNisn,
+      studentClass: latestTaking.session.studentClass,
+      subject: latestTaking.exam.subject,
+      type: 'kecurangan',
+      title: `Ujian Langsung Diselesaikan: ${reason}`,
+      description: `Sistem pengawas CBT mendeteksi peserta (${latestTaking.session.studentName}) ${reason.toLowerCase()} pada pukul ${now.toLocaleTimeString('id-ID')}. Sesi ujian otomatis dihentikan & dikumpulkan sesuai tata tertib ujian.`,
+      timestamp: now.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }),
+      severity: 'danger',
+      source: 'system_auto',
+    };
+    setDisciplineNotes(prev => [autoFinishNote, ...prev]);
+
+    submitCurrentExam(reason);
+  };
+  finishExamViolationRef.current = finishExamDueToViolation;
 
   const viewStudentExamResult = (examId: string) => {
     const exam = exams.find(e => e.id === examId);
@@ -2405,6 +2465,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetAdminPassword,
         batchResetAllStudentsPassword,
         recordExamViolation,
+        finishExamDueToViolation,
         recordAudioViolation,
         reportCurrentAudioLevel,
         updateAudioProctoringSettings,

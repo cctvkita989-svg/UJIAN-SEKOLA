@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 import { ExamResultView } from './ExamResultView';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
+import { isInsideExamApp } from '../../utils/examAppGuard';
 
 export const CBTExamRoom: React.FC = () => {
   const {
@@ -36,6 +37,7 @@ export const CBTExamRoom: React.FC = () => {
     setExamQuestionIndex,
     setFontScale,
     recordExamViolation,
+    finishExamDueToViolation,
     recordAudioViolation,
     reportCurrentAudioLevel,
     schoolProfile,
@@ -107,11 +109,15 @@ export const CBTExamRoom: React.FC = () => {
 
   const lastViolationTimestampRef = useRef<number>(0);
 
-  // Anti-cheat: window blur / visibility detection + block copy, paste, cut, right-click, long-press & shortcuts
+  // Anti-cheat: leaving app (visibility hidden / pagehide) immediately finishes the exam;
+  // transient focus loss after system-dialog grace period records a focus warning.
   useEffect(() => {
     if (!activeExamTaking || activeExamTaking.session.status !== 'in_progress') return;
 
+    const armedAt = Date.now() + 3000;
+
     const triggerViolationSafe = () => {
+      if (Date.now() < armedAt) return;
       const now = Date.now();
       if (now - lastViolationTimestampRef.current < 1500) return;
       lastViolationTimestampRef.current = now;
@@ -121,12 +127,20 @@ export const CBTExamRoom: React.FC = () => {
 
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        triggerViolationSafe();
+        finishExamDueToViolation('Keluar aplikasi atau berpindah layar saat ujian');
       }
     };
 
+    const handlePageHide = () => {
+      finishExamDueToViolation('Menutup atau meninggalkan aplikasi saat ujian');
+    };
+
     const handleWindowBlur = () => {
-      triggerViolationSafe();
+      if (document.hidden) {
+        finishExamDueToViolation('Keluar aplikasi saat ujian');
+      } else {
+        triggerViolationSafe();
+      }
     };
 
     const preventClipboardOrMenu = (e: Event) => {
@@ -161,6 +175,7 @@ export const CBTExamRoom: React.FC = () => {
     };
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('pagehide', handlePageHide);
     window.addEventListener('blur', handleWindowBlur);
     document.addEventListener('copy', preventClipboardOrMenu);
     document.addEventListener('cut', preventClipboardOrMenu);
@@ -172,6 +187,7 @@ export const CBTExamRoom: React.FC = () => {
 
     return () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('pagehide', handlePageHide);
       window.removeEventListener('blur', handleWindowBlur);
       document.removeEventListener('copy', preventClipboardOrMenu);
       document.removeEventListener('cut', preventClipboardOrMenu);
@@ -348,6 +364,29 @@ export const CBTExamRoom: React.FC = () => {
   // If already submitted, show result view
   if (session.status === 'submitted') {
     return <ExamResultView onBackToDashboard={exitExamView} />;
+  }
+
+  // Block web browser exam execution
+  if (!isInsideExamApp()) {
+    return (
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+        <div className="max-w-md w-full bg-white rounded-2xl p-6 text-center space-y-4 shadow-2xl">
+          <div className="w-16 h-16 bg-rose-100 rounded-full flex items-center justify-center mx-auto text-rose-600">
+            <AlertTriangle className="w-8 h-8" />
+          </div>
+          <h2 className="text-lg font-bold text-slate-900">Ujian Hanya Melalui Aplikasi</h2>
+          <p className="text-xs text-slate-600 leading-relaxed">
+            Siswa tidak diperbolehkan mengikuti ujian melalui browser web (Chrome, Safari, dll). Silakan tutup halaman ini dan buka ujian menggunakan <strong>Aplikasi Ujian Android</strong> resmi sekolah.
+          </p>
+          <button
+            onClick={exitExamView}
+            className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+          >
+            Kembali ke Beranda
+          </button>
+        </div>
+      </div>
+    );
   }
 
   // If blocked, show blocked screen

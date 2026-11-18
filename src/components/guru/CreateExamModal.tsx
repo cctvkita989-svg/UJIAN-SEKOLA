@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useCBT } from '../../context/CBTContext';
-import { X, BookOpen } from 'lucide-react';
+import { X, BookOpen, Calendar, Clock } from 'lucide-react';
+import { computeDurationMinutes, getTodayIsoDate } from '../../utils/examSchedule';
 
 interface CreateExamModalProps {
   isOpen: boolean;
@@ -13,6 +14,9 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({ isOpen, onClos
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState(currentUser.mapel || 'Matematika');
   const [gradeLevel, setGradeLevel] = useState('Kelas XII - MIPA');
+  const [examDate, setExamDate] = useState(getTodayIsoDate());
+  const [startTime, setStartTime] = useState('07:30');
+  const [endTime, setEndTime] = useState('09:00');
   const [durationMinutes, setDurationMinutes] = useState(90);
   const [kkm, setKkm] = useState(75);
   const [randomizeQuestions, setRandomizeQuestions] = useState(true);
@@ -33,9 +37,10 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({ isOpen, onClos
       totalQuestions: 0,
       token: Math.random().toString(36).substring(2, 8).toUpperCase(),
       isTokenActive: true,
-      startTime: '08:00',
-      endTime: '12:00',
-      status: 'ongoing',
+      examDate: examDate || undefined,
+      startTime,
+      endTime,
+      status: 'published',
       createdByTeacherId: currentUser.id,
       teacherName: currentUser.name,
       kkm,
@@ -111,6 +116,58 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({ isOpen, onClos
             </div>
           </div>
 
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Tanggal Ujian</span>
+              </label>
+              <input
+                type="date"
+                required
+                value={examDate}
+                onChange={e => setExamDate(e.target.value)}
+                className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-indigo-600 font-medium"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Jam Mulai (WIB)</span>
+              </label>
+              <input
+                type="time"
+                required
+                value={startTime}
+                onChange={e => {
+                  const nextStart = e.target.value;
+                  setStartTime(nextStart);
+                  const autoDur = computeDurationMinutes(nextStart, endTime);
+                  if (autoDur !== null) setDurationMinutes(autoDur);
+                }}
+                className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-indigo-600"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1 flex items-center gap-1">
+                <Clock className="w-3.5 h-3.5 text-indigo-600" />
+                <span>Jam Selesai (WIB)</span>
+              </label>
+              <input
+                type="time"
+                required
+                value={endTime}
+                onChange={e => {
+                  const nextEnd = e.target.value;
+                  setEndTime(nextEnd);
+                  const autoDur = computeDurationMinutes(startTime, nextEnd);
+                  if (autoDur !== null) setDurationMinutes(autoDur);
+                }}
+                className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-indigo-600"
+              />
+            </div>
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -118,8 +175,8 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({ isOpen, onClos
               </label>
               <input
                 type="number"
-                min={15}
-                max={240}
+                min={10}
+                max={480}
                 value={durationMinutes}
                 onChange={e => setDurationMinutes(Number(e.target.value))}
                 className="w-full px-3 py-2 text-sm font-mono bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-indigo-600"

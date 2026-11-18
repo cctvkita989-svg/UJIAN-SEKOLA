@@ -42,6 +42,8 @@ import {
 } from 'firebase/firestore';
 import { offlineStorage } from '../lib/offlineStorage';
 import { isInsideExamApp, notifyKioskExamActive } from '../utils/examAppGuard';
+import { formatExamDateId, getExamTimingStatus, getTodayIsoDate } from '../utils/examSchedule';
+import { buildPasDraftExams, buildTrialExamsAndQuestions } from '../data/pasAndTrialPresets';
 
 interface CBTContextType {
   isAuthenticated: boolean;
@@ -151,6 +153,7 @@ interface CBTContextType {
   // Global reset & Clear Trial Data (preserve 834 official students + school master data)
   resetAllData: () => void;
   clearTrialData: () => Promise<{ success: boolean; message: string }>;
+  loadPasAndTrialPresets: () => Promise<{ addedExams: number; addedQuestions: number }>;
 }
 
 export const CBT_STORAGE_VERSION = 'v21_real_students_roster';
@@ -592,6 +595,9 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setOfflineQueue(newQueue);
   };
 
+  const examsRef = useRef<Exam[]>(exams);
+  examsRef.current = exams;
+
   const examSessionsRef = useRef<ExamSession[]>(examSessions);
   examSessionsRef.current = examSessions;
 
@@ -905,7 +911,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const syncExamToFirestore = async (exam: Exam) => {
     try {
-      await setDoc(doc(db, 'exams', exam.id), exam, { merge: true });
+      const sanitizedExam = JSON.parse(JSON.stringify(exam));
+      await setDoc(doc(db, 'exams', exam.id), sanitizedExam, { merge: true });
     } catch (e) {
       console.warn('[Firestore] Sync exam note:', e);
     }
@@ -1616,6 +1623,89 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
+  const loadPasAndTrialPresets = async (): Promise<{ addedExams: number; addedQuestions: number }> => {
+    const pasDrafts = buildPasDraftExams();
+    const { exams: trialExams, questionsMap: trialQuestionsMap } = buildTrialExamsAndQuestions();
+    const allPresetExams = [...trialExams, ...pasDrafts];
+    const trialIds = new Set(trialExams.map(t => t.id));
+
+    const existingIds = new Set(examsRef.current.map(e => e.id));
+    const missingExams = allPresetExams.filter(e => !existingIds.has(e.id));
+    const outdatedTrialExams = examsRef.current
+      .filter(e => trialIds.has(e.id) && e.token !== 'SMPN1PANDAN')
+      .map(e => ({ ...e, token: 'SMPN1PANDAN', isTokenActive: true }));
+
+    if (missingExams.length > 0 || outdatedTrialExams.length > 0) {
+      setExams(prev => {
+        const ids = new Set(prev.map(e => e.id));
+        const toAdd = allPresetExams.filter(e => !ids.has(e.id));
+        const updatedPrev = prev.map(e =>
+          trialIds.has(e.id) && e.token !== 'SMPN1PANDAN'
+            ? { ...e, token: 'SMPN1PANDAN', isTokenActive: true }
+            : e
+        );
+        return [...toAdd, ...updatedPrev];
+      });
+    }
+
+    const qKeysToSync: string[] = [];
+    setQuestions(prev => {
+      const next = { ...prev };
+      Object.entries(trialQuestionsMap).forEach(([examId, qList]) => {
+        if (!next[examId] || next[examId].length === 0) {
+          next[examId] = qList;
+          qKeysToSync.push(examId);
+        }
+      });
+      pasDrafts.forEach(d => {
+        if (!next[d.id]) {
+          next[d.id] = [];
+        }
+      });
+      return next;
+    });
+
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      await Promise.allSettled([
+        ...missingExams.map(ex => syncExamToFirestore(ex)),
+        ...outdatedTrialExams.map(ex => syncExamToFirestore(ex)),
+        ...Object.entries(trialQuestionsMap).map(([examId, qList]) =>
+          setDoc(
+            doc(db, 'examQuestions', examId),
+            {
+              examId,
+              questions: qList,
+              updatedAt: new Date().toISOString(),
+            },
+            { merge: true }
+          )
+        ),
+      ]);
+    }
+
+    try {
+      localStorage.setItem('educbt_pas_trial_seeded_v2', 'true');
+    } catch {}
+
+    return {
+      addedExams: missingExams.length + outdatedTrialExams.length,
+      addedQuestions: qKeysToSync.length * 10,
+    };
+  };
+
+  useEffect(() => {
+    if (!isAuthenticated || currentUser.role !== 'admin') return;
+    try {
+      if (localStorage.getItem('educbt_pas_trial_seeded_v2') === 'true') return;
+    } catch {
+      return;
+    }
+    const timer = setTimeout(() => {
+      loadPasAndTrialPresets().catch(() => {});
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, currentUser.role]);
+
   // Exam Actions
   const addExam = (examData: Omit<Exam, 'id'>) => {
     const newId = `exam-${Date.now()}`;
@@ -1806,6 +1896,34 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const exam = exams.find(e => e.id === examId);
     if (!exam) return { success: false, message: 'Ujian tidak ditemukan.' };
 
+    if (exam.status === 'completed') {
+      return { success: false, message: 'Sesi ujian ini telah dihentikan / selesai oleh proktor.' };
+    }
+
+    if (exam.status === 'draft') {
+      return { success: false, message: 'Ujian masih berstatus draft dan belum dipublikasikan.' };
+    }
+
+    const timingStatus = getExamTimingStatus(exam);
+    if (timingStatus === 'before_date') {
+      return {
+        success: false,
+        message: `Ujian belum waktunya. Jadwal dimulai pada ${formatExamDateId(exam.examDate)} pukul ${exam.startTime} WIB.`,
+      };
+    }
+    if (timingStatus === 'before_time' && exam.examDate) {
+      return {
+        success: false,
+        message: `Ujian belum dimulai. Jadwal dibuka pukul ${exam.startTime} WIB.`,
+      };
+    }
+    if (timingStatus === 'after_time') {
+      return {
+        success: false,
+        message: `Waktu jadwal ujian (${formatExamDateId(exam.examDate)} pukul ${exam.startTime} - ${exam.endTime} WIB) telah berakhir. Hubungi proktor jika membutuhkan sesi susulan.`,
+      };
+    }
+
     if (!exam.isTokenActive) {
       return { success: false, message: 'Sesi ujian belum diaktifkan oleh pengawas/proktor.' };
     }
@@ -1885,28 +2003,30 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // OTOMATIS SISTEM: Deteksi Keterlambatan Waktu Masuk Ujian
     if (isFirstStart) {
       const now = new Date();
+      const isTodaySchedule = !exam.examDate || exam.examDate === getTodayIsoDate(now);
       const [startH, startM] = (exam.startTime || '07:30').split(':').map(Number);
       const currentMinsTotal = now.getHours() * 60 + now.getMinutes();
       const scheduledMinsTotal = startH * 60 + startM;
       const diff = currentMinsTotal - scheduledMinsTotal;
-      const minutesLate = diff > 0 ? diff : 10; // Default simulated 10 menit jika tes live
 
-      const autoTardyNote: StudentDisciplineNote = {
-        id: `auto-tardy-${Date.now()}`,
-        studentId: currentUser.id,
-        studentName: currentUser.name,
-        studentNisn: currentUser.nisn || '-',
-        studentClass: currentUser.kelas || '-',
-        subject: exam.subject,
-        type: 'terlambat',
-        title: `Otomatis Sistem: Terlambat Masuk Ujian (${minutesLate} Menit)`,
-        description: `Jadwal resmi dimulai pukul ${exam.startTime} WIB. Sistem mendeteksi siswa baru mulai login/mengerjakan pada pukul ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB (terlambat ${minutesLate} menit). Catatan otomatis terkirim dan disinkronkan ke Dasbor Siswa, Proktor Admin, dan Guru Pengampu (${exam.teacherName}).`,
-        timestamp: now.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }),
-        severity: 'warning',
-        source: 'system_auto',
-        minutesLate,
-      };
-      setDisciplineNotes(prev => [autoTardyNote, ...prev]);
+      if (isTodaySchedule && diff > 5) {
+        const autoTardyNote: StudentDisciplineNote = {
+          id: `auto-tardy-${Date.now()}`,
+          studentId: currentUser.id,
+          studentName: currentUser.name,
+          studentNisn: currentUser.nisn || '-',
+          studentClass: currentUser.kelas || '-',
+          subject: exam.subject,
+          type: 'terlambat',
+          title: `Otomatis Sistem: Terlambat Masuk Ujian (${diff} Menit)`,
+          description: `Jadwal resmi dimulai pukul ${exam.startTime} WIB. Sistem mendeteksi siswa baru mulai login/mengerjakan pada pukul ${now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })} WIB (terlambat ${diff} menit). Catatan otomatis terkirim dan disinkronkan ke Dasbor Siswa, Proktor Admin, dan Guru Pengampu (${exam.teacherName}).`,
+          timestamp: now.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }),
+          severity: 'warning',
+          source: 'system_auto',
+          minutesLate: diff,
+        };
+        setDisciplineNotes(prev => [autoTardyNote, ...prev]);
+      }
     }
 
     // Restore any offline cached answers if session was previously interrupted
@@ -2492,6 +2612,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         resetSimulationToStandard,
         resetAllData,
         clearTrialData,
+        loadPasAndTrialPresets,
         theme,
         setTheme,
       }}

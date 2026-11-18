@@ -21,6 +21,7 @@ import {
   downloadBeritaAcaraPdf,
   downloadNomorMejaPdf,
 } from '../../utils/pdfGenerator';
+import { formatExamDateId } from '../../utils/examSchedule';
 
 export interface ExamAdministrationDocsProps {
   initialDocType?: 'kartu_peserta' | 'daftar_hadir' | 'berita_acara' | 'nomor_meja' | 'daftar_nilai';
@@ -519,7 +520,11 @@ export const ExamAdministrationDocs: React.FC<ExamAdministrationDocsProps> = ({
                 <div className="space-y-1">
                   <div className="flex">
                     <span className="w-32 text-slate-500">Tanggal Pelaksanaan</span>
-                    <span className="font-bold text-slate-900">: {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</span>
+                    <span className="font-bold text-slate-900">
+                      : {selectedExam?.examDate
+                        ? formatExamDateId(selectedExam.examDate)
+                        : new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                    </span>
                   </div>
                   <div className="flex">
                     <span className="w-32 text-slate-500">Waktu & Durasi</span>

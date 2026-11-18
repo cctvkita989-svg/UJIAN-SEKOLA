@@ -34,6 +34,7 @@ import { Exam, StudentSubjectGrade } from '../../types/cbt';
 import { StudentCardModal } from '../admin/StudentCardModal';
 import { StudentExamHistoryView } from './StudentExamHistoryView';
 import { isInsideExamApp } from '../../utils/examAppGuard';
+import { formatExamDateId, getExamTimingStatus } from '../../utils/examSchedule';
 
 export const SiswaDashboard: React.FC = () => {
   const {
@@ -66,6 +67,7 @@ export const SiswaDashboard: React.FC = () => {
   // Exam token states
   const [enteredToken, setEnteredToken] = useState<Record<string, string>>({});
   const [tokenError, setTokenError] = useState<Record<string, string>>({});
+  const [selectedActiveExamId, setSelectedActiveExamId] = useState<string | null>(null);
 
   // Change password states
   const [oldPassword, setOldPassword] = useState('');
@@ -84,10 +86,17 @@ export const SiswaDashboard: React.FC = () => {
   }
 
   const handleStartExam = (exam: Exam) => {
-    if (exam.status !== 'ongoing' || !exam.isTokenActive) {
+    const timingStatus = getExamTimingStatus(exam);
+    const isWindowOpen = timingStatus === 'ongoing' || timingStatus === 'ready';
+    if (!isWindowOpen || !exam.isTokenActive) {
       setTokenError(prev => ({
         ...prev,
-        [exam.id]: 'Ujian belum dimulai atau sesi belum dibuka oleh pengawas ruang.',
+        [exam.id]:
+          timingStatus === 'before_date'
+            ? `Ujian baru dapat diakses pada ${formatExamDateId(exam.examDate)} pukul ${exam.startTime} WIB.`
+            : timingStatus === 'after_time'
+            ? 'Jadwal ujian ini sudah berakhir. Hubungi proktor jika ada kendala.'
+            : 'Ujian belum dimulai atau sesi belum dibuka oleh pengawas ruang.',
       }));
       return;
     }
@@ -161,6 +170,9 @@ export const SiswaDashboard: React.FC = () => {
   const studentAgamaNorm = normalizeAgama(studentAgama);
 
   const relevantExams = exams.filter(e => {
+    // Sembunyikan ujian berstatus draft dari siswa
+    if (e.status === 'draft') return false;
+
     // 1. Filter Agama
     if (e.requiredAgama) {
       if (normalizeAgama(e.requiredAgama) !== studentAgamaNorm) return false;
@@ -183,6 +195,11 @@ export const SiswaDashboard: React.FC = () => {
     }
 
     return true;
+  }).sort((a, b) => {
+    const dateA = a.examDate || '9999-12-31';
+    const dateB = b.examDate || '9999-12-31';
+    if (dateA !== dateB) return dateA.localeCompare(dateB);
+    return (a.startTime || '').localeCompare(b.startTime || '');
   });
 
   // Helper to determine student's personal completion state for an exam
@@ -320,9 +337,24 @@ export const SiswaDashboard: React.FC = () => {
     }
   };
 
-  // Filter exams into: 1 Sedang Berlangsung & 1 Belum Waktunya (as instructed)
-  const ongoingExam = relevantExams.find(e => e.status === 'ongoing') || relevantExams[0];
-  const upcomingExam = relevantExams.find(e => e.status === 'published' && e.id !== ongoingExam?.id) || relevantExams.find(e => e.id !== ongoingExam?.id);
+  // Filter exams into: 1 Sedang Berlangsung/Siap & 1 Belum Waktunya
+  const ongoingExam =
+    (selectedActiveExamId
+      ? relevantExams.find(e => e.id === selectedActiveExamId)
+      : undefined) ||
+    relevantExams.find(e => {
+      const st = getExamTimingStatus(e);
+      return (st === 'ongoing' || st === 'ready') && !getExamStudentState(e.id).isSubmitted;
+    }) ||
+    relevantExams.find(e => {
+      const st = getExamTimingStatus(e);
+      return st === 'ongoing' || st === 'ready';
+    }) ||
+    relevantExams.find(e => e.status !== 'completed' && e.status !== 'draft') ||
+    relevantExams[0];
+  const upcomingExam =
+    relevantExams.find(e => e.id !== ongoingExam?.id && e.status !== 'draft') ||
+    undefined;
 
   return (
     <div className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-4 sm:space-y-6">
@@ -614,11 +646,18 @@ export const SiswaDashboard: React.FC = () => {
                 );
               }
 
+              const ongoingTiming = getExamTimingStatus(ongoingExam);
+              const ongoingIsOpen = ongoingTiming === 'ongoing' || ongoingTiming === 'ready';
+
               return (
                 <div className="bg-white border-2 border-indigo-500 rounded-2xl p-6 shadow-sm flex flex-col justify-between relative overflow-hidden">
-                  <div className="absolute top-0 right-0 bg-emerald-600 text-white text-[11px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider flex items-center gap-1">
+                  <div
+                    className={`absolute top-0 right-0 text-white text-[11px] font-bold px-3 py-1 rounded-bl-xl uppercase tracking-wider flex items-center gap-1 ${
+                      ongoingIsOpen ? 'bg-emerald-600' : 'bg-amber-600'
+                    }`}
+                  >
                     <span className="w-2 h-2 rounded-full bg-white"></span>
-                    Sedang Berlangsung
+                    {ongoingIsOpen ? 'Sedang Berlangsung' : 'Terjadwal'}
                   </div>
 
                   <div>
@@ -631,6 +670,12 @@ export const SiswaDashboard: React.FC = () => {
                     <p className="text-xs text-slate-500 mt-0.5">{ongoingExam.title}</p>
 
                     <div className="mt-4 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl space-y-2 text-xs">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500">Tanggal Ujian</span>
+                        <span className="font-bold text-indigo-900 text-right">
+                          {formatExamDateId(ongoingExam.examDate, 'Hari Ini')}
+                        </span>
+                      </div>
                       <div className="flex justify-between items-center">
                         <span className="text-slate-500">Waktu Pelaksanaan</span>
                         <span className="font-bold text-slate-800">
@@ -678,7 +723,7 @@ export const SiswaDashboard: React.FC = () => {
                             <KeyRound className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                             <input
                               type="text"
-                              maxLength={8}
+                              maxLength={20}
                               value={enteredToken[ongoingExam.id] || ''}
                               onChange={e =>
                                 setEnteredToken(prev => ({
@@ -796,10 +841,16 @@ export const SiswaDashboard: React.FC = () => {
                     <p className="text-xs text-slate-500 mt-0.5">{upcomingExam.title}</p>
 
                     <div className="mt-4 p-4 bg-white border border-slate-200 rounded-xl space-y-2 text-xs">
+                      <div className="flex justify-between items-center gap-2">
+                        <span className="text-slate-500">Tanggal Ujian</span>
+                        <span className="font-bold text-slate-800 text-right">
+                          {formatExamDateId(upcomingExam.examDate, 'Sesuai Jadwal Sekolah')}
+                        </span>
+                      </div>
                       <div className="flex justify-between items-center">
                         <span className="text-slate-500">Jadwal Sesi</span>
                         <span className="font-semibold text-slate-800 font-mono">
-                          {upcomingExam.startTime} - {upcomingExam.endTime} WIB (Siang)
+                          {upcomingExam.startTime} - {upcomingExam.endTime} WIB
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
@@ -823,7 +874,15 @@ export const SiswaDashboard: React.FC = () => {
                     <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-2">
                       <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
                       <span>
-                        Sesi ujian ini <strong>belum dapat diakses</strong>. Pengawas ruangan baru akan membuka token dan memulai sesi pada pukul <strong>{upcomingExam.startTime} WIB</strong>.
+                        Sesi ujian ini <strong>belum dapat diakses</strong>. Token baru dapat digunakan{' '}
+                        {upcomingExam.examDate ? (
+                          <>
+                            pada <strong>{formatExamDateId(upcomingExam.examDate)}</strong> pukul{' '}
+                          </>
+                        ) : (
+                          'pada pukul '
+                        )}
+                        <strong>{upcomingExam.startTime} WIB</strong>.
                       </span>
                     </div>
                   </div>
@@ -850,6 +909,71 @@ export const SiswaDashboard: React.FC = () => {
               );
             })()}
           </div>
+          )}
+
+          {relevantExams.length > 2 && (
+            <div className="bg-white border border-slate-200 rounded-2xl p-4 sm:p-5 shadow-xs space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-indigo-600" />
+                  <span>Semua Jadwal Ujian Kelas Anda ({relevantExams.length} Mapel)</span>
+                </h3>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                {relevantExams.map(ex => {
+                  const st = getExamStudentState(ex.id);
+                  const timing = getExamTimingStatus(ex);
+                  const canSelect = timing === 'ongoing' || timing === 'ready';
+                  const isCurrentlySelected = ongoingExam?.id === ex.id;
+                  return (
+                    <div
+                      key={ex.id}
+                      className={`p-3 rounded-xl border flex flex-col justify-between gap-2 text-xs transition-colors ${
+                        isCurrentlySelected
+                          ? 'border-indigo-500 bg-indigo-50/60'
+                          : 'border-slate-200 bg-slate-50/70'
+                      }`}
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-bold text-slate-900 truncate">{ex.subject}</span>
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-bold shrink-0 ${
+                              st.isSubmitted
+                                ? 'bg-emerald-100 text-emerald-700'
+                                : canSelect
+                                ? 'bg-indigo-100 text-indigo-700'
+                                : 'bg-slate-200 text-slate-700'
+                            }`}
+                          >
+                            {st.isSubmitted ? 'Selesai' : canSelect ? 'Aktif' : 'Terjadwal'}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-600 font-medium">
+                          {ex.dayLabel || formatExamDateId(ex.examDate, 'Jadwal Fleksibel')}
+                        </div>
+                        <div className="text-[11px] font-mono text-slate-500">
+                          {ex.startTime} - {ex.endTime} WIB ({ex.durationMinutes} Menit) · {ex.totalQuestions} Soal
+                        </div>
+                      </div>
+                      {canSelect && !st.isSubmitted && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedActiveExamId(ex.id)}
+                          className={`w-full py-1.5 rounded-lg text-[11px] font-bold transition-colors cursor-pointer ${
+                            isCurrentlySelected
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-white border border-indigo-200 text-indigo-700 hover:bg-indigo-50'
+                          }`}
+                        >
+                          {isCurrentlySelected ? 'Sedang Dipilih (Masukkan Token)' : 'Pilih & Kerjakan Ujian Ini'}
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           )}
         </div>
       )}

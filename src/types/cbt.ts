@@ -70,6 +70,8 @@ export interface Exam {
   token: string;
   isTokenActive: boolean;
   tokenExpiredAt?: string;
+  dayLabel?: string; // e.g., 'Hari ke-1', 'Hari ke-2' saat tanggal belum ditentukan
+  examDate?: string; // Format YYYY-MM-DD (Tanggal Ujian)
   startTime: string;
   endTime: string;
   status: 'draft' | 'published' | 'ongoing' | 'completed';

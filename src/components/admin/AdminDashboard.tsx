@@ -219,6 +219,44 @@ export const AdminDashboard: React.FC = () => {
       ? window.location.origin
       : 'https://ujian-sekola.vercel.app'
   );
+  const [downloadingZipPath, setDownloadingZipPath] = useState<string | null>(null);
+  const [zipDownloadError, setZipDownloadError] = useState<string | null>(null);
+
+  const handleSafeZipDownload = async (url: string, downloadName: string) => {
+    setDownloadingZipPath(url);
+    setZipDownloadError(null);
+    try {
+      const separator = url.includes('?') ? '&' : '?';
+      const res = await fetch(`${url}${separator}t=${Date.now()}`, {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const buffer = await res.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const isValidZip = bytes.length >= 4 && bytes[0] === 0x50 && bytes[1] === 0x4b;
+      if (!isValidZip) {
+        throw new Error(
+          'Server atau cache PWA mengembalikan halaman HTML, bukan arsip ZIP yang valid. Lakukan hard reload (Ctrl+Shift+R) atau deploy ulang terlebih dahulu.'
+        );
+      }
+      const blob = new Blob([buffer], { type: 'application/zip' });
+      const blobUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = downloadName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+    } catch (err: any) {
+      setZipDownloadError(err?.message || 'Gagal mengunduh file arsip ZIP.');
+    } finally {
+      setDownloadingZipPath(null);
+    }
+  };
   const [copiedDeployUrl, setCopiedDeployUrl] = useState(false);
 
   const showScheduleToast = (msg: string) => {
@@ -4994,14 +5032,17 @@ export const AdminDashboard: React.FC = () => {
                         </li>
                       </ul>
                       <div className="pt-1 flex flex-wrap gap-2">
-                        <a
-                          href="/android-kiosk.zip"
-                          download="android-kiosk-smpn1.zip"
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-semibold text-[11px] transition-colors cursor-pointer"
+                        <button
+                          type="button"
+                          onClick={() => handleSafeZipDownload('/android-kiosk.zip', 'android-kiosk-smpn1.zip')}
+                          disabled={downloadingZipPath === '/android-kiosk.zip'}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-700 hover:bg-emerald-800 disabled:opacity-60 text-white font-semibold text-[11px] transition-colors cursor-pointer"
                         >
                           <FileDown className="w-3.5 h-3.5" />
-                          Unduh Proyek APK Kiosk (89 KB)
-                        </a>
+                          {downloadingZipPath === '/android-kiosk.zip'
+                            ? 'Mengunduh ZIP...'
+                            : 'Unduh Proyek APK Kiosk (.zip)'}
+                        </button>
                         <a
                           href="https://www.pwabuilder.com/"
                           target="_blank"
@@ -5011,6 +5052,11 @@ export const AdminDashboard: React.FC = () => {
                           Buka PWABuilder <ExternalLink className="w-3 h-3" />
                         </a>
                       </div>
+                      {zipDownloadError && (
+                        <p className="text-[11px] text-rose-700 bg-rose-50 border border-rose-200 rounded-lg px-2.5 py-1.5 mt-2">
+                          {zipDownloadError}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -5024,14 +5070,15 @@ export const AdminDashboard: React.FC = () => {
                     </p>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap shrink-0">
-                    <a
-                      href="/dist.zip"
-                      download="dist.zip"
-                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
+                    <button
+                      type="button"
+                      onClick={() => handleSafeZipDownload('/dist.zip', 'dist.zip')}
+                      disabled={downloadingZipPath === '/dist.zip'}
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-emerald-800 hover:bg-emerald-900 disabled:opacity-60 text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
                     >
                       <FileDown className="w-3.5 h-3.5" />
-                      Unduh dist.zip
-                    </a>
+                      {downloadingZipPath === '/dist.zip' ? 'Mengunduh...' : 'Unduh dist.zip'}
+                    </button>
                     <a
                       href="https://app.netlify.com/drop"
                       target="_blank"

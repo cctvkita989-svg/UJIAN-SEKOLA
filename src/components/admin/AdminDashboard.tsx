@@ -3610,25 +3610,25 @@ export const AdminDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          const newStatus = currentExam.publishAnswers === false ? true : false;
+                          const newStatus = currentExam.publishAnswers === true ? false : true;
                           updateExam(currentExam.id, { publishAnswers: newStatus });
                         }}
                         className={`px-3 py-2 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors ${
-                          currentExam.publishAnswers !== false
+                          currentExam.publishAnswers === true
                             ? 'bg-indigo-600 hover:bg-indigo-700 text-white'
                             : 'bg-amber-600 hover:bg-amber-700 text-white'
                         }`}
-                        title="Tentukan apakah siswa dapat melihat pembahasan jawaban benar/salah di Menu Nilai & Hasil"
+                        title="Tentukan apakah siswa dapat melihat nilai akhir dan pembahasan jawaban di Riwayat & Menu Nilai"
                       >
-                        {currentExam.publishAnswers !== false ? (
+                        {currentExam.publishAnswers === true ? (
                           <>
                             <Eye className="w-4 h-4" />
-                            <span>Kunci Jawaban: Dipublish (Aktif)</span>
+                            <span>Nilai & Kunci: Dipublish (Aktif)</span>
                           </>
                         ) : (
                           <>
                             <EyeOff className="w-4 h-4" />
-                            <span>Kunci Jawaban: Disembunyikan (Klik Publish)</span>
+                            <span>Nilai & Kunci: Disembunyikan (Klik Publish)</span>
                           </>
                         )}
                       </button>
@@ -3636,13 +3636,13 @@ export const AdminDashboard: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => {
-                          const anyUnpublished = exams.some(e => e.publishAnswers === false);
+                          const anyUnpublished = exams.some(e => e.publishAnswers !== true);
                           exams.forEach(e => {
                             updateExam(e.id, { publishAnswers: anyUnpublished });
                           });
                         }}
                         className="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"
-                        title="Publish atau sembunyikan kunci jawaban untuk seluruh mata pelajaran sekaligus"
+                        title="Publish atau sembunyikan nilai & kunci jawaban untuk seluruh mata pelajaran sekaligus"
                       >
                         <CheckCircle2 className="w-4 h-4 text-emerald-400" />
                         <span>Publish Semua Mapel</span>

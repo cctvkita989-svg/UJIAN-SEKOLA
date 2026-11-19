@@ -943,7 +943,7 @@ export function downloadStudentHistoryPdf(params: {
     subject: string;
     code: string;
     category: string;
-    score: number;
+    score: number | string;
     kkm: number;
     status: string;
     completedDate: string;
@@ -991,8 +991,8 @@ export function downloadStudentHistoryPdf(params: {
       0: { halign: 'center', cellWidth: 10 },
       1: { halign: 'center', cellWidth: 18 },
       4: { halign: 'center', cellWidth: 14 },
-      5: { halign: 'center', fontStyle: 'bold', cellWidth: 14 },
-      6: { halign: 'center', cellWidth: 22 },
+      5: { halign: 'center', fontStyle: 'bold', cellWidth: 20 },
+      6: { halign: 'center', cellWidth: 28 },
     },
   });
 
@@ -1012,8 +1012,10 @@ export function downloadStudentReceiptPdf(params: {
     correctCount: number;
     timeSpentMinutes: number;
     violationsCount: number;
+    isPublished?: boolean;
   };
 }): string {
+  const isPublished = params.item.isPublished === true;
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const marginX = 16;
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -1023,7 +1025,7 @@ export function downloadStudentReceiptPdf(params: {
   doc.setTextColor(15, 23, 42);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10.5);
-  doc.text('TANDA BUKTI HASIL ASESMEN BERBASIS KOMPUTER (CBT)', pageWidth / 2, y, { align: 'center' });
+  doc.text('TANDA BUKTI PELAKSANAAN & HASIL ASESMEN CBT', pageWidth / 2, y, { align: 'center' });
   y += 9;
 
   doc.setFontSize(8.5);
@@ -1043,14 +1045,21 @@ export function downloadStudentReceiptPdf(params: {
   doc.roundedRect(marginX, y, pageWidth - marginX * 2, 32, 2, 2, 'FD');
   doc.setFontSize(8.5);
   doc.setTextColor(100, 116, 139);
-  doc.text('HASIL PEROLEHAN NILAI AKHIR', pageWidth / 2, y + 7, { align: 'center' });
+  doc.text(isPublished ? 'HASIL PEROLEHAN NILAI AKHIR' : 'STATUS PEMERIKSAAN HASIL UJIAN', pageWidth / 2, y + 7, { align: 'center' });
   doc.setFont('helvetica', 'bold');
-  doc.setFontSize(28);
+  doc.setFontSize(isPublished ? 28 : 16);
   doc.setTextColor(15, 23, 42);
-  doc.text(String(params.item.score), pageWidth / 2, y + 20, { align: 'center' });
+  doc.text(isPublished ? String(params.item.score) : 'SEDANG DIPERIKSA', pageWidth / 2, y + 19, { align: 'center' });
   doc.setFontSize(9);
   const statusStr = params.item.score >= params.item.kkm ? 'TUNTAS' : 'REMEDIAL';
-  doc.text(`Standar KKM: ${params.item.kkm}  |  STATUS: ${statusStr}`, pageWidth / 2, y + 28, { align: 'center' });
+  doc.text(
+    isPublished
+      ? `Standar KKM: ${params.item.kkm}  |  STATUS: ${statusStr}`
+      : 'Jawaban sedang di periksa, silahkan coba lagi nanti.',
+    pageWidth / 2,
+    y + 28,
+    { align: 'center' }
+  );
   y += 38;
 
   autoTable(doc, {
@@ -1058,9 +1067,11 @@ export function downloadStudentReceiptPdf(params: {
     margin: { left: marginX, right: marginX },
     head: [['Parameter Asesmen', 'Capaian', 'Keterangan']],
     body: [
-      ['Jumlah Butir Soal Terjawab', `${params.item.totalQuestions} Soal`, '100% Lengkap'],
-      ['Jawaban Benar', `${params.item.correctCount} Soal`, 'Bobot Poin Penuh'],
-      ['Durasi Pengerjaan', `${params.item.timeSpentMinutes || 75} Menit`, 'Tepat Waktu'],
+      ['Jumlah Butir Soal Terjawab', `${params.item.totalQuestions} Soal`, 'Tersimpan Lengkap'],
+      isPublished
+        ? ['Jawaban Benar', `${params.item.correctCount} Soal`, 'Bobot Poin Penuh']
+        : ['Status Pemeriksaan', 'Sedang Diperiksa', 'Menunggu Publikasi Nilai'],
+      ['Durasi Pengerjaan', `${params.item.timeSpentMinutes || 75} Menit`, 'Selesai Dikerjakan'],
       [
         'Integritas Sensor Keamanan',
         params.item.violationsCount > 0 ? `${params.item.violationsCount}x Pelanggaran` : 'Tertib',

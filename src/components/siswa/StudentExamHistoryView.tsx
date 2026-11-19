@@ -50,6 +50,7 @@ export interface MergedExamHistoryItem {
   wrongCount: number;
   violationsCount: number;
   teacherName?: string;
+  isPublished: boolean;
   session?: ExamSession;
   questions?: Question[];
 }
@@ -116,6 +117,7 @@ export const StudentExamHistoryView: React.FC = () => {
         wrongCount: wrong,
         violationsCount: ses.violationsCount || 0,
         teacherName: exam?.teacherName || 'Guru Pengampu CBT',
+        isPublished: exam?.publishAnswers === true,
         session: ses,
         questions: examQList,
       };
@@ -166,6 +168,7 @@ export const StudentExamHistoryView: React.FC = () => {
         wrongCount: wrong,
         violationsCount: g.violationsCount || 0,
         teacherName: matchedExam?.teacherName || 'Bpk/Ibu Guru Mata Pelajaran',
+        isPublished: matchedExam?.publishAnswers === true,
         questions: examQList.length > 0 ? examQList : undefined,
       });
 
@@ -195,16 +198,16 @@ export const StudentExamHistoryView: React.FC = () => {
     }
 
     if (selectedStatus !== 'ALL') {
-      result = result.filter(item => item.status === selectedStatus);
+      result = result.filter(item => item.isPublished && item.status === selectedStatus);
     }
 
     // Sort
     result.sort((a, b) => {
       if (sortBy === 'score_high') {
-        return b.score - a.score;
+        return (b.isPublished ? b.score : -1) - (a.isPublished ? a.score : -1);
       }
       if (sortBy === 'score_low') {
-        return a.score - b.score;
+        return (a.isPublished ? a.score : 999) - (b.isPublished ? b.score : 999);
       }
       // 'newest': sort by date/id
       return b.id.localeCompare(a.id);
@@ -213,25 +216,28 @@ export const StudentExamHistoryView: React.FC = () => {
     return result;
   }, [historyItems, searchQuery, selectedCategory, selectedStatus, sortBy]);
 
-  // Overall Statistics KPI
+  // Overall Statistics KPI (Only aggregate published scores so unpublished scores stay hidden)
   const stats = useMemo(() => {
     const total = historyItems.length;
     if (total === 0) {
-      return { total: 0, avg: 0, passed: 0, remedial: 0, cleanIntegrity: 0 };
+      return { total: 0, publishedCount: 0, avg: '-', passed: 0, remedial: 0, cleanIntegrity: 0 };
     }
-    const sum = historyItems.reduce((acc, curr) => acc + curr.score, 0);
-    const avg = (sum / total).toFixed(1);
-    const passed = historyItems.filter(h => h.status === 'Tuntas').length;
-    const remedial = historyItems.filter(h => h.status === 'Remedial').length;
+    const publishedItems = historyItems.filter(h => h.isPublished);
+    const sum = publishedItems.reduce((acc, curr) => acc + curr.score, 0);
+    const avg = publishedItems.length > 0 ? (sum / publishedItems.length).toFixed(1) : '-';
+    const passed = publishedItems.filter(h => h.status === 'Tuntas').length;
+    const remedial = publishedItems.filter(h => h.status === 'Remedial').length;
     const cleanIntegrity = historyItems.filter(h => h.violationsCount === 0).length;
 
-    return { total, avg, passed, remedial, cleanIntegrity };
+    return { total, publishedCount: publishedItems.length, avg, passed, remedial, cleanIntegrity };
   }, [historyItems]);
 
   const handlePrintAllHistory = () => {
+    const printable = filteredItems.filter(i => i.isPublished);
+    if (printable.length === 0) return;
     downloadStudentHistoryPdf({
       currentUser,
-      items: filteredItems.map(item => ({
+      items: printable.map(item => ({
         subject: item.subject,
         code: item.code,
         category: item.category,
@@ -265,15 +271,21 @@ export const StudentExamHistoryView: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={handlePrintAllHistory}
-              className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-2xs cursor-pointer"
-              title="Download Rekap Riwayat Ujian (PDF)"
-            >
-              <Printer className="w-4 h-4 text-slate-500" />
-              <span>Download Rekap PDF</span>
-            </button>
+            {stats.publishedCount > 0 ? (
+              <button
+                type="button"
+                onClick={handlePrintAllHistory}
+                className="flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-xl transition-colors shadow-2xs cursor-pointer"
+                title="Download Rekap Riwayat Ujian (PDF)"
+              >
+                <Printer className="w-4 h-4 text-slate-500" />
+                <span>Download Rekap PDF</span>
+              </button>
+            ) : (
+              <span className="px-3 py-1.5 text-[11px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 rounded-xl">
+                Nilai Sedang Diperiksa Admin
+              </span>
+            )}
           </div>
         </div>
 
@@ -302,7 +314,9 @@ export const StudentExamHistoryView: React.FC = () => {
             <div className="text-2xl font-bold font-mono text-blue-700 mt-1">
               {stats.avg}
             </div>
-            <span className="text-[11px] text-slate-500">Skala 0 - 100</span>
+            <span className="text-[11px] text-slate-500">
+              {stats.publishedCount > 0 ? `Dari ${stats.publishedCount} mapel dirilis` : 'Menunggu hasil pemeriksaan'}
+            </span>
           </div>
 
           <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
@@ -313,10 +327,16 @@ export const StudentExamHistoryView: React.FC = () => {
               <CheckCircle2 className="w-4 h-4 text-slate-400" />
             </div>
             <div className="text-2xl font-bold font-mono text-slate-900 mt-1">
-              {stats.passed} <span className="text-xs font-normal text-slate-500 font-sans">Tuntas</span>
+              {stats.publishedCount > 0 ? (
+                <>
+                  {stats.passed} <span className="text-xs font-normal text-slate-500 font-sans">Tuntas</span>
+                </>
+              ) : (
+                <span className="text-sm font-sans text-amber-700">Diperiksa</span>
+              )}
             </div>
-            <span className="text-[11px] text-rose-700">
-              {stats.remedial} mapel remedial (&lt; 75)
+            <span className="text-[11px] text-slate-500">
+              {stats.publishedCount > 0 ? `${stats.remedial} mapel remedial (< 75)` : 'Menunggu publikasi nilai'}
             </span>
           </div>
 
@@ -459,25 +479,32 @@ export const StudentExamHistoryView: React.FC = () => {
                       <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-bold bg-stone-100 text-stone-700 border border-stone-200">
                         {item.category} · {item.code}
                       </span>
-                      <span
-                        className={`px-2 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 ${
-                          isPassed
-                            ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
-                            : 'bg-rose-50 text-rose-800 border border-rose-200/80'
-                        }`}
-                      >
-                        {isPassed ? (
-                          <>
-                            <CheckCircle2 className="w-3 h-3 text-emerald-700" />
-                            <span>TUNTAS KKM ({item.kkm})</span>
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-3 h-3 text-rose-700" />
-                            <span>REMEDIAL (KKM: {item.kkm})</span>
-                          </>
-                        )}
-                      </span>
+                      {!item.isPublished ? (
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 bg-amber-50 text-amber-800 border border-amber-200/80">
+                          <Clock className="w-3 h-3 text-amber-700" />
+                          <span>SELESAI · SEDANG DIPERIKSA</span>
+                        </span>
+                      ) : (
+                        <span
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-semibold flex items-center gap-1 ${
+                            isPassed
+                              ? 'bg-emerald-50 text-emerald-800 border border-emerald-200/80'
+                              : 'bg-rose-50 text-rose-800 border border-rose-200/80'
+                          }`}
+                        >
+                          {isPassed ? (
+                            <>
+                              <CheckCircle2 className="w-3 h-3 text-emerald-700" />
+                              <span>TUNTAS KKM ({item.kkm})</span>
+                            </>
+                          ) : (
+                            <>
+                              <XCircle className="w-3 h-3 text-rose-700" />
+                              <span>REMEDIAL (KKM: {item.kkm})</span>
+                            </>
+                          )}
+                        </span>
+                      )}
 
                       {item.violationsCount > 0 ? (
                         <span className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/80 flex items-center gap-1">
@@ -522,41 +549,58 @@ export const StudentExamHistoryView: React.FC = () => {
 
                   {/* Right: Score Box & Action Buttons */}
                   <div className="flex flex-row lg:flex-col items-center lg:items-end justify-between border-t lg:border-t-0 pt-3 lg:pt-0 border-stone-100 gap-3">
-                    <div className="flex items-baseline gap-2 text-right">
+                    {!item.isPublished ? (
                       <div className="flex flex-col items-start lg:items-end">
                         <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">
-                          Nilai Akhir
+                          Status Nilai
                         </span>
-                        <div className="flex items-baseline gap-1">
-                          <span
-                            className={`text-3xl font-bold font-mono tracking-tight ${
-                              isPassed ? 'text-emerald-800' : 'text-rose-700'
-                            }`}
-                          >
-                            {item.score}
-                          </span>
-                          <span className="text-xs text-stone-400 font-mono">/ 100</span>
-                        </div>
-                        <span
-                          className={`text-[10px] font-mono font-medium ${
-                            diffScore >= 0 ? 'text-emerald-700' : 'text-rose-600'
-                          }`}
-                        >
-                          {diffScore >= 0 ? `+${diffScore} dari KKM` : `${diffScore} di bawah KKM`}
+                        <span className="mt-1 px-2.5 py-1 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs font-bold flex items-center gap-1.5">
+                          <Clock className="w-3.5 h-3.5 text-amber-600" />
+                          <span>Sedang Diperiksa</span>
+                        </span>
+                        <span className="text-[10px] text-stone-400 mt-1">
+                          Menunggu publikasi Admin
                         </span>
                       </div>
-                    </div>
+                    ) : (
+                      <div className="flex items-baseline gap-2 text-right">
+                        <div className="flex flex-col items-start lg:items-end">
+                          <span className="text-[10px] font-semibold uppercase tracking-wider text-stone-400">
+                            Nilai Akhir
+                          </span>
+                          <div className="flex items-baseline gap-1">
+                            <span
+                              className={`text-3xl font-bold font-mono tracking-tight ${
+                                isPassed ? 'text-emerald-800' : 'text-rose-700'
+                              }`}
+                            >
+                              {item.score}
+                            </span>
+                            <span className="text-xs text-stone-400 font-mono">/ 100</span>
+                          </div>
+                          <span
+                            className={`text-[10px] font-mono font-medium ${
+                              diffScore >= 0 ? 'text-emerald-700' : 'text-rose-600'
+                            }`}
+                          >
+                            {diffScore >= 0 ? `+${diffScore} dari KKM` : `${diffScore} di bawah KKM`}
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     {/* Action Buttons */}
                     <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setReceiptModalItem(item)}
-                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-xl transition-colors cursor-pointer"
-                        title="Lihat & Cetak Tanda Bukti Hasil Asesmen"
-                      >
-                        <Printer className="w-3.5 h-3.5 text-stone-500" />
-                        <span>Cetak Bukti</span>
-                      </button>
+                      {item.isPublished && (
+                        <button
+                          onClick={() => setReceiptModalItem(item)}
+                          className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-stone-700 bg-stone-100 hover:bg-stone-200/80 rounded-xl transition-colors cursor-pointer"
+                          title="Lihat & Cetak Tanda Bukti Hasil Asesmen"
+                        >
+                          <Printer className="w-3.5 h-3.5 text-stone-500" />
+                          <span>Cetak Bukti</span>
+                        </button>
+                      )}
 
                       <button
                         onClick={() => setReviewModalItem(item)}
@@ -572,24 +616,37 @@ export const StudentExamHistoryView: React.FC = () => {
 
                 {/* Question Counts Strip */}
                 <div className="mt-4 pt-3 border-t border-stone-100 flex flex-wrap items-center justify-between text-xs text-stone-500 gap-2">
-                  <div className="flex items-center gap-4">
-                    <span>
-                      Total Soal: <strong className="text-stone-700 font-mono">{item.totalQuestions}</strong>
-                    </span>
-                    <span className="text-emerald-700">
-                      Benar: <strong className="font-mono">{item.correctCount}</strong>
-                    </span>
-                    <span className="text-rose-700">
-                      Salah: <strong className="font-mono">{item.wrongCount}</strong>
-                    </span>
-                  </div>
+                  {!item.isPublished ? (
+                    <>
+                      <span>
+                        Total Soal: <strong className="text-stone-700 font-mono">{item.totalQuestions}</strong>
+                      </span>
+                      <span className="text-[11px] text-amber-700 font-medium">
+                        Jawaban telah tercatat · Nilai &amp; pembahasan sedang diperiksa
+                      </span>
+                    </>
+                  ) : (
+                    <>
+                      <div className="flex items-center gap-4">
+                        <span>
+                          Total Soal: <strong className="text-stone-700 font-mono">{item.totalQuestions}</strong>
+                        </span>
+                        <span className="text-emerald-700">
+                          Benar: <strong className="font-mono">{item.correctCount}</strong>
+                        </span>
+                        <span className="text-rose-700">
+                          Salah: <strong className="font-mono">{item.wrongCount}</strong>
+                        </span>
+                      </div>
 
-                  <div className="text-[11px] font-mono text-stone-400">
-                    Akurasi:{' '}
-                    <strong className="text-stone-700">
-                      {Math.round((item.correctCount / item.totalQuestions) * 100)}%
-                    </strong>
-                  </div>
+                      <div className="text-[11px] font-mono text-stone-400">
+                        Akurasi:{' '}
+                        <strong className="text-stone-700">
+                          {Math.round((item.correctCount / item.totalQuestions) * 100)}%
+                        </strong>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             );
@@ -610,21 +667,37 @@ export const StudentExamHistoryView: React.FC = () => {
                   <span className="px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-stone-800 text-stone-300">
                     {reviewModalItem.category} · {reviewModalItem.code}
                   </span>
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      reviewModalItem.score >= reviewModalItem.kkm
-                        ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/60'
-                        : 'bg-rose-900/60 text-rose-300 border border-rose-700/60'
-                    }`}
-                  >
-                    {reviewModalItem.score >= reviewModalItem.kkm ? 'Tuntas KKM' : 'Remedial'}
-                  </span>
+                  {!reviewModalItem.isPublished ? (
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-900/60 text-amber-300 border border-amber-700/60">
+                      Sedang Diperiksa
+                    </span>
+                  ) : (
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        reviewModalItem.score >= reviewModalItem.kkm
+                          ? 'bg-emerald-900/60 text-emerald-300 border border-emerald-700/60'
+                          : 'bg-rose-900/60 text-rose-300 border border-rose-700/60'
+                      }`}
+                    >
+                      {reviewModalItem.score >= reviewModalItem.kkm ? 'Tuntas KKM' : 'Remedial'}
+                    </span>
+                  )}
                 </div>
                 <h3 className="text-lg font-bold text-white mt-1">
-                  Ulasan Jawaban & Pembahasan: {reviewModalItem.subject}
+                  {reviewModalItem.isPublished
+                    ? `Ulasan Jawaban & Pembahasan: ${reviewModalItem.subject}`
+                    : `Status Pemeriksaan: ${reviewModalItem.subject}`}
                 </h3>
                 <p className="text-xs text-stone-400">
-                  {currentUser.name} · Nilai: <strong className="text-white font-mono">{reviewModalItem.score}</strong> (KKM: {reviewModalItem.kkm}) · Selesai: {reviewModalItem.completedDate}
+                  {reviewModalItem.isPublished ? (
+                    <>
+                      {currentUser.name} · Nilai: <strong className="text-white font-mono">{reviewModalItem.score}</strong> (KKM: {reviewModalItem.kkm}) · Selesai: {reviewModalItem.completedDate}
+                    </>
+                  ) : (
+                    <>
+                      {currentUser.name} · Selesai: {reviewModalItem.completedDate}
+                    </>
+                  )}
                 </p>
               </div>
               <button
@@ -635,6 +708,27 @@ export const StudentExamHistoryView: React.FC = () => {
               </button>
             </div>
 
+            {!reviewModalItem.isPublished ? (
+              <div className="p-8 sm:p-10 text-center space-y-4">
+                <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto">
+                  <Clock className="w-8 h-8" />
+                </div>
+                <div className="space-y-1.5 max-w-md mx-auto">
+                  <h4 className="text-base font-bold text-stone-900">
+                    Jawaban sedang diperiksa, silahkan coba lagi nanti.
+                  </h4>
+                  <p className="text-xs text-stone-500 leading-relaxed">
+                    Seluruh jawaban ujian mata pelajaran <strong>{reviewModalItem.subject}</strong> telah tersimpan di riwayat ujian Anda. Nilai akhir serta pembahasan soal hanya akan tampil setelah Admin / Proktor mempublikasikan hasil ujian.
+                  </p>
+                </div>
+                <div className="inline-flex items-center gap-3 px-4 py-2 bg-stone-50 border border-stone-200 rounded-xl text-[11px] text-stone-600 font-mono">
+                  <span>Selesai: {reviewModalItem.completedDate}</span>
+                  <span>•</span>
+                  <span>{reviewModalItem.totalQuestions} Butir Soal</span>
+                </div>
+              </div>
+            ) : (
+            <>
             {/* Score Strip */}
             <div className="grid grid-cols-4 gap-2 p-3 bg-stone-50 border-b border-stone-200 text-center text-xs">
               <div className="p-2 bg-white rounded-lg border border-stone-200">
@@ -773,6 +867,8 @@ export const StudentExamHistoryView: React.FC = () => {
             </div>
 
             {/* Modal Footer */}
+            </>
+            )}
             <div className="p-4 bg-stone-50 border-t border-stone-200 flex justify-between items-center text-xs">
               <span className="text-stone-500">
                 Pencatatan resmi Asesmen CBT · SMP Negeri 1 Pandan

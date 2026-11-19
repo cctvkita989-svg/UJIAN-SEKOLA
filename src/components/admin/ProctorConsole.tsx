@@ -75,6 +75,7 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
   const [quickExtendMinutes, setQuickExtendMinutes] = useState<number>(10);
   const [activeSubTab, setActiveSubTab] = useState<'seatmap' | 'sessions' | 'audio' | 'broadcast'>('seatmap');
   const [seatPage, setSeatPage] = useState<number>(1);
+  const [detailModalStudentId, setDetailModalStudentId] = useState<string | null>(null);
 
   const students = useMemo(() => users.filter(u => u.role === 'siswa'), [users]);
 
@@ -84,7 +85,18 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
   ).sort(), [students]);
 
   const getStudentSession = (studentId: string): ExamSession | undefined => {
-    return examSessions.find(s => s.studentId === studentId);
+    const matches = examSessions.filter(s => s.studentId === studentId);
+    if (matches.length === 0) return undefined;
+    if (selectedExamFilter !== 'ALL') {
+      const exact = matches.find(s => s.examId === selectedExamFilter);
+      if (exact) return exact;
+    }
+    return (
+      matches.find(s => s.status === 'in_progress') ||
+      matches.find(s => s.status === 'blocked') ||
+      matches.find(s => s.status === 'submitted') ||
+      matches[0]
+    );
   };
 
   // Filter students based on classroom and search
@@ -143,13 +155,16 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
         if (ses && (ses.audioViolationsCount || 0) > 0) {
           whisperCount += (ses.audioViolationsCount || 0);
         }
-        const db = ses?.currentAudioLevel || (ses?.status === 'blocked' ? 52 : 28);
-        totalDb += db;
-        countWithDb++;
-        if (db > maxDb) maxDb = db;
+        if (ses && typeof ses.currentAudioLevel === 'number' && ses.currentAudioLevel > 0) {
+          const db = ses.avgAudioLevel && ses.avgAudioLevel > 0 ? ses.avgAudioLevel : ses.currentAudioLevel;
+          totalDb += db;
+          countWithDb++;
+          const peak = Math.max(ses.currentAudioLevel, ses.maxAudioLevel || 0);
+          if (peak > maxDb) maxDb = peak;
+        }
       });
 
-      const avgDb = countWithDb > 0 ? Math.round(totalDb / countWithDb) : 28;
+      const avgDb = countWithDb > 0 ? Math.round(totalDb / countWithDb) : 0;
       const primaryRoom = `Ruang Kelas ${cls}`;
       const noiseScore = avgDb + (whisperCount * 12) + (maxDb >= 48 ? 15 : 0);
 
@@ -182,7 +197,7 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
     }
 
     return list;
-  }, [students, examSessions]);
+  }, [students, examSessions, selectedExamFilter]);
 
   const loudestClass = classNoiseStats.length > 0 && (classNoiseStats[0].isNoisiest || classNoiseStats[0].avgDb >= 36 || classNoiseStats[0].whisperCount > 0)
     ? classNoiseStats[0]
@@ -526,7 +541,7 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                   }`}
                 >
                   <span>Ruang {cls}</span>
-                  {stat && stat.avgDb && (
+                  {stat && stat.avgDb > 0 && (
                     <span className={`text-[10px] font-mono px-1 rounded ${
                       selectedClass === cls ? 'bg-indigo-800 text-white' : 'text-slate-500'
                     }`}>
@@ -650,8 +665,14 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
               }
 
               const seatNo = `Meja-${String(globalIdx + 1).padStart(2, '0')}`;
-              const answeredCount = session ? Object.keys(session.answers).length : 0;
+              const sessionExam = session ? exams.find(e => e.id === session.examId) : undefined;
+              const answeredCount = session ? (session.answeredCount ?? Object.values(session.answers || {}).filter(a => a.selectedOption !== '').length) : 0;
+              const totalQCount = session?.totalQuestionsCount || sessionExam?.totalQuestions || 10;
+              const progressPct = totalQCount > 0 ? Math.min(100, Math.round((answeredCount / totalQCount) * 100)) : 0;
+              const currentQNum = session?.currentQuestionNumber || 1;
               const minsLeft = session ? Math.floor(session.remainingSeconds / 60) : 0;
+              const hasAudioReading = typeof session?.currentAudioLevel === 'number' && session.currentAudioLevel > 0;
+              const audioDb = hasAudioReading ? session!.currentAudioLevel! : 0;
 
               return (
                 <div
@@ -678,47 +699,71 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                       </div>
                     </div>
 
-                    {/* Progress indicator */}
-                    {isInProgress && (
-                      <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-600 flex items-center justify-between">
-                        <span className="font-medium">Jawab: {answeredCount} Soal</span>
-                        <span className="font-mono font-bold text-indigo-700">{minsLeft}m</span>
+                    {/* Question Progress indicator (4-min checkpoints + live) */}
+                    {session && (isInProgress || isSubmitted || isBlocked) && (
+                      <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-600 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-indigo-700">Soal No. {currentQNum}</span>
+                          <span className="font-mono font-semibold text-slate-700">
+                            {answeredCount}/{totalQCount} ({progressPct}%)
+                          </span>
+                        </div>
+                        <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all ${
+                              isSubmitted ? 'bg-blue-600' : 'bg-emerald-500'
+                            }`}
+                            style={{ width: `${progressPct}%` }}
+                          />
+                        </div>
+                        <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
+                          <span>{session.lastProgressSyncAt ? `Sync ${session.lastProgressSyncAt}` : 'Progres aktif'}</span>
+                          {isInProgress && <span className="font-bold text-indigo-700">{minsLeft}m sisa</span>}
+                        </div>
                       </div>
                     )}
 
-                    {/* Live Audio / Whisper Sensor indicator */}
+                    {/* Live Audio / Whisper Sensor indicator (10-min history + live baseline) */}
                     {session && (
                       <div className="mt-1.5 pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono">
                         <span className="flex items-center gap-1">
                           <Mic className={`w-3 h-3 ${
                             (session.audioViolationsCount || 0) > 0
                               ? 'text-rose-500 animate-pulse'
-                              : (session.currentAudioLevel || 0) >= 48
+                              : !hasAudioReading
+                              ? 'text-slate-400'
+                              : audioDb >= 48
                               ? 'text-rose-500'
-                              : (session.currentAudioLevel || 0) >= 38
+                              : audioDb >= 38
                               ? 'text-amber-500'
                               : 'text-emerald-500'
                           }`} />
                           <span className={
                             (session.audioViolationsCount || 0) > 0
                               ? 'text-rose-600 font-bold'
-                              : (session.currentAudioLevel || 0) >= 48
+                              : !hasAudioReading
+                              ? 'text-slate-400'
+                              : audioDb >= 48
                               ? 'text-rose-600 font-bold'
-                              : (session.currentAudioLevel || 0) >= 38
+                              : audioDb >= 38
                               ? 'text-amber-600 font-bold'
-                              : 'text-slate-500'
+                              : 'text-emerald-700 font-semibold'
                           }>
-                            {session.currentAudioLevel ? `${session.currentAudioLevel} dB` : '30 dB'}
+                            {hasAudioReading ? `${audioDb} dB` : '-- dB'}
                           </span>
                         </span>
                         {(session.audioViolationsCount || 0) > 0 ? (
                           <span className="px-1 py-0.2 bg-rose-100 text-rose-700 font-bold rounded text-[9px] animate-pulse">
                             {session.audioViolationsCount}x Bisik
                           </span>
+                        ) : !hasAudioReading ? (
+                          <span className="text-slate-400 text-[9px]">Standby</span>
+                        ) : audioDb >= 48 ? (
+                          <span className="text-rose-600 font-bold text-[9px]">Ribut</span>
+                        ) : audioDb >= 38 ? (
+                          <span className="text-amber-600 font-semibold text-[9px]">Desas-desus</span>
                         ) : (
-                          <span className="text-slate-400 text-[9px]">
-                            Hening
-                          </span>
+                          <span className="text-emerald-600 text-[9px]">Hening</span>
                         )}
                       </div>
                     )}
@@ -759,6 +804,16 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                         title="Reset sesi pengerjaan ujian"
                       >
                         Reset Sesi
+                      </button>
+                    )}
+                    {session && (
+                      <button
+                        type="button"
+                        onClick={() => setDetailModalStudentId(student.id)}
+                        className="py-1 px-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[10px] font-semibold rounded border border-indigo-200 transition-colors cursor-pointer"
+                        title="Lihat Detail Progres (4 Menit) & Histori Suara (10 Menit)"
+                      >
+                        <FileText className="w-3 h-3" />
                       </button>
                     )}
                     <button
@@ -846,11 +901,12 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
               <thead className="bg-slate-50 text-slate-700 font-bold border-b border-slate-200">
                 <tr>
                   <th className="py-2.5 px-3">No</th>
-                  <th className="py-2.5 px-3">Peserta & NISN</th>
+                  <th className="py-2.5 px-3">Peserta &amp; NISN</th>
                   <th className="py-2.5 px-3">Ruang Kelas</th>
                   <th className="py-2.5 px-3">Status Ujian</th>
+                  <th className="py-2.5 px-3">Progres Soal (4m)</th>
                   <th className="py-2.5 px-3">Sisa Waktu</th>
-                  <th className="py-2.5 px-3">Pelanggaran</th>
+                  <th className="py-2.5 px-3">Suara (10m) &amp; Tab</th>
                   <th className="py-2.5 px-3">Aktivitas Terakhir</th>
                   <th className="py-2.5 px-3 text-right">Tindakan Proktor</th>
                 </tr>
@@ -858,9 +914,15 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
               <tbody className="divide-y divide-slate-100">
                 {filteredStudents.map((st, idx) => {
                   const session = getStudentSession(st.id);
+                  const sessionExam = session ? exams.find(e => e.id === session.examId) : undefined;
                   const isBlocked = session?.status === 'blocked' || st.statusLogin === 'terkunci';
                   const isInProgress = session?.status === 'in_progress';
                   const isSubmitted = session?.status === 'submitted';
+
+                  const answeredCount = session ? (session.answeredCount ?? Object.values(session.answers || {}).filter(a => a.selectedOption !== '').length) : 0;
+                  const totalQCount = session?.totalQuestionsCount || sessionExam?.totalQuestions || 10;
+                  const progressPct = totalQCount > 0 ? Math.min(100, Math.round((answeredCount / totalQCount) * 100)) : 0;
+                  const currentQNum = session?.currentQuestionNumber || 1;
 
                   const hours = session ? Math.floor(session.remainingSeconds / 3600) : 0;
                   const minutes = session ? Math.floor((session.remainingSeconds % 3600) / 60) : 0;
@@ -898,6 +960,29 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                           </span>
                         )}
                       </td>
+                      <td className="py-2.5 px-3">
+                        {session ? (
+                          <div className="w-32 space-y-1">
+                            <div className="flex items-center justify-between text-[11px] font-mono">
+                              <span className="font-bold text-indigo-700">Soal #{currentQNum}</span>
+                              <span className="text-slate-700 font-semibold">{answeredCount}/{totalQCount} ({progressPct}%)</span>
+                            </div>
+                            <div className="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${isSubmitted ? 'bg-blue-600' : 'bg-emerald-500'}`}
+                                style={{ width: `${progressPct}%` }}
+                              />
+                            </div>
+                            {session.lastProgressSyncAt && (
+                              <div className="text-[9px] text-slate-400 font-mono">
+                                Sync: {session.lastProgressSyncAt}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 font-mono">-</span>
+                        )}
+                      </td>
                       <td className="py-2.5 px-3 font-mono font-bold text-slate-800">
                         {isInProgress ? timeFormatted : '-'}
                       </td>
@@ -911,14 +996,16 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                           {session && (session.audioViolationsCount || 0) > 0 ? (
                             <span className="text-amber-700 font-bold text-[11px] flex items-center gap-1">
                               <Mic className="w-3 h-3 text-amber-500" />
-                              <span>{session.audioViolationsCount}x bisikan</span>
+                              <span>{session.audioViolationsCount}x bisik ({session.currentAudioLevel || '-'} dB)</span>
                             </span>
-                          ) : session && session.currentAudioLevel ? (
-                            <span className="text-slate-400 text-[10px] flex items-center gap-1">
+                          ) : session && typeof session.currentAudioLevel === 'number' && session.currentAudioLevel > 0 ? (
+                            <span className="text-slate-600 text-[10px] flex items-center gap-1">
                               <Mic className="w-2.5 h-2.5 text-emerald-500" />
-                              <span>{session.currentAudioLevel} dB</span>
+                              <span>{session.currentAudioLevel} dB {session.lastAudioSyncAt ? `(${session.lastAudioSyncAt})` : ''}</span>
                             </span>
-                          ) : null}
+                          ) : (
+                            <span className="text-slate-400 text-[10px]">-- dB</span>
+                          )}
                         </div>
                       </td>
                       <td className="py-2.5 px-3 text-slate-500 text-[11px] truncate max-w-[150px]">
@@ -926,6 +1013,17 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                       </td>
                       <td className="py-2.5 px-3 text-right">
                         <div className="flex items-center justify-end gap-1.5">
+                          {session && (
+                            <button
+                              type="button"
+                              onClick={() => setDetailModalStudentId(st.id)}
+                              className="px-2 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded text-[10px] font-bold border border-indigo-200 cursor-pointer flex items-center gap-1"
+                              title="Lihat histori suara per menit & progres pengerjaan tiap 4 menit"
+                            >
+                              <FileText className="w-3 h-3" />
+                              <span>Histori</span>
+                            </button>
+                          )}
                           {isBlocked && (
                             <button
                               onClick={() => unlockStudent(st.id)}
@@ -1094,7 +1192,10 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                   Ruang Hening (&lt; 38 dB)
                 </div>
                 <div className="text-xl font-bold font-mono text-emerald-700 mt-0.5">
-                  {filteredStudents.filter(s => (getStudentSession(s.id)?.currentAudioLevel || 28) < 38).length} Siswa
+                  {filteredStudents.filter(s => {
+                    const db = getStudentSession(s.id)?.currentAudioLevel;
+                    return typeof db === 'number' && db > 0 && db < 38;
+                  }).length} Siswa
                 </div>
               </div>
               <div className="p-3 bg-amber-50/60 rounded-xl border border-amber-200">
@@ -1104,8 +1205,8 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                 </div>
                 <div className="text-xl font-bold font-mono text-amber-700 mt-0.5">
                   {filteredStudents.filter(s => {
-                    const db = getStudentSession(s.id)?.currentAudioLevel || 28;
-                    return db >= 38 && db < 48;
+                    const db = getStudentSession(s.id)?.currentAudioLevel;
+                    return typeof db === 'number' && db >= 38 && db < 48;
                   }).length} Siswa
                 </div>
               </div>
@@ -1117,7 +1218,7 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                 <div className="text-xl font-bold font-mono text-rose-700 mt-0.5">
                   {filteredStudents.filter(s => {
                     const ses = getStudentSession(s.id);
-                    return (ses?.audioViolationsCount || 0) > 0 || (ses?.currentAudioLevel || 28) >= 48;
+                    return (ses?.audioViolationsCount || 0) > 0 || (typeof ses?.currentAudioLevel === 'number' && ses.currentAudioLevel >= 48);
                   }).length} Siswa
                 </div>
               </div>
@@ -1190,7 +1291,7 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                         <h5 className="font-bold text-slate-900 text-sm flex items-center justify-between">
                           <span>Ruang Kelas {clsStat.className}</span>
                           <span className="font-mono text-xs font-bold text-slate-700">
-                            {clsStat.avgDb} dB SPL
+                            {clsStat.avgDb > 0 ? `${clsStat.avgDb} dB SPL` : '-- dB'}
                           </span>
                         </h5>
                         <p className="text-[11px] text-slate-500 flex items-center gap-1">
@@ -1208,13 +1309,15 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                                 ? 'bg-rose-500'
                                 : clsStat.avgDb >= 38
                                 ? 'bg-amber-500'
-                                : 'bg-emerald-500'
+                                : clsStat.avgDb > 0
+                                ? 'bg-emerald-500'
+                                : 'bg-slate-300'
                             }`}
-                            style={{ width: `${Math.min(100, Math.max(10, (clsStat.avgDb / 80) * 100))}%` }}
+                            style={{ width: `${clsStat.avgDb > 0 ? Math.min(100, Math.max(10, (clsStat.avgDb / 80) * 100)) : 5}%` }}
                           />
                         </div>
                         <div className="flex items-center justify-between text-[9px] text-slate-400 font-mono">
-                          <span>Max: {clsStat.maxDb} dB</span>
+                          <span>Max: {clsStat.maxDb > 0 ? `${clsStat.maxDb} dB` : '--'}</span>
                           <span>{clsStat.whisperCount > 0 ? `${clsStat.whisperCount}x Bisik` : '0x Bisik'}</span>
                         </div>
                       </div>
@@ -1277,10 +1380,10 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
               <div>
                 <h4 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                   <Volume2 className="w-4 h-4 text-indigo-600" />
-                  <span>Matriks Telemetri Audio Siswa Real-Time</span>
+                  <span>Matriks Telemetri Audio &amp; Histori Per Menit (Sync Tiap 10 Menit)</span>
                 </h4>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Menampilkan tingkat kebisingan mikrofon dan histori pelanggaran bisikan dari masing-masing meja siswa.
+                  Menampilkan tingkat kebisingan mikrofon terkini, rata-rata/puncak, serta histori rekaman suara tiap menit dari perangkat siswa.
                 </p>
               </div>
 
@@ -1296,12 +1399,12 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-semibold uppercase text-[10px] tracking-wider">
-                    <th className="py-2.5 px-3">Meja & Siswa</th>
+                    <th className="py-2.5 px-3">Meja &amp; Siswa</th>
                     <th className="py-2.5 px-3">Ruang Kelas</th>
                     <th className="py-2.5 px-3">Level Suara Mikrofon (dB SPL)</th>
+                    <th className="py-2.5 px-3">Histori Menit / Sync</th>
                     <th className="py-2.5 px-3">Status Sensor</th>
                     <th className="py-2.5 px-3">Insiden Bisik</th>
-                    <th className="py-2.5 px-3">Waktu Insiden Terakhir</th>
                     <th className="py-2.5 px-3 text-right">Tindakan Proktor</th>
                   </tr>
                 </thead>
@@ -1310,9 +1413,11 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                     const session = getStudentSession(st.id);
                     const isBlocked = session?.status === 'blocked' || st.statusLogin === 'terkunci';
                     const audioViolations = session?.audioViolationsCount || 0;
-                    const dbVal = session?.currentAudioLevel || (isBlocked ? 54 : 26 + (idx % 7));
-                    const isWhispering = dbVal >= 48 || audioViolations > 0;
-                    const isNearThreshold = dbVal >= 38 && dbVal < 48;
+                    const hasDb = typeof session?.currentAudioLevel === 'number' && session.currentAudioLevel > 0;
+                    const dbVal = hasDb ? session!.currentAudioLevel! : 0;
+                    const isWhispering = (hasDb && dbVal >= 48) || audioViolations > 0;
+                    const isNearThreshold = hasDb && dbVal >= 38 && dbVal < 48;
+                    const minuteLogsCount = session?.audioHistory?.length || 0;
 
                     return (
                       <tr
@@ -1331,30 +1436,58 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                           <div className="font-semibold text-slate-800">Ruang Kelas {st.kelas}</div>
                         </td>
                         <td className="py-2.5 px-3">
-                          <div className="space-y-1 w-36">
+                          <div className="space-y-1 w-40">
                             <div className="flex items-center justify-between font-mono text-[11px]">
                               <span className={`font-bold tabular-nums ${
-                                dbVal >= 48 ? 'text-rose-600 font-black' : dbVal >= 38 ? 'text-amber-600 font-bold' : 'text-emerald-600'
+                                !hasDb
+                                  ? 'text-slate-400'
+                                  : dbVal >= 48
+                                  ? 'text-rose-600 font-black'
+                                  : dbVal >= 38
+                                  ? 'text-amber-600 font-bold'
+                                  : 'text-emerald-600'
                               }`}>
-                                {dbVal} dB SPL
+                                {hasDb ? `${dbVal} dB SPL` : '-- dB'}
                               </span>
                               <span className="text-[9px] text-slate-400">
-                                {dbVal < 38 ? 'Hening' : dbVal < 48 ? 'Desas-desus' : 'Bisikan!'}
+                                {!hasDb ? 'Menunggu' : dbVal < 38 ? 'Hening' : dbVal < 48 ? 'Desas-desus' : 'Ribut!'}
                               </span>
                             </div>
                             <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all duration-300 ${
-                                  dbVal >= 48
+                                  !hasDb
+                                    ? 'bg-slate-200'
+                                    : dbVal >= 48
                                     ? 'bg-rose-500'
                                     : dbVal >= 38
                                     ? 'bg-amber-500'
                                     : 'bg-emerald-500'
                                 }`}
-                                style={{ width: `${Math.min(100, Math.max(10, (dbVal / 85) * 100))}%` }}
+                                style={{ width: `${hasDb ? Math.min(100, Math.max(10, (dbVal / 85) * 100)) : 5}%` }}
                               />
                             </div>
+                            {hasDb && (
+                              <div className="text-[9px] font-mono text-slate-400 flex justify-between">
+                                <span>Avg: {session?.avgAudioLevel || dbVal} dB</span>
+                                <span>Max: {session?.maxAudioLevel || dbVal} dB</span>
+                              </div>
+                            )}
                           </div>
+                        </td>
+                        <td className="py-2.5 px-3 font-mono text-[11px]">
+                          {session ? (
+                            <div className="space-y-0.5">
+                              <span className="font-bold text-slate-700 block">
+                                {minuteLogsCount} Menit Terekam
+                              </span>
+                              <span className="text-[10px] text-slate-400 block">
+                                Sync: {session.lastAudioSyncAt || '-'}
+                              </span>
+                            </div>
+                          ) : (
+                            <span className="text-slate-400">-</span>
+                          )}
                         </td>
                         <td className="py-2.5 px-3">
                           {isBlocked ? (
@@ -1371,27 +1504,44 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
                               <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
                               Mendekati Batas
                             </span>
-                          ) : (
+                          ) : hasDb ? (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1 w-max">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                              Kondusif & Hening
+                              Kondusif &amp; Hening
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-slate-100 text-slate-500">
+                              Standby
                             </span>
                           )}
                         </td>
                         <td className="py-2.5 px-3 font-mono font-bold">
                           {audioViolations > 0 ? (
-                            <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-                              {audioViolations}x Terdeteksi
-                            </span>
+                            <div>
+                              <span className="text-rose-600 bg-rose-50 px-2 py-0.5 rounded border border-rose-200 inline-block">
+                                {audioViolations}x Terdeteksi
+                              </span>
+                              {session?.lastAudioIncidentAt && (
+                                <span className="text-[10px] text-slate-400 block mt-0.5">{session.lastAudioIncidentAt}</span>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-slate-400">0x</span>
                           )}
                         </td>
-                        <td className="py-2.5 px-3 font-mono text-[11px] text-slate-500">
-                          {session?.lastAudioIncidentAt || '-'}
-                        </td>
                         <td className="py-2.5 px-3 text-right">
                           <div className="flex items-center justify-end gap-1.5">
+                            {session && (
+                              <button
+                                type="button"
+                                onClick={() => setDetailModalStudentId(st.id)}
+                                className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded text-[11px] font-bold flex items-center gap-1 cursor-pointer transition-colors"
+                                title="Lihat histori suara per menit & progres pengerjaan"
+                              >
+                                <FileText className="w-3 h-3" />
+                                <span>Histori</span>
+                              </button>
+                            )}
                             <button
                               type="button"
                               onClick={() => {
@@ -1659,6 +1809,211 @@ export const ProctorConsole: React.FC<ProctorConsoleProps> = ({ initialExamId, o
           </div>
         </div>
       )}
+
+      {/* Detail Progres (4 Menit) & Histori Suara (Per Menit / Sync 10 Menit) Modal */}
+      {detailModalStudentId && (() => {
+        const targetStudent = students.find(u => u.id === detailModalStudentId);
+        const targetSession = getStudentSession(detailModalStudentId);
+        if (!targetStudent || !targetSession) return null;
+
+        const targetExam = exams.find(e => e.id === targetSession.examId);
+        const totalQ = targetSession.totalQuestionsCount || targetExam?.totalQuestions || 10;
+        const answeredQ = targetSession.answeredCount ?? Object.values(targetSession.answers || {}).filter(a => a.selectedOption !== '').length;
+        const progressPct = totalQ > 0 ? Math.min(100, Math.round((answeredQ / totalQ) * 100)) : 0;
+        const audioHist = [...(targetSession.audioHistory || [])].reverse();
+        const progHist = [...(targetSession.progressHistory || [])].reverse();
+
+        return (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-900/60 backdrop-blur-xs overflow-y-auto">
+            <div className="relative w-full max-w-3xl my-auto bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
+              <div className="bg-slate-900 text-white p-4 sm:p-5 flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-[11px] text-indigo-300 font-mono">
+                    <span>Ruang Kelas {targetStudent.kelas}</span>
+                    <span>•</span>
+                    <span>NISN: {targetStudent.nisn || '-'}</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold mt-0.5">
+                    Detail Progres &amp; Histori Suara: {targetStudent.name}
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    {targetExam?.subject || 'Ujian CBT'} · Pemantauan Progres Tiap 4 Menit &amp; Rekaman Kebisingan Tiap Menit (Kirim 10 Menit)
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setDetailModalStudentId(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-4 sm:p-5 overflow-y-auto space-y-5 flex-1 text-xs">
+                {/* 1. Question Progress Section */}
+                <div className="border border-slate-200 rounded-xl p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span>Progres Pengerjaan Soal (Sync Setiap 4 Menit)</span>
+                    </h4>
+                    <span className="text-[11px] font-mono text-slate-500">
+                      Sync Terakhir: {targetSession.lastProgressSyncAt || '-'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg">
+                      <span className="text-[10px] text-indigo-600 uppercase font-semibold block">Posisi Soal</span>
+                      <span className="text-lg font-bold font-mono text-indigo-800">
+                        No. {targetSession.currentQuestionNumber || 1}
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-emerald-50 border border-emerald-100 rounded-lg">
+                      <span className="text-[10px] text-emerald-600 uppercase font-semibold block">Terjawab</span>
+                      <span className="text-lg font-bold font-mono text-emerald-800">
+                        {answeredQ} / {totalQ}
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="text-[10px] text-slate-500 uppercase font-semibold block">Persentase</span>
+                      <span className="text-lg font-bold font-mono text-slate-800">{progressPct}%</span>
+                    </div>
+                  </div>
+
+                  {progHist.length === 0 ? (
+                    <div className="p-3 text-center text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                      Menunggu checkpoint 4 menit pertama dari perangkat siswa.
+                    </div>
+                  ) : (
+                    <div className="max-h-44 overflow-y-auto border border-slate-200 rounded-lg">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                          <tr>
+                            <th className="py-2 px-3">Waktu Sync</th>
+                            <th className="py-2 px-3">Soal Dibuka</th>
+                            <th className="py-2 px-3">Jumlah Terjawab</th>
+                            <th className="py-2 px-3 text-right">Progres</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-mono">
+                          {progHist.map((p, i) => (
+                            <tr key={i} className="hover:bg-slate-50">
+                              <td className="py-1.5 px-3 text-slate-600">{p.timeLabel}</td>
+                              <td className="py-1.5 px-3 font-bold text-indigo-700">Soal No. {p.currentQuestionNumber}</td>
+                              <td className="py-1.5 px-3 text-slate-800">{p.answeredCount} / {p.totalQuestions} Soal</td>
+                              <td className="py-1.5 px-3 text-right font-bold text-emerald-700">{p.percent}%</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Audio Noise History Section */}
+                <div className="border border-slate-200 rounded-xl p-4 space-y-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <h4 className="font-bold text-slate-900 flex items-center gap-2">
+                      <Mic className="w-4 h-4 text-rose-600" />
+                      <span>Histori Suara Per Menit (Terkirim Setiap 10 Menit)</span>
+                    </h4>
+                    <span className="text-[11px] font-mono text-slate-500">
+                      Sync Suara Terakhir: {targetSession.lastAudioSyncAt || '-'}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2 text-center">
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="text-[10px] text-slate-500 uppercase font-semibold block">Terkini</span>
+                      <span className="text-base font-bold font-mono text-slate-800">
+                        {targetSession.currentAudioLevel ? `${targetSession.currentAudioLevel} dB` : '--'}
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="text-[10px] text-slate-500 uppercase font-semibold block">Rata-Rata</span>
+                      <span className="text-base font-bold font-mono text-indigo-700">
+                        {targetSession.avgAudioLevel ? `${targetSession.avgAudioLevel} dB` : '--'}
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-lg">
+                      <span className="text-[10px] text-slate-500 uppercase font-semibold block">Puncak Maks</span>
+                      <span className="text-base font-bold font-mono text-rose-700">
+                        {targetSession.maxAudioLevel ? `${targetSession.maxAudioLevel} dB` : '--'}
+                      </span>
+                    </div>
+                    <div className="p-2.5 bg-rose-50 border border-rose-100 rounded-lg">
+                      <span className="text-[10px] text-rose-600 uppercase font-semibold block">Insiden Bisik</span>
+                      <span className="text-base font-bold font-mono text-rose-700">
+                        {targetSession.audioViolationsCount || 0}x
+                      </span>
+                    </div>
+                  </div>
+
+                  {audioHist.length === 0 ? (
+                    <div className="p-3 text-center text-slate-400 bg-slate-50 rounded-lg border border-dashed border-slate-200">
+                      Belum ada riwayat menit audio terkumpul (histori per menit dikirim otomatis setiap 10 menit atau saat ujian selesai).
+                    </div>
+                  ) : (
+                    <div className="max-h-56 overflow-y-auto border border-slate-200 rounded-lg">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                          <tr>
+                            <th className="py-2 px-3">Menit</th>
+                            <th className="py-2 px-3">Waktu</th>
+                            <th className="py-2 px-3">Rata-Rata</th>
+                            <th className="py-2 px-3">Maks / Min</th>
+                            <th className="py-2 px-3">Status</th>
+                            <th className="py-2 px-3 text-right">Insiden</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100 font-mono">
+                          {audioHist.map((log, i) => (
+                            <tr key={i} className="hover:bg-slate-50">
+                              <td className="py-1.5 px-3 font-bold text-slate-700">Menit #{log.minuteIndex}</td>
+                              <td className="py-1.5 px-3 text-slate-500">{log.timeLabel}</td>
+                              <td className="py-1.5 px-3 font-bold text-slate-900">{log.avgDb} dB</td>
+                              <td className="py-1.5 px-3 text-slate-600">{log.maxDb} / {log.minDb} dB</td>
+                              <td className="py-1.5 px-3 font-sans">
+                                {log.status === 'ribut' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 text-rose-700">
+                                    Ribut / Bersuara
+                                  </span>
+                                ) : log.status === 'desas_desus' ? (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                                    Desas-desus
+                                  </span>
+                                ) : (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                                    Hening &amp; Fokus
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-1.5 px-3 text-right font-bold text-rose-600">
+                                {log.incidentCount > 0 ? `${log.incidentCount}x` : '-'}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setDetailModalStudentId(null)}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-lg cursor-pointer"
+                >
+                  Tutup Detail
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Attendance Status Modal */}
       <AttendanceStatusModal

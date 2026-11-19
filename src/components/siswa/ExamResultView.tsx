@@ -198,10 +198,10 @@ export const ExamResultView: React.FC<ExamResultViewProps> = ({ onBackToDashboar
           </div>
           <div className="space-y-1">
             <h4 className="text-xs font-bold text-blue-950">
-              Pemberitahuan Hasil & Kunci Jawaban
+              Pemberitahuan Pemeriksaan Jawaban & Nilai
             </h4>
             <p className="text-xs text-blue-900/80 leading-relaxed">
-              Untuk mengetahui perolehan nilai serta pembahasan jawaban yang benar dan salah, admin akan mempublikasikannya melalui <strong>Menu Nilai & Hasil</strong> setelah seluruh rangkaian asesmen selesai dilaksanakan.
+              Ujian Anda telah tercatat pada menu <strong>Riwayat Ujian</strong>. Saat ini jawaban Anda sedang dalam proses pemeriksaan oleh guru/admin. Nilai akhir dan ulasan jawaban dapat dilihat kembali nanti setelah hasil dipublikasikan.
             </p>
           </div>
         </div>

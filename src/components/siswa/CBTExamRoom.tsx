@@ -27,6 +27,7 @@ import {
 import { ExamResultView } from './ExamResultView';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { isInsideExamApp } from '../../utils/examAppGuard';
+import { AudioMinuteLog } from '../../types/cbt';
 
 export const CBTExamRoom: React.FC = () => {
   const {
@@ -40,6 +41,7 @@ export const CBTExamRoom: React.FC = () => {
     finishExamDueToViolation,
     recordAudioViolation,
     reportCurrentAudioLevel,
+    syncAudioBatchToServer,
     schoolProfile,
     submitCurrentExam,
     exitExamView,
@@ -199,6 +201,63 @@ export const CBTExamRoom: React.FC = () => {
     };
   }, [activeExamTaking?.session?.status]);
 
+  // Refs for per-minute audio aggregation & 10-minute admin batch sync
+  const audioBucketRef = useRef({
+    minuteIndex: (activeExamTaking?.session?.audioHistory?.length || 0) + 1,
+    sumDb: 0,
+    count: 0,
+    minDb: 100,
+    maxDb: 0,
+    lastDb: 28,
+    incidentCount: 0,
+  });
+  const pendingAudioLogsRef = useRef<AudioMinuteLog[]>([]);
+  const hasSentInitialAudioRef = useRef<boolean>(false);
+
+  const sealCurrentAudioMinute = (): AudioMinuteLog | null => {
+    const b = audioBucketRef.current;
+    if (b.count === 0) return null;
+    const avgDb = Math.round(b.sumDb / b.count);
+    const maxDb = b.maxDb;
+    const minDb = b.minDb;
+    const status: AudioMinuteLog['status'] =
+      avgDb >= 48 || b.incidentCount > 0 || maxDb >= 55
+        ? 'ribut'
+        : avgDb >= 38 || maxDb >= 44
+        ? 'desas_desus'
+        : 'hening';
+    const log: AudioMinuteLog = {
+      minuteIndex: b.minuteIndex,
+      timeLabel: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+      avgDb,
+      maxDb,
+      minDb,
+      status,
+      incidentCount: b.incidentCount,
+    };
+    audioBucketRef.current = {
+      minuteIndex: b.minuteIndex + 1,
+      sumDb: 0,
+      count: 0,
+      minDb: 100,
+      maxDb: 0,
+      lastDb: b.lastDb,
+      incidentCount: 0,
+    };
+    return log;
+  };
+
+  const flushAudioHistoryToServer = (forceSync = true, includeCurrentPartialMinute = true) => {
+    if (includeCurrentPartialMinute) {
+      const partial = sealCurrentAudioMinute();
+      if (partial) pendingAudioLogsRef.current.push(partial);
+    }
+    const batch = [...pendingAudioLogsRef.current];
+    pendingAudioLogsRef.current = [];
+    const latestDb = audioBucketRef.current.lastDb;
+    syncAudioBatchToServer(batch, latestDb, forceSync);
+  };
+
   // Audio / Whisper Detection Proctoring using Web Audio API
   useEffect(() => {
     if (!activeExamTaking || activeExamTaking.session.status !== 'in_progress') return;
@@ -209,13 +268,49 @@ export const CBTExamRoom: React.FC = () => {
     let microphoneStream: MediaStream | null = null;
     let analyser: AnalyserNode | null = null;
     let animFrameId: number | null = null;
-    let simIntervalId: NodeJS.Timeout | null = null;
+    let simIntervalId: ReturnType<typeof setInterval> | null = null;
+    let minuteRollIntervalId: ReturnType<typeof setInterval> | null = null;
+    let tenMinSyncIntervalId: ReturnType<typeof setInterval> | null = null;
+    let initialSyncTimeoutId: ReturnType<typeof setTimeout> | null = null;
     let sustainedWhisperFrames = 0;
     let lastViolationTime = 0;
     let lastReportTime = 0;
 
     const sensitivity = schoolProfile.audioSensitivity || 'medium';
     const threshold = sensitivity === 'high' ? 38 : sensitivity === 'low' ? 62 : 48;
+
+    const recordSampleDb = (dbVal: number) => {
+      const b = audioBucketRef.current;
+      b.sumDb += dbVal;
+      b.count += 1;
+      if (dbVal < b.minDb) b.minDb = dbVal;
+      if (dbVal > b.maxDb) b.maxDb = dbVal;
+      b.lastDb = dbVal;
+    };
+
+    // Roll 1-minute bucket into pending logs every 60 seconds
+    minuteRollIntervalId = setInterval(() => {
+      if (!isMounted) return;
+      const completedMinute = sealCurrentAudioMinute();
+      if (completedMinute) {
+        pendingAudioLogsRef.current.push(completedMinute);
+      }
+    }, 60000);
+
+    // Send accumulated per-minute audio history to Admin every 10 minutes (600,000 ms)
+    tenMinSyncIntervalId = setInterval(() => {
+      if (!isMounted) return;
+      flushAudioHistoryToServer(true, true);
+    }, 600000);
+
+    // Initial live audio reading ~5 seconds after mic starts so Admin never sees stale 30 dB
+    initialSyncTimeoutId = setTimeout(() => {
+      if (!isMounted || hasSentInitialAudioRef.current) return;
+      hasSentInitialAudioRef.current = true;
+      const b = audioBucketRef.current;
+      const dbSnapshot = b.count > 0 ? Math.round(b.sumDb / b.count) : b.lastDb;
+      syncAudioBatchToServer([], dbSnapshot, true);
+    }, 5000);
 
     const startAudioListener = async () => {
       try {
@@ -273,13 +368,14 @@ export const CBTExamRoom: React.FC = () => {
             sum += dataArray[i];
           }
           const avg = sum / bufferLength;
-          // Map to approximate decibel range: 20dB (quiet room) to 95dB (shouting)
+          // Map to approximate decibel range: 22dB (quiet room) to 95dB (shouting)
           const dbVal = Math.round(22 + (avg / 255) * 73);
           setCurrentDb(dbVal);
 
           const now = Date.now();
           if (now - lastReportTime > 1500) {
             lastReportTime = now;
+            recordSampleDb(dbVal);
             reportCurrentAudioLevel(dbVal);
           }
 
@@ -290,6 +386,7 @@ export const CBTExamRoom: React.FC = () => {
             if (sustainedWhisperFrames >= 8) {
               if (now - lastViolationTime > 10000) { // 10s cooldown between warnings
                 lastViolationTime = now;
+                audioBucketRef.current.incidentCount += 1;
                 const incidentType = dbVal >= 65 ? 'suara_keras' : 'bisikan';
                 const warningText = incidentType === 'bisikan'
                   ? `Sensor mikrofon mendeteksi suara bisikan (${dbVal} dB)! Dilarang berbisik selama ujian berlangsung.`
@@ -322,6 +419,7 @@ export const CBTExamRoom: React.FC = () => {
           if (!isMounted) return;
           const ambientDb = Math.round(25 + Math.random() * 8);
           setCurrentDb(ambientDb);
+          recordSampleDb(ambientDb);
           reportCurrentAudioLevel(ambientDb);
         }, 2000);
       }
@@ -333,6 +431,9 @@ export const CBTExamRoom: React.FC = () => {
       isMounted = false;
       if (animFrameId) cancelAnimationFrame(animFrameId);
       if (simIntervalId) clearInterval(simIntervalId);
+      if (minuteRollIntervalId) clearInterval(minuteRollIntervalId);
+      if (tenMinSyncIntervalId) clearInterval(tenMinSyncIntervalId);
+      if (initialSyncTimeoutId) clearTimeout(initialSyncTimeoutId);
       if (microphoneStream) {
         microphoneStream.getTracks().forEach(t => t.stop());
       }
@@ -345,6 +446,9 @@ export const CBTExamRoom: React.FC = () => {
   // Manual Trigger for Testing Whisper Detection
   const triggerSimulatedWhisperTest = (simulatedDb = 52) => {
     setCurrentDb(simulatedDb);
+    audioBucketRef.current.lastDb = simulatedDb;
+    if (simulatedDb > audioBucketRef.current.maxDb) audioBucketRef.current.maxDb = simulatedDb;
+    audioBucketRef.current.incidentCount += 1;
     const incidentType = simulatedDb >= 65 ? 'suara_keras' : 'bisikan';
     const warningText = `Uji Coba Sensor: Terdeteksi suara bisikan (${simulatedDb} dB)! Sistem otomatis mencatat kejadian ke server pengawas proktor.`;
 
@@ -1240,6 +1344,7 @@ export const CBTExamRoom: React.FC = () => {
                 type="button"
                 disabled={!agreementChecked}
                 onClick={() => {
+                  flushAudioHistoryToServer(false, true);
                   setIsConfirmSubmitOpen(false);
                   submitCurrentExam();
                 }}

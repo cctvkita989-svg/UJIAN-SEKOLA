@@ -21,7 +21,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({ isOpen, onClos
   const [kkm, setKkm] = useState(75);
   const [randomizeQuestions, setRandomizeQuestions] = useState(true);
   const [randomizeOptions, setRandomizeOptions] = useState(true);
-  const [showScoreImmediate, setShowScoreImmediate] = useState(true);
+  const [showScoreImmediate, setShowScoreImmediate] = useState(false);
 
   if (!isOpen) return null;
 
@@ -47,6 +47,7 @@ export const CreateExamModal: React.FC<CreateExamModalProps> = ({ isOpen, onClos
       randomizeQuestions,
       randomizeOptions,
       showScoreImmediate,
+      publishAnswers: false,
       maxViolationsAllowed: 3,
     });
 

@@ -15,6 +15,8 @@ import {
   ProctorBroadcastMessage,
   AttendanceStatus,
   AppTheme,
+  AudioMinuteLog,
+  ProgressCheckpointLog,
 } from '../types/cbt';
 import {
   INITIAL_USERS,
@@ -119,6 +121,7 @@ interface CBTContextType {
   finishExamDueToViolation: (reason: string) => void;
   recordAudioViolation: (decibelLevel: number, incidentType?: 'bisikan' | 'suara_keras') => void;
   reportCurrentAudioLevel: (decibelLevel: number) => void;
+  syncAudioBatchToServer: (logs: AudioMinuteLog[], currentDb: number, forceSync?: boolean) => void;
   updateAudioProctoringSettings: (enabled: boolean, sensitivity?: 'low' | 'medium' | 'high') => void;
   submitCurrentExam: (forcedReason?: string) => void;
   exitExamView: () => void;
@@ -667,12 +670,14 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const dirtySessionRef = useRef<ExamSession | null>(null);
   const answerSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAnswerClicksRef = useRef<number>(0);
+  const hasDoneInitialProgressSyncRef = useRef<Record<string, boolean>>({});
   const questionSyncTimersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
 
   // Firestore Sync Helpers for Multi-Device Real-Time Exam
   const syncSessionToFirestore = async (session: ExamSession) => {
     try {
-      await setDoc(doc(db, 'examSessions', session.id), session, { merge: true });
+      const sanitizedSession = JSON.parse(JSON.stringify(session));
+      await setDoc(doc(db, 'examSessions', session.id), sanitizedSession, { merge: true });
     } catch (e) {
       console.warn('[Firestore] Sync session note (device might be offline):', e);
     }
@@ -702,7 +707,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Throttled checkpoint sync for answers (every 8 min OR every 25 clicks) to stay safely inside Firebase Spark 20k writes/day limit
+  // Throttled checkpoint sync for answers & question progress (initial 10s quick checkpoint, then every 4 minutes OR every 25 clicks)
   const scheduleAnswerSyncToFirestore = (session: ExamSession) => {
     dirtySessionRef.current = session;
     pendingAnswerClicksRef.current += 1;
@@ -715,6 +720,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       if (typeof navigator === 'undefined' || navigator.onLine) {
         dirtySessionRef.current = null;
+        hasDoneInitialProgressSyncRef.current[session.id] = true;
         syncSessionToFirestore(session).then(() => {
           offlineStorage.markAnswersSynced(session.id);
         });
@@ -723,17 +729,21 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     if (answerSyncTimerRef.current) return;
+    const isInitial = !hasDoneInitialProgressSyncRef.current[session.id];
+    const delayMs = isInitial ? 10000 : 240000; // Initial 10s checkpoint, then every 4 minutes
+
     answerSyncTimerRef.current = setTimeout(() => {
       answerSyncTimerRef.current = null;
       pendingAnswerClicksRef.current = 0;
       const pending = dirtySessionRef.current;
       if (pending && (typeof navigator === 'undefined' || navigator.onLine)) {
         dirtySessionRef.current = null;
+        hasDoneInitialProgressSyncRef.current[pending.id] = true;
         syncSessionToFirestore(pending).then(() => {
           offlineStorage.markAnswersSynced(pending.id);
         });
       }
-    }, 480000);
+    }, delayMs);
   };
 
   const clearScheduledAnswerSync = () => {
@@ -1632,18 +1642,23 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const existingIds = new Set(examsRef.current.map(e => e.id));
     const missingExams = allPresetExams.filter(e => !existingIds.has(e.id));
     const outdatedTrialExams = examsRef.current
-      .filter(e => trialIds.has(e.id) && e.token !== 'SMPN1PANDAN')
-      .map(e => ({ ...e, token: 'SMPN1PANDAN', isTokenActive: true }));
+      .filter(
+        e =>
+          (trialIds.has(e.id) && (e.token !== 'SMPN1PANDAN' || e.showScoreImmediate !== false || e.publishAnswers !== false)) ||
+          (e.id.startsWith('pas-draft-') && (e.showScoreImmediate !== false || e.publishAnswers === undefined))
+      )
+      .map(e =>
+        trialIds.has(e.id)
+          ? { ...e, token: 'SMPN1PANDAN', isTokenActive: true, showScoreImmediate: false, publishAnswers: false }
+          : { ...e, showScoreImmediate: false, publishAnswers: e.publishAnswers === true }
+      );
 
     if (missingExams.length > 0 || outdatedTrialExams.length > 0) {
+      const updatedMap = new Map(outdatedTrialExams.map(u => [u.id, u]));
       setExams(prev => {
         const ids = new Set(prev.map(e => e.id));
         const toAdd = allPresetExams.filter(e => !ids.has(e.id));
-        const updatedPrev = prev.map(e =>
-          trialIds.has(e.id) && e.token !== 'SMPN1PANDAN'
-            ? { ...e, token: 'SMPN1PANDAN', isTokenActive: true }
-            : e
-        );
+        const updatedPrev = prev.map(e => updatedMap.get(e.id) || e);
         return [...toAdd, ...updatedPrev];
       });
     }
@@ -1684,7 +1699,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      localStorage.setItem('educbt_pas_trial_seeded_v2', 'true');
+      localStorage.setItem('educbt_pas_trial_seeded_v3', 'true');
     } catch {}
 
     return {
@@ -1696,7 +1711,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!isAuthenticated || currentUser.role !== 'admin') return;
     try {
-      if (localStorage.getItem('educbt_pas_trial_seeded_v2') === 'true') return;
+      if (localStorage.getItem('educbt_pas_trial_seeded_v3') === 'true') return;
     } catch {
       return;
     }
@@ -1967,6 +1982,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const isFirstStart = !session || session.status === 'not_started';
+    const totalQ = questionsRef.current[examId]?.length || exam.totalQuestions || 10;
 
     if (!session) {
       session = {
@@ -1982,13 +1998,19 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         status: 'in_progress',
         answers: {},
         violationsCount: 0,
-        lastActive: 'Sedang Mengerjakan',
+        currentQuestionNumber: 1,
+        answeredCount: 0,
+        totalQuestionsCount: totalQ,
+        lastActive: 'Sedang Mengerjakan (Soal No. 1)',
       };
       setExamSessions(prev => [session!, ...prev]);
     } else {
       session = {
         ...session,
         status: 'in_progress',
+        currentQuestionNumber: session.currentQuestionNumber || 1,
+        answeredCount: Object.values(session.answers || {}).filter(a => a.selectedOption !== '').length,
+        totalQuestionsCount: totalQ,
         lastActive: 'Melanjutkan Pengerjaan',
       };
       setExamSessions(prev =>
@@ -2036,6 +2058,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (raw) {
         const cached = JSON.parse(raw);
         session.answers = { ...session.answers, ...cached };
+        session.answeredCount = Object.values(session.answers).filter(a => a.selectedOption !== '').length;
       }
     } catch {}
 
@@ -2073,10 +2096,18 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       },
     };
 
+    const answeredCount = Object.values(updatedAnswers).filter(a => a.selectedOption !== '').length;
+    const totalQuestionsCount =
+      questionsRef.current[activeExamTaking.exam.id]?.length || activeExamTaking.exam.totalQuestions || 10;
+    const currentQuestionNumber = activeExamTaking.currentQuestionIndex + 1;
+
     const updatedSession: ExamSession = {
       ...activeExamTaking.session,
       answers: updatedAnswers,
-      lastActive: 'Menjawab soal',
+      answeredCount,
+      totalQuestionsCount,
+      currentQuestionNumber,
+      lastActive: `Menjawab Soal No. ${currentQuestionNumber} (${answeredCount}/${totalQuestionsCount})`,
     };
 
     setActiveExamTaking(prev => (prev ? { ...prev, session: updatedSession } : null));
@@ -2094,7 +2125,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       activeExamTaking.currentQuestionIndex
     );
 
-    // Throttled cloud checkpoint (every 8 minutes) or offline queue
+    // Throttled cloud checkpoint (initial 10s, then every 4 minutes) or offline queue
     if (typeof navigator !== 'undefined' && navigator.onLine) {
       scheduleAnswerSyncToFirestore(updatedSession);
     } else {
@@ -2124,9 +2155,16 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       ...activeExamTaking.session.answers,
       [questionId]: updated,
     };
-    const updatedSession = {
+    const answeredCount = Object.values(updatedAnswers).filter(a => a.selectedOption !== '').length;
+    const totalQuestionsCount =
+      questionsRef.current[activeExamTaking.exam.id]?.length || activeExamTaking.exam.totalQuestions || 10;
+    const currentQuestionNumber = activeExamTaking.currentQuestionIndex + 1;
+    const updatedSession: ExamSession = {
       ...activeExamTaking.session,
       answers: updatedAnswers,
+      answeredCount,
+      totalQuestionsCount,
+      currentQuestionNumber,
     };
     setActiveExamTaking(prev => (prev ? { ...prev, session: updatedSession } : null));
     setExamSessions(all =>
@@ -2158,7 +2196,22 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const setExamQuestionIndex = (index: number) => {
     if (!activeExamTaking) return;
-    setActiveExamTaking(prev => (prev ? { ...prev, currentQuestionIndex: index } : null));
+    const qNumber = index + 1;
+    const answeredCount = Object.values(activeExamTaking.session.answers || {}).filter(a => a.selectedOption !== '').length;
+    const totalQuestionsCount =
+      questionsRef.current[activeExamTaking.exam.id]?.length || activeExamTaking.exam.totalQuestions || 10;
+    const updatedSession: ExamSession = {
+      ...activeExamTaking.session,
+      currentQuestionNumber: qNumber,
+      answeredCount,
+      totalQuestionsCount,
+      lastActive: `Membuka Soal No. ${qNumber} (${answeredCount}/${totalQuestionsCount})`,
+    };
+    setActiveExamTaking(prev => (prev ? { ...prev, currentQuestionIndex: index, session: updatedSession } : null));
+    setExamSessions(all =>
+      all.map(s => (s.id === updatedSession.id ? updatedSession : s))
+    );
+    dirtySessionRef.current = updatedSession;
   };
 
   const setFontScale = (scale: 'normal' | 'large' | 'xlarge') => {
@@ -2264,15 +2317,122 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const reportCurrentAudioLevel = (decibelLevel: number) => {
-    if (!activeExamTaking) return;
-    setActiveExamTaking(prev => (prev ? {
-      ...prev,
-      session: {
-        ...prev.session,
-        currentAudioLevel: decibelLevel,
-      }
-    } : null));
+    const latest = activeExamTakingRef.current;
+    if (!latest) return;
+    const targetSessionId = latest.session.id;
+
+    setActiveExamTaking(prev =>
+      prev
+        ? {
+            ...prev,
+            session: {
+              ...prev.session,
+              currentAudioLevel: decibelLevel,
+            },
+          }
+        : null
+    );
+    setExamSessions(all =>
+      all.map(s => (s.id === targetSessionId ? { ...s, currentAudioLevel: decibelLevel } : s))
+    );
   };
+
+  const syncAudioBatchToServer = (logs: AudioMinuteLog[], currentDb: number, forceSync = true) => {
+    const latest = activeExamTakingRef.current;
+    if (!latest || latest.session.status !== 'in_progress') return;
+
+    const existingHistory = latest.session.audioHistory || [];
+    const mergedMap = new Map<number, AudioMinuteLog>();
+    existingHistory.forEach(item => mergedMap.set(item.minuteIndex, item));
+    logs.forEach(item => mergedMap.set(item.minuteIndex, item));
+    const mergedHistory = Array.from(mergedMap.values())
+      .sort((a, b) => a.minuteIndex - b.minuteIndex)
+      .slice(-180);
+
+    const avgAudioLevel =
+      mergedHistory.length > 0
+        ? Math.round(mergedHistory.reduce((acc, item) => acc + item.avgDb, 0) / mergedHistory.length)
+        : currentDb;
+    const maxAudioLevel =
+      mergedHistory.length > 0
+        ? Math.max(currentDb, ...mergedHistory.map(item => item.maxDb))
+        : Math.max(currentDb, latest.session.maxAudioLevel || 0);
+
+    const syncTimeLabel = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+    const updatedSession: ExamSession = {
+      ...latest.session,
+      currentAudioLevel: currentDb,
+      avgAudioLevel,
+      maxAudioLevel,
+      audioHistory: mergedHistory,
+      lastAudioSyncAt: syncTimeLabel,
+    };
+
+    activeExamTakingRef.current = { ...latest, session: updatedSession };
+    setActiveExamTaking(prev => (prev ? { ...prev, session: updatedSession } : null));
+    setExamSessions(all => all.map(s => (s.id === updatedSession.id ? updatedSession : s)));
+
+    if (forceSync && (typeof navigator === 'undefined' || navigator.onLine)) {
+      syncSessionToFirestore(updatedSession);
+    }
+  };
+
+  // Periodic 4-Minute Progress Sync to Admin & Firestore (answered count + current question number)
+  useEffect(() => {
+    const status = activeExamTaking?.session?.status;
+    if (status !== 'in_progress') return;
+
+    const pushProgressCheckpoint = () => {
+      const latest = activeExamTakingRef.current;
+      if (!latest || latest.session.status !== 'in_progress') return;
+
+      const totalQuestions =
+        questionsRef.current[latest.exam.id]?.length || latest.exam.totalQuestions || 10;
+      const answeredCount = Object.values(latest.session.answers || {}).filter(a => a.selectedOption !== '').length;
+      const currentQuestionNumber = latest.currentQuestionIndex + 1;
+      const percent = totalQuestions > 0 ? Math.min(100, Math.round((answeredCount / totalQuestions) * 100)) : 0;
+      const timeLabel = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+
+      const checkpoint: ProgressCheckpointLog = {
+        timeLabel,
+        answeredCount,
+        currentQuestionNumber,
+        totalQuestions,
+        percent,
+      };
+
+      const nextHistory = [...(latest.session.progressHistory || []), checkpoint].slice(-60);
+      const updatedSession: ExamSession = {
+        ...latest.session,
+        answeredCount,
+        currentQuestionNumber,
+        totalQuestionsCount: totalQuestions,
+        progressHistory: nextHistory,
+        lastProgressSyncAt: timeLabel,
+        lastActive: `Progres Soal No. ${currentQuestionNumber} (${answeredCount}/${totalQuestions})`,
+      };
+
+      setActiveExamTaking(prev => (prev ? { ...prev, session: updatedSession } : null));
+      setExamSessions(all => all.map(s => (s.id === updatedSession.id ? updatedSession : s)));
+
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        hasDoneInitialProgressSyncRef.current[updatedSession.id] = true;
+        syncSessionToFirestore(updatedSession);
+      } else {
+        enqueueOfflineSync({
+          id: `prog-${updatedSession.id}-${Date.now()}`,
+          type: 'answer',
+          sessionId: updatedSession.id,
+          sessionData: updatedSession,
+          timestamp: Date.now(),
+        });
+      }
+    };
+
+    const intervalId = setInterval(pushProgressCheckpoint, 240000); // Every 4 minutes
+    return () => clearInterval(intervalId);
+  }, [activeExamTaking?.session?.status]);
 
   const updateAudioProctoringSettings = (enabled: boolean, sensitivity: 'low' | 'medium' | 'high' = 'medium') => {
     updateSchoolProfile({
@@ -2290,8 +2450,19 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const { correctCount, wrongCount, finalScore } = calculateExamScore(examQList, latestTaking.session.answers);
 
     const completedTimestamp = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
+    const timeOnlyLabel = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB';
 
     const onlineNow = typeof navigator !== 'undefined' ? navigator.onLine : true;
+    const totalQuestions = examQList.length || latestTaking.exam.totalQuestions || 10;
+    const answeredCount = Object.values(latestTaking.session.answers || {}).filter(a => a.selectedOption !== '').length;
+    const currentQuestionNumber = latestTaking.currentQuestionIndex + 1;
+    const finalCheckpoint: ProgressCheckpointLog = {
+      timeLabel: timeOnlyLabel,
+      answeredCount,
+      currentQuestionNumber,
+      totalQuestions,
+      percent: totalQuestions > 0 ? Math.min(100, Math.round((answeredCount / totalQuestions) * 100)) : 100,
+    };
 
     const completedSession: ExamSession = {
       ...latestTaking.session,
@@ -2300,6 +2471,11 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       score: finalScore,
       correctCount,
       wrongCount,
+      answeredCount,
+      currentQuestionNumber,
+      totalQuestionsCount: totalQuestions,
+      lastProgressSyncAt: timeOnlyLabel,
+      progressHistory: [...(latestTaking.session.progressHistory || []), finalCheckpoint].slice(-60),
       lastActive: forcedReason
         ? `Selesai Otomatis (${forcedReason})`
         : onlineNow
@@ -2588,6 +2764,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         finishExamDueToViolation,
         recordAudioViolation,
         reportCurrentAudioLevel,
+        syncAudioBatchToServer,
         updateAudioProctoringSettings,
         submitCurrentExam,
         exitExamView,

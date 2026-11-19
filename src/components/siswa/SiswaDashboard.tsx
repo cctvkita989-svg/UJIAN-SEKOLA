@@ -143,21 +143,26 @@ export const SiswaDashboard: React.FC = () => {
     }
   };
 
-  // Student grades data
+  // Student grades data (only expose scores when exam.publishAnswers === true)
   const myGrades = studentGrades[currentUser.id] || [];
   const completedGrades = myGrades.filter(g => g.status !== 'Belum Ujian');
+  const findExamForGrade = (g: StudentSubjectGrade) =>
+    exams.find(e => e.id.toLowerCase() === g.code.toLowerCase()) ||
+    exams.find(e => e.subject.toLowerCase() === g.subject.toLowerCase()) ||
+    exams.find(e => e.examCategory && g.examTitle.toLowerCase().includes(e.subject.toLowerCase()));
+  const publishedGrades = completedGrades.filter(g => findExamForGrade(g)?.publishAnswers === true);
   const avgScore =
-    completedGrades.length > 0
+    publishedGrades.length > 0
       ? (
-          completedGrades.reduce((sum, g) => sum + g.score, 0) / completedGrades.length
+          publishedGrades.reduce((sum, g) => sum + g.score, 0) / publishedGrades.length
         ).toFixed(1)
-      : '0';
-  const sortedByScore = [...completedGrades].sort((a, b) => b.score - a.score);
+      : '-';
+  const sortedByScore = [...publishedGrades].sort((a, b) => b.score - a.score);
   const highestGradeItem = sortedByScore[0];
   const lowestGradeItem = sortedByScore[sortedByScore.length - 1];
-  const highestGrade = highestGradeItem ? highestGradeItem.score : 0;
-  const lowestGrade = lowestGradeItem ? lowestGradeItem.score : 0;
-  const passedCount = myGrades.filter(g => g.status === 'Tuntas').length;
+  const highestGrade = highestGradeItem ? highestGradeItem.score : '-';
+  const lowestGrade = lowestGradeItem ? lowestGradeItem.score : '-';
+  const passedCount = publishedGrades.filter(g => g.status === 'Tuntas').length;
 
   // Student discipline notes
   const myDisciplineNotes = disciplineNotes.filter(n => n.studentId === currentUser.id);
@@ -1015,7 +1020,9 @@ export const SiswaDashboard: React.FC = () => {
               <div className="text-3xl font-mono font-bold text-indigo-600 mt-1">
                 {avgScore}
               </div>
-              <span className="text-xs text-slate-500 mt-1 block">Dari {completedGrades.length} mapel selesai</span>
+              <span className="text-xs text-slate-500 mt-1 block">
+                {publishedGrades.length > 0 ? `Dari ${publishedGrades.length} mapel dirilis` : 'Menunggu pemeriksaan admin'}
+              </span>
             </div>
 
             <div className="p-4 bg-white border border-slate-200 rounded-xl shadow-xs">
@@ -1026,7 +1033,7 @@ export const SiswaDashboard: React.FC = () => {
                 {highestGrade}
               </div>
               <span className="text-xs text-slate-500 mt-1 block">
-                {highestGradeItem ? highestGradeItem.subject : 'Belum ada nilai'}
+                {highestGradeItem ? highestGradeItem.subject : 'Sedang diperiksa'}
               </span>
             </div>
 
@@ -1038,7 +1045,7 @@ export const SiswaDashboard: React.FC = () => {
                 {lowestGrade}
               </div>
               <span className="text-xs text-slate-500 mt-1 block">
-                {lowestGradeItem ? `${lowestGradeItem.subject} (${lowestGradeItem.status})` : 'Belum ada nilai'}
+                {lowestGradeItem ? `${lowestGradeItem.subject} (${lowestGradeItem.status})` : 'Sedang diperiksa'}
               </span>
             </div>
 
@@ -1047,9 +1054,11 @@ export const SiswaDashboard: React.FC = () => {
                 Ketuntasan KKM
               </span>
               <div className="text-3xl font-mono font-bold text-slate-900 mt-1">
-                {passedCount} / {myGrades.length}
+                {publishedGrades.length > 0 ? `${passedCount} / ${publishedGrades.length}` : '-'}
               </div>
-              <span className="text-xs text-slate-500 mt-1 block">Mata Pelajaran Tuntas</span>
+              <span className="text-xs text-slate-500 mt-1 block">
+                {publishedGrades.length > 0 ? 'Mata Pelajaran Tuntas' : 'Menunggu rilis nilai'}
+              </span>
             </div>
           </div>
 
@@ -1088,12 +1097,8 @@ export const SiswaDashboard: React.FC = () => {
                     </tr>
                   ) : (
                     myGrades.map(g => {
-                    const matchedExam = exams.find(
-                      e => e.subject.toLowerCase() === g.subject.toLowerCase() ||
-                           e.id.toLowerCase() === g.code.toLowerCase() ||
-                           (e.examCategory && g.examTitle.toLowerCase().includes(e.subject.toLowerCase()))
-                    );
-                    const isPublished = matchedExam ? matchedExam.publishAnswers !== false : true;
+                    const matchedExam = findExamForGrade(g);
+                    const isPublished = matchedExam?.publishAnswers === true;
                     const breakdown = getSimpleGradeAnswerBreakdown(g);
 
                     return (
@@ -1103,7 +1108,16 @@ export const SiswaDashboard: React.FC = () => {
                         <td className="py-2.5 px-4 text-slate-500 font-mono">{g.completedDate}</td>
                         <td className="py-2.5 px-4 font-mono">{g.kkm}</td>
                         <td className="py-2.5 px-4 font-mono font-bold text-sm">
-                          {g.status === 'Belum Ujian' ? '-' : g.score}
+                          {g.status === 'Belum Ujian' ? (
+                            '-'
+                          ) : !isPublished ? (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-50 border border-amber-200 text-amber-800 text-[11px] font-sans font-semibold">
+                              <Clock className="w-3 h-3 text-amber-600" />
+                              Sedang Diperiksa
+                            </span>
+                          ) : (
+                            g.score
+                          )}
                         </td>
                         <td className="py-2.5 px-4 text-right">
                           {g.status === 'Belum Ujian' ? (
@@ -1111,13 +1125,15 @@ export const SiswaDashboard: React.FC = () => {
                               Belum Ujian
                             </span>
                           ) : !isPublished ? (
-                            <span
-                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-500 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg"
-                              title="Kunci jawaban dan analisis benar/salah belum dipublikasikan oleh admin"
+                            <button
+                              type="button"
+                              onClick={() => setSelectedAnswerReviewGrade(g)}
+                              className="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 border border-amber-200 px-2.5 py-1 rounded-lg cursor-pointer transition-colors"
+                              title="Klik untuk melihat status pemeriksaan jawaban"
                             >
-                              <Lock className="w-3 h-3 text-slate-400" />
-                              <span>Menunggu Publikasi Admin</span>
-                            </span>
+                              <Lock className="w-3 h-3 text-amber-600" />
+                              <span>Review Jawaban</span>
+                            </button>
                           ) : (
                             <button
                               type="button"
@@ -1381,6 +1397,8 @@ export const SiswaDashboard: React.FC = () => {
       {/* MODAL RINCIAN JAWABAN BENAR & SALAH (COMPACT & BERSIH)       */}
       {/* ============================================================ */}
       {selectedAnswerReviewGrade && (() => {
+        const matchedExam = findExamForGrade(selectedAnswerReviewGrade);
+        const isPublished = matchedExam?.publishAnswers === true;
         const breakdown = getSimpleGradeAnswerBreakdown(selectedAnswerReviewGrade);
         const kkm = selectedAnswerReviewGrade.kkm || 75;
         const isPassed = selectedAnswerReviewGrade.score >= kkm;
@@ -1396,15 +1414,21 @@ export const SiswaDashboard: React.FC = () => {
                       {selectedAnswerReviewGrade.code}
                     </span>
                     <span className="text-xs text-slate-400">·</span>
-                    <span
-                      className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
-                        isPassed
-                          ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
-                      }`}
-                    >
-                      {isPassed ? 'Tuntas KKM' : 'Remedial'}
-                    </span>
+                    {!isPublished ? (
+                      <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                        Sedang Diperiksa
+                      </span>
+                    ) : (
+                      <span
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          isPassed
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'bg-rose-500/20 text-rose-300 border border-rose-500/30'
+                        }`}
+                      >
+                        {isPassed ? 'Tuntas KKM' : 'Remedial'}
+                      </span>
+                    )}
                   </div>
                   <h3 className="text-base font-bold text-white mt-0.5">
                     {selectedAnswerReviewGrade.subject}
@@ -1421,6 +1445,20 @@ export const SiswaDashboard: React.FC = () => {
                 </button>
               </div>
 
+              {!isPublished ? (
+                <div className="p-8 text-center space-y-3">
+                  <div className="w-14 h-14 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto">
+                    <Clock className="w-7 h-7" />
+                  </div>
+                  <h4 className="text-sm font-bold text-slate-900">
+                    Jawaban sedang diperiksa, silahkan coba lagi nanti.
+                  </h4>
+                  <p className="text-xs text-slate-500 leading-relaxed">
+                    Hasil penilaian serta rincian jawaban untuk mata pelajaran <strong>{selectedAnswerReviewGrade.subject}</strong> akan tersedia setelah dipublikasikan oleh Admin / Proktor.
+                  </p>
+                </div>
+              ) : (
+              <>
               {/* Summary Strip */}
               <div className="grid grid-cols-3 gap-2 p-3 bg-slate-50 border-b border-slate-200 text-center">
                 <div className="p-2.5 bg-white rounded-xl border border-slate-200">
@@ -1495,6 +1533,8 @@ export const SiswaDashboard: React.FC = () => {
               </div>
 
               {/* Footer */}
+              </>
+              )}
               <div className="shrink-0 p-3 bg-slate-50 border-t border-slate-200 flex justify-between items-center text-xs">
                 <span className="text-slate-500 font-medium">
                   {schoolProfile.name} · Hasil Resmi Asesmen CBT

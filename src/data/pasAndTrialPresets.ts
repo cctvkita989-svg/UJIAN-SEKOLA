@@ -200,6 +200,7 @@ export function buildPasDraftExams(): Exam[] {
         randomizeQuestions: true,
         randomizeOptions: true,
         showScoreImmediate: false,
+        publishAnswers: false,
         maxViolationsAllowed: 3,
         examCategory: 'PAS',
       };
@@ -267,7 +268,8 @@ export function buildTrialExamsAndQuestions(): {
       kkm: 75,
       randomizeQuestions: true,
       randomizeOptions: true,
-      showScoreImmediate: true,
+      showScoreImmediate: false,
+      publishAnswers: false,
       maxViolationsAllowed: 3,
     },
     {
@@ -291,7 +293,8 @@ export function buildTrialExamsAndQuestions(): {
       kkm: 75,
       randomizeQuestions: true,
       randomizeOptions: true,
-      showScoreImmediate: true,
+      showScoreImmediate: false,
+      publishAnswers: false,
       maxViolationsAllowed: 3,
     },
     {
@@ -315,7 +318,8 @@ export function buildTrialExamsAndQuestions(): {
       kkm: 75,
       randomizeQuestions: true,
       randomizeOptions: true,
-      showScoreImmediate: true,
+      showScoreImmediate: false,
+      publishAnswers: false,
       maxViolationsAllowed: 3,
     },
     {
@@ -340,7 +344,8 @@ export function buildTrialExamsAndQuestions(): {
       kkm: 75,
       randomizeQuestions: true,
       randomizeOptions: true,
-      showScoreImmediate: true,
+      showScoreImmediate: false,
+      publishAnswers: false,
       maxViolationsAllowed: 3,
     },
     {
@@ -365,7 +370,8 @@ export function buildTrialExamsAndQuestions(): {
       kkm: 75,
       randomizeQuestions: true,
       randomizeOptions: true,
-      showScoreImmediate: true,
+      showScoreImmediate: false,
+      publishAnswers: false,
       maxViolationsAllowed: 3,
     },
     {
@@ -390,7 +396,8 @@ export function buildTrialExamsAndQuestions(): {
       kkm: 75,
       randomizeQuestions: true,
       randomizeOptions: true,
-      showScoreImmediate: true,
+      showScoreImmediate: false,
+      publishAnswers: false,
       maxViolationsAllowed: 3,
     },
   ];

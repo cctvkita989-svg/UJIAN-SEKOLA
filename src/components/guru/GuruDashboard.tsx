@@ -449,7 +449,10 @@ export const GuruDashboard: React.FC = () => {
                   </tr>
                 ) : (
                   sessionsForCurrentExam.map(session => {
-                    const answeredCount = Object.keys(session.answers).length;
+                    const answeredCount = session.answeredCount ?? Object.values(session.answers || {}).filter(a => a.selectedOption !== '').length;
+                    const totalQCount = session.totalQuestionsCount || currentQuestions.length || currentExam.totalQuestions || 10;
+                    const progressPct = totalQCount > 0 ? Math.min(100, Math.round((answeredCount / totalQCount) * 100)) : 0;
+                    const currentQNum = session.currentQuestionNumber || 1;
                     const doubtCount = Object.values(session.answers).filter(a => a.isDoubtful).length;
                     const mins = Math.floor(session.remainingSeconds / 60);
                     const secs = session.remainingSeconds % 60;
@@ -467,15 +470,26 @@ export const GuruDashboard: React.FC = () => {
                           <div className="text-[11px] text-slate-400">{session.studentRoom}</div>
                         </td>
                         <td className="py-3 px-4">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono font-semibold text-slate-900">
-                              {answeredCount} / {currentQuestions.length || currentExam.totalQuestions}
-                            </span>
-                            {doubtCount > 0 && (
-                              <span className="text-[11px] font-medium text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
-                                {doubtCount} ragu
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono font-bold text-indigo-700">
+                                Soal No. {currentQNum}
                               </span>
-                            )}
+                              <span className="font-mono font-semibold text-slate-900">
+                                {answeredCount}/{totalQCount} ({progressPct}%)
+                              </span>
+                              {doubtCount > 0 && (
+                                <span className="text-[11px] font-medium text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                                  {doubtCount} ragu
+                                </span>
+                              )}
+                            </div>
+                            <div className="text-[10px] font-mono text-slate-400 flex items-center gap-2">
+                              {session.lastProgressSyncAt && <span>Sync: {session.lastProgressSyncAt}</span>}
+                              {typeof session.currentAudioLevel === 'number' && session.currentAudioLevel > 0 && (
+                                <span className="text-emerald-700 font-semibold">Audio: {session.currentAudioLevel} dB</span>
+                              )}
+                            </div>
                           </div>
                         </td>
                         <td className="py-3 px-4 font-mono font-semibold text-slate-800">

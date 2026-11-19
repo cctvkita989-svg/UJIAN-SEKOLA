@@ -100,6 +100,24 @@ export interface StudentAnswer {
 
 export type AttendanceStatus = 'cbt' | 'tertulis' | 'absen' | 'izin' | 'sakit';
 
+export interface AudioMinuteLog {
+  minuteIndex: number;
+  timeLabel: string;
+  avgDb: number;
+  maxDb: number;
+  minDb: number;
+  status: 'hening' | 'desas_desus' | 'ribut';
+  incidentCount: number;
+}
+
+export interface ProgressCheckpointLog {
+  timeLabel: string;
+  answeredCount: number;
+  currentQuestionNumber: number;
+  totalQuestions: number;
+  percent: number;
+}
+
 export interface ExamSession {
   id: string;
   examId: string;
@@ -122,6 +140,15 @@ export interface ExamSession {
   audioViolationsCount?: number;
   lastAudioIncidentAt?: string;
   currentAudioLevel?: number; // 0 - 100
+  avgAudioLevel?: number;
+  maxAudioLevel?: number;
+  audioHistory?: AudioMinuteLog[];
+  lastAudioSyncAt?: string;
+  currentQuestionNumber?: number; // 1-based current question index viewed by student
+  answeredCount?: number;
+  totalQuestionsCount?: number;
+  progressHistory?: ProgressCheckpointLog[];
+  lastProgressSyncAt?: string;
   lastActive: string;
   isOfflineSynced?: boolean;
   offlineSubmittedAt?: string;

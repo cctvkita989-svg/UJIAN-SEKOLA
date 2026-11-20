@@ -46,6 +46,7 @@ import { offlineStorage } from '../lib/offlineStorage';
 import { isInsideExamApp, notifyKioskExamActive } from '../utils/examAppGuard';
 import { formatExamDateId, getExamTimingStatus, getTodayIsoDate } from '../utils/examSchedule';
 import { buildPasDraftExams, buildTrialExamsAndQuestions } from '../data/pasAndTrialPresets';
+import { syncSavedCredentialPassword } from '../utils/savedCredentials';
 
 interface CBTContextType {
   isAuthenticated: boolean;
@@ -53,7 +54,13 @@ interface CBTContextType {
   currentRole: Role;
   setCurrentUser: (user: User) => void;
   switchRole: (role: Role) => void;
-  login: (username: string, password: string) => { success: boolean; message: string; role?: Role };
+  login: (username: string, password: string) => {
+    success: boolean;
+    message: string;
+    role?: Role;
+    userId?: string;
+    displayName?: string;
+  };
   logout: () => void;
   users: User[];
   exams: Exam[];
@@ -1203,6 +1210,8 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       success: true,
       message: 'Login berhasil.',
       role: matchedUser.role,
+      userId: matchedUser.id,
+      displayName: matchedUser.name,
     };
   };
 
@@ -1245,6 +1254,11 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUserState(updatedUser);
       localStorage.setItem('educbt_curr_user', JSON.stringify(updatedUser));
     }
+    syncSavedCredentialPassword(userId, newPass.trim(), [
+      user.username,
+      user.nisn || '',
+      user.name,
+    ]);
 
     return {
       success: true,
@@ -1266,6 +1280,11 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUserState(updatedUser);
       localStorage.setItem('educbt_curr_user', JSON.stringify(updatedUser));
     }
+    syncSavedCredentialPassword(userId, finalPass, [
+      user.username,
+      user.nisn || '',
+      user.name,
+    ]);
     return {
       success: true,
       message: `Password untuk "${user.name}" (${user.role}) berhasil direset menjadi: ${finalPass}`,
@@ -1307,6 +1326,11 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       setCurrentUserState(updatedStudent);
       localStorage.setItem('educbt_curr_user', JSON.stringify(updatedStudent));
     }
+    syncSavedCredentialPassword(student.id, finalPass, [
+      student.username,
+      student.nisn || '',
+      student.name,
+    ]);
 
     return {
       success: true,

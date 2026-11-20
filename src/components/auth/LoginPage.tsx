@@ -6,19 +6,39 @@ import {
   Eye,
   EyeOff,
   ArrowRight,
-  AlertCircle
+  AlertCircle,
+  CheckCircle2,
+  Trash2
 } from 'lucide-react';
 import { ThemeSwitcher } from '../common/ThemeSwitcher';
 import { PWAInstallButton } from '../common/PWAInstallButton';
+import {
+  loadSavedCredentials,
+  saveLoginCredentials,
+  clearSavedCredentials,
+  SavedLoginCredentials
+} from '../../utils/savedCredentials';
 
 export const LoginPage: React.FC = () => {
   const { login, schoolProfile } = useCBT();
 
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [savedAccount, setSavedAccount] = useState<SavedLoginCredentials | null>(() =>
+    loadSavedCredentials()
+  );
+  const [username, setUsername] = useState<string>(() => savedAccount?.username || '');
+  const [password, setPassword] = useState<string>(() => savedAccount?.password || '');
+  const [rememberMe, setRememberMe] = useState<boolean>(true);
   const [showPassword, setShowPassword] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+
+  const handleClearSavedAccount = () => {
+    clearSavedCredentials();
+    setSavedAccount(null);
+    setUsername('');
+    setPassword('');
+    setErrorMessage('');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,6 +57,19 @@ export const LoginPage: React.FC = () => {
 
       if (!result.success) {
         setErrorMessage(result.message);
+        return;
+      }
+
+      if (rememberMe) {
+        saveLoginCredentials({
+          userId: result.userId,
+          username: username.trim(),
+          password,
+          displayName: result.displayName,
+          role: result.role,
+        });
+      } else {
+        clearSavedCredentials();
       }
     }, 200);
   };
@@ -70,7 +103,7 @@ export const LoginPage: React.FC = () => {
 
         {/* Main Card */}
         <div className="mt-7 bg-white py-8 px-6 sm:px-8 border border-slate-200/90 rounded-2xl shadow-xs">
-          <div className="mb-6">
+          <div className="mb-5">
             <h2 className="text-base font-bold text-slate-900">
               Masuk ke Portal Ujian
             </h2>
@@ -78,6 +111,32 @@ export const LoginPage: React.FC = () => {
               Silakan masukkan username/NISN dan password Anda. Hak akses diarahkan otomatis sesuai peran.
             </p>
           </div>
+
+          {savedAccount && (
+            <div className="mb-4 p-3 rounded-xl bg-emerald-50 border border-emerald-200/90 flex items-center justify-between gap-2.5">
+              <div className="flex items-start gap-2 min-w-0">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="text-xs leading-snug min-w-0">
+                  <p className="font-bold text-emerald-900 truncate">
+                    Akun Tersimpan Otomatis
+                  </p>
+                  <p className="text-[11px] text-emerald-700 truncate">
+                    {savedAccount.displayName ? `${savedAccount.displayName} · ` : ''}
+                    <span className="font-mono">{savedAccount.username}</span>
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={handleClearSavedAccount}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white hover:bg-rose-50 text-[11px] font-semibold text-slate-600 hover:text-rose-700 border border-emerald-200 hover:border-rose-200 transition-colors shrink-0 cursor-pointer"
+                title="Hapus akun tersimpan jika memakai akun lain"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>Ganti</span>
+              </button>
+            </div>
+          )}
 
           {errorMessage && (
             <div className="mb-5 p-3.5 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5">
@@ -100,9 +159,11 @@ export const LoginPage: React.FC = () => {
                 </div>
                 <input
                   id="username"
+                  name="username"
                   type="text"
+                  autoComplete="username"
                   required
-                  autoFocus
+                  autoFocus={!savedAccount}
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   placeholder="Contoh NISN: 3142848459, atau admin / guru"
@@ -124,7 +185,9 @@ export const LoginPage: React.FC = () => {
                 </div>
                 <input
                   id="password"
+                  name="password"
                   type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
                   required
                   value={password}
                   onChange={e => setPassword(e.target.value)}
@@ -134,7 +197,7 @@ export const LoginPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors"
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -145,7 +208,19 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="pt-2">
+            <div className="flex items-center justify-between pt-0.5">
+              <label className="inline-flex items-center gap-2 text-xs text-slate-600 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={e => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                />
+                <span>Simpan username &amp; password di perangkat ini</span>
+              </label>
+            </div>
+
+            <div className="pt-1">
               <button
                 type="submit"
                 disabled={isLoading}

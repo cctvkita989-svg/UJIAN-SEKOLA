@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panduan Ujian CBT Siswa - UPTD SMP Negeri 1 Pandan</title>
+  <style>
+    :root {
+      --primary: #1d4ed8;
+      --primary-soft: #eff6ff;
+      --slate-900: #0f172a;
+      --slate-700: #334155;
+      --slate-500: #64748b;
+      --border: #e2e8f0;
+      --danger-bg: #fff1f2;
+      --danger-border: #fecdd3;
+      --danger-text: #9f1239;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+      color: var(--slate-900);
+      background: #f1f5f9;
+      line-height: 1.6;
+    }
+    .toolbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      background: #0f172a;
+      color: #fff;
+      padding: 12px 20px;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15);
+    }
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .toolbar-sub {
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .btn-print {
+      background: #2563eb;
+      color: #fff;
+      border: none;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .btn-print:hover { background: #1d4ed8; }
+    .container {
+      max-width: 900px;
+      margin: 24px auto;
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06);
+    }
+    .header {
+      text-align: center;
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 18px;
+      margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block;
+      background: var(--primary-soft);
+      color: var(--primary);
+      border: 1px solid #bfdbfe;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 4px 12px;
+      border-radius: 999px;
+      margin-bottom: 8px;
+    }
+    h1 {
+      margin: 4px 0;
+      font-size: 24px;
+      color: var(--slate-900);
+    }
+    .school {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--slate-700);
+    }
+    .section-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: var(--primary);
+      margin: 28px 0 12px;
+      padding-left: 10px;
+      border-left: 4px solid var(--primary);
+    }
+    .prep-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .prep-card {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      font-size: 13px;
+    }
+    .prep-card strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--slate-900);
+    }
+    .step-card {
+      display: grid;
+      grid-template-columns: 1fr 270px;
+      gap: 20px;
+      align-items: center;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 18px;
+      background: #fff;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .step-badge {
+      display: inline-block;
+      background: var(--primary);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 10px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+    }
+    .step-card h3 {
+      margin: 0 0 8px;
+      font-size: 16px;
+    }
+    .step-card ul, .step-card ol {
+      margin: 6px 0 0;
+      padding-left: 18px;
+      font-size: 13.5px;
+      color: var(--slate-700);
+    }
+    .step-card li { margin-bottom: 5px; }
+    .shot-wrap {
+      text-align: center;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px;
+    }
+    .shot-wrap img {
+      width: 100%;
+      max-width: 245px;
+      height: auto;
+      border-radius: 8px;
+      border: 1px solid #cbd5e1;
+      display: block;
+      margin: 0 auto;
+    }
+    .shot-caption {
+      font-size: 11px;
+      color: var(--slate-500);
+      margin-top: 6px;
+    }
+    .token-box {
+      display: inline-block;
+      font-family: Consolas, monospace;
+      font-weight: 700;
+      background: #eef2ff;
+      color: #3730a3;
+      border: 1px solid #c7d2fe;
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .rules-box {
+      background: var(--danger-bg);
+      border: 1px solid var(--danger-border);
+      border-radius: 14px;
+      padding: 18px 20px;
+      color: var(--danger-text);
+      font-size: 13.5px;
+      break-inside: avoid;
+      page-break-inside: avoid;
+    }
+    .rules-box h3 {
+      margin: 0 0 10px;
+      font-size: 16px;
+      color: #881337;
+    }
+    .rules-box li { margin-bottom: 6px; }
+    .footer {
+      text-align: center;
+      margin-top: 24px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--slate-500);
+    }
+    @media (max-width: 700px) {
+      .container { margin: 0; border-radius: 0; padding: 18px; }
+      .step-card { grid-template-columns: 1fr; }
+    }
+    @media print {
+      body { background: #fff; }
+      .toolbar { display: none !important; }
+      .container {
+        margin: 0;
+        border: none;
+        box-shadow: none;
+        padding: 8px 12px;
+        max-width: 100%;
+      }
+      .step-card { grid-template-columns: 1fr 220px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="toolbar">
+    <div>
+      <div class="toolbar-title">Panduan Peserta Ujian CBT — UPTD SMP Negeri 1 Pandan</div>
+      <div class="toolbar-sub">Klik tombol di kanan untuk menyimpan sebagai PDF dan bagikan ke grup WhatsApp siswa.</div>
+    </div>
+    <button class="btn-print" onclick="window.print()">Cetak / Simpan PDF</button>
+  </div>
+
+  <div class="container">
+    <div class="header">
+      <div class="badge">Panduan Resmi Peserta Didik</div>
+      <h1>Tata Cara Mengikuti Ujian Sekolah (CBT Online)</h1>
+      <div class="school">UPTD SMP NEGERI 1 PANDAN · NPSN: 10204682 · TA 2024/2025</div>
+    </div>
+
+    <div class="section-title">A. Persiapan Sebelum Ujian Dimulai</div>
+    <div class="prep-grid">
+      <div class="prep-card">
+        <strong>1. Wajib Pakai Aplikasi Exambro</strong>
+        Ujian hanya dapat dikerjakan melalui <b>Aplikasi Ujian Android (APK Sekolah)</b>. Browser Chrome/Safari biasa akan diblokir.
+      </div>
+      <div class="prep-card">
+        <strong>2. Baterai &amp; Koneksi Stabil</strong>
+        Pastikan baterai minimal <b>50%</b>, kuota/WiFi aktif, dan nyalakan mode <i>Jangan Ganggu (Do Not Disturb)</i>.
+      </div>
+      <div class="prep-card">
+        <strong>3. Setujui Izin Aplikasi</strong>
+        Izinkan <b>Pin App / Sematkan Layar</b> dan akses <b>Mikrofon</b> saat pertama membuka aplikasi.
+      </div>
+      <div class="prep-card">
+        <strong>4. Siapkan NISN &amp; Token</strong>
+        Login memakai <b>NISN</b> &amp; password Anda. Token Uji Coba semua mapel: <span class="token-box">SMPN1PANDAN</span>
+      </div>
+    </div>
+
+    <div class="section-title">B. Langkah-Langkah Mengerjakan Ujian</div>
+
+    <div class="step-card">
+      <div>
+        <span class="step-badge">LANGKAH 1</span>
+        <h3>Login Portal Ujian Menggunakan NISN</h3>
+        <ul>
+          <li>Buka aplikasi Ujian Sekolah di HP Android Anda.</li>
+          <li>Masukkan <b>NISN</b> pada kolom <i>Username atau NISN Siswa</i>.</li>
+          <li>Masukkan <b>Password Akun</b> Anda (default siswa baru: <code>siswa123</code>).</li>
+          <li>Tekan tombol biru <b>Masuk ke Sistem</b>.</li>
+        </ul>
+      </div>
+      <div class="shot-wrap">
+        <img src="/assets/panduan/01_halaman_login.png" alt="Halaman Login" />
+        <div class="shot-caption">Tampilan Halaman Login Siswa</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div>
+        <span class="step-badge">LANGKAH 2</span>
+        <h3>Pastikan Tidak Membuka Lewat Browser Biasa</h3>
+        <ul>
+          <li>Jika membuka lewat Google Chrome / browser HP biasa, akan muncul kotak merah <b>"Ujian Melalui Browser Web Dilarang"</b>.</li>
+          <li>Tombol mulai ujian tidak akan tersedia di browser web.</li>
+          <li>Tutup browser, lalu login ulang lewat <b>Aplikasi Ujian Android (Exambro Sekolah)</b>.</li>
+        </ul>
+      </div>
+      <div class="shot-wrap">
+        <img src="/assets/panduan/02_blokir_browser_web.png" alt="Blokir Browser Web" />
+        <div class="shot-caption">Peringatan Jika Membuka dari Browser Web</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div>
+        <span class="step-badge">LANGKAH 3</span>
+        <h3>Masukkan Token &amp; Mulai Ujian</h3>
+        <ul>
+          <li>Pastikan nama, NISN, kelas, dan agama Anda di bagian atas sudah benar.</li>
+          <li>Pilih kartu ujian yang berstatus <b>SEDANG BERLANGSUNG</b>.</li>
+          <li>Ketik token dari Pengawas Ruang (untuk Uji Coba: <span class="token-box">SMPN1PANDAN</span>).</li>
+          <li>Tekan tombol <b>Mulai Kerjakan</b>.</li>
+        </ul>
+      </div>
+      <div class="shot-wrap">
+        <img src="/assets/panduan/03_beranda_siswa_dan_token.png" alt="Input Token Ujian" />
+        <div class="shot-caption">Beranda Siswa &amp; Kolom Token Ujian</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div>
+        <span class="step-badge">LANGKAH 4</span>
+        <h3>Mengerjakan Soal di Ruang Ujian</h3>
+        <ul>
+          <li><b>Indikator Mikrofon (dB):</b> Memantau ketenangan ruangan selama ujian.</li>
+          <li><b>Sisa Waktu:</b> Hitung mundur waktu pengerjaan ujian Anda.</li>
+          <li>Ketuk pilihan jawaban <b>A, B, C, atau D</b>.</li>
+          <li>Gunakan tombol kuning <b>Ragu-Ragu</b> bila masih ingin meninjau ulang jawaban, lalu tekan <b>Soal Berikutnya</b>.</li>
+        </ul>
+      </div>
+      <div class="shot-wrap">
+        <img src="/assets/panduan/04_ruang_ujian_soal.png" alt="Ruang Ujian Soal" />
+        <div class="shot-caption">Tampilan Soal, Timer &amp; Sensor Suara</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div>
+        <span class="step-badge">LANGKAH 5</span>
+        <h3>Cek Kelengkapan Lewat Daftar Soal</h3>
+        <ul>
+          <li>Tekan tombol <b>Daftar Soal</b> di pojok kanan atas untuk melihat peta nomor soal.</li>
+          <li><b>Hijau:</b> Sudah terjawab &nbsp;|&nbsp; <b>Kuning (?):</b> Ragu-ragu &nbsp;|&nbsp; <b>Abu (-):</b> Belum dijawab.</li>
+          <li>Ketuk nomor mana saja untuk langsung melompat ke soal tersebut.</li>
+        </ul>
+      </div>
+      <div class="shot-wrap">
+        <img src="/assets/panduan/05_daftar_nomor_soal.png" alt="Daftar Nomor Soal" />
+        <div class="shot-caption">Peta Navigasi Nomor Soal</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div>
+        <span class="step-badge">LANGKAH 6</span>
+        <h3>Konfirmasi &amp; Kumpulkan Jawaban</h3>
+        <ul>
+          <li>Buka soal nomor terakhir, lalu tekan tombol hijau <b>Selesai Ujian</b>.</li>
+          <li>Periksa ringkasan jumlah soal terjawab dan belum terjawab.</li>
+          <li><b>Centang kotak pernyataan</b> kesiapan mengakhiri ujian.</li>
+          <li>Tekan tombol hijau <b>Kumpulkan Ujian</b>.</li>
+        </ul>
+      </div>
+      <div class="shot-wrap">
+        <img src="/assets/panduan/06_konfirmasi_kumpulkan.png" alt="Konfirmasi Kumpulkan" />
+        <div class="shot-caption">Centang Pernyataan lalu Kumpulkan</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div>
+        <span class="step-badge">LANGKAH 7</span>
+        <h3>Bukti Pengumpulan Ujian Berhasil</h3>
+        <ul>
+          <li>Layar akan menampilkan pesan <b>"Selamat, Anda Telah Menyelesaikan Ujian!"</b>.</li>
+          <li>Pastikan lencana status menunjukkan <b>Tersinkron ke Server</b> &amp; <b>Tersimpan &amp; Terverifikasi</b>.</li>
+          <li>Tekan <b>Kembali ke Beranda Siswa</b>.</li>
+        </ul>
+      </div>
+      <div class="shot-wrap">
+        <img src="/assets/panduan/07_ujian_selesai.png" alt="Ujian Selesai" />
+        <div class="shot-caption">Konfirmasi Ujian Telah Dikumpulkan</div>
+      </div>
+    </div>
+
+    <div class="step-card">
+      <div>
+        <span class="step-badge">LANGKAH 8</span>
+        <h3>Cek Riwayat Ujian &amp; Status Nilai</h3>
+        <ul>
+          <li>Buka tab <b>Riwayat Ujian</b> untuk memastikan ujian Anda telah tercatat selesai.</li>
+          <li>Selama hasil belum dipublikasikan oleh Admin/Proktor, nilai masih disembunyikan.</li>
+          <li>Jika menekan <b>Review Jawaban</b>, tampil keterangan: <b>"Jawaban sedang diperiksa, silahkan coba lagi nanti."</b></li>
+        </ul>
+      </div>
+      <div class="shot-wrap">
+        <img src="/assets/panduan/09_review_jawaban_terkunci.png" alt="Review Terkunci" />
+        <div class="shot-caption">Status Pemeriksaan pada Riwayat Ujian</div>
+      </div>
+    </div>
+
+    <div class="rules-box">
+      <h3>C. Tata Tertib Penting — Hal yang Dilarang Saat Ujian</h3>
+      <ul>
+        <li><b>DILARANG Keluar Aplikasi / Berpindah Layar:</b> Membuka WhatsApp, Google, split-screen, atau menutup aplikasi akan membuat sistem <b>langsung menyelesaikan ujian Anda secara otomatis</b>.</li>
+        <li><b>DILARANG Melepas Screen Pinning:</b> Mencoba melepas sematan layar saat ujian berjalan akan langsung menghentikan dan menyelesaikan sesi ujian Anda.</li>
+        <li><b>DILARANG Berbisik atau Berbicara:</b> Mikrofon perangkat merekam tingkat kebisingan ruangan dan mengirimkannya ke Pengawas Pusat.</li>
+        <li><b>DILARANG Screenshot / Rekam Layar:</b> Sistem memblokir tangkapan layar dan salin-tempel selama aplikasi berjalan.</li>
+      </ul>
+    </div>
+
+    <div class="footer">
+      Panitia &amp; Proktor Asesmen Berbasis Komputer · UPTD SMP Negeri 1 Pandan<br />
+      Jika ada kendala akun atau membutuhkan PIN keluar setelah ujian berakhir, segera hubungi Pengawas Ruang.
+    </div>
+  </div>
+</body>
+</html>

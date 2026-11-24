@@ -946,6 +946,18 @@ export const CBTExamRoom: React.FC = () => {
               {currentQ.questionText}
             </div>
 
+            {currentQ.imageUrl && (
+              <div className={`rounded-xl border p-3 flex justify-center ${
+                isDarkMode ? 'border-slate-700 bg-slate-800/40' : 'border-slate-200 bg-white'
+              }`}>
+                <img
+                  src={currentQ.imageUrl}
+                  alt={`Gambar stimulus soal nomor ${currentQ.number}`}
+                  className="max-h-72 w-auto max-w-full rounded-lg object-contain bg-white"
+                />
+              </div>
+            )}
+
             {/* A. STANDAR PILIHAN GANDA (1 JAWABAN BENAR) */}
             {currentQ.type === 'pg' && (
               <div className="space-y-3 pt-2">

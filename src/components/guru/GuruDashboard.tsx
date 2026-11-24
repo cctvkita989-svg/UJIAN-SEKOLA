@@ -337,6 +337,16 @@ export const GuruDashboard: React.FC = () => {
                       {q.questionText}
                     </div>
 
+                    {q.imageUrl && (
+                      <div className="mt-3 rounded-lg border border-slate-200 bg-white p-2 inline-block">
+                        <img
+                          src={q.imageUrl}
+                          alt={`Gambar soal nomor ${q.number}`}
+                          className="max-h-52 w-auto max-w-full rounded object-contain"
+                        />
+                      </div>
+                    )}
+
                     {/* Options */}
                     <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                       {q.options.map(opt => {

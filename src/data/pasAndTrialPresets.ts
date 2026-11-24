@@ -185,7 +185,7 @@ export function buildPasDraftExams(): Exam[] {
         gradeLevel: tier.label,
         targetClasses: tier.classes,
         durationMinutes: 90,
-        totalQuestions: bp.totalQuestions,
+        totalQuestions: bp.code === 'h1-ipa' && tier.key === 'viii' ? 20 : bp.totalQuestions,
         token,
         isTokenActive: false,
         dayLabel: bp.dayLabel,
@@ -223,7 +223,8 @@ function makePg(
   options: [string, string, string, string],
   correctAnswer: 'A' | 'B' | 'C' | 'D',
   explanation: string,
-  points = 10
+  points = 10,
+  imageUrl?: string
 ): Question {
   return {
     id: `${examId}-q${number}`,
@@ -231,6 +232,7 @@ function makePg(
     number,
     type: 'pg',
     questionText,
+    ...(imageUrl ? { imageUrl } : {}),
     options: [
       { id: 'A', text: options[0] },
       { id: 'B', text: options[1] },
@@ -483,7 +485,11 @@ export function buildTrialExamsAndQuestions(): {
 
 export function buildPasQuestionsMap(): Record<string, Question[]> {
   const ppknViiId = 'pas-draft-h1-ppkn-vii';
+  const ipaViiiId = 'pas-draft-h1-ipa-viii';
+  const ipaIxId = 'pas-draft-h1-ipa-ix';
   const P = 2.5; // 40 soal x 2.5 = 100
+  const P8 = 5; // 20 soal x 5 = 100
+  const P9 = 10; // 30 soal x 10 = 300 (dinormalisasi ke skala 100)
 
   return {
     [ppknViiId]: [
@@ -956,6 +962,544 @@ export function buildPasQuestionsMap(): Record<string, Question[]> {
         'B',
         'Sanksi norma hukum bersifat tegas, memaksa, dan mengikat, bukan fleksibel.',
         P
+      ),
+    ],
+    [ipaViiiId]: [
+      makePg(
+        ipaViiiId,
+        1,
+        'Tiga macam zat makanan penghasil energi bagi tubuh adalah...',
+        [
+          'Karbohidrat, protein, dan vitamin',
+          'Karbohidrat, lemak, dan mineral',
+          'Karbohidrat, vitamin, dan lemak',
+          'Protein, karbohidrat, dan lemak',
+        ],
+        'D',
+        'Zat makanan penghasil energi (kalori) bagi tubuh adalah karbohidrat, protein, dan lemak.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        2,
+        'Ketika melakukan uji makanan dengan biuret, tampak muncul warna ungu pada bahan makanan. Hal ini menunjukkan bahwa...',
+        [
+          'Makanan mengandung lemak',
+          'Makanan mengandung karbohidrat',
+          'Makanan mengandung cukup air',
+          'Makanan mengandung protein',
+        ],
+        'D',
+        'Reagen Biuret berubah warna menjadi ungu apabila bahan makanan positif mengandung protein.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        3,
+        'Saat berpuasa kadar gula dalam darah menjadi rendah. Makanan yang paling cocok untuk segera memulihkan kondisi tubuh adalah...',
+        ['Telur', 'Air putih', 'Kurma', 'Daging'],
+        'C',
+        'Kurma mengandung gula sederhana alami yang cepat diserap tubuh untuk memulihkan kadar glukosa darah.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        4,
+        'Seorang remaja putri berusia 14 tahun, dengan aktivitas fisik sedang, membutuhkan asupan energi yang cukup untuk pertumbuhan dan kegiatan sehari-hari. Nutrien utama yang menjadi sumber energi terbesar bagi tubuh adalah...',
+        ['Vitamin', 'Mineral', 'Karbohidrat dan lemak', 'Air'],
+        'C',
+        'Karbohidrat dan lemak merupakan sumber energi utama terbesar bagi aktivitas tubuh manusia.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        5,
+        'Vitamin berikut yang berperan penting dalam pembekuan darah dan banyak ditemukan pada sayuran hijau seperti brokoli dan bayam adalah...',
+        ['Vitamin C', 'Vitamin K', 'Vitamin B12', 'Vitamin A'],
+        'B',
+        'Vitamin K berperan penting membantu pembentukan protrombin dalam proses pembekuan darah.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        6,
+        'Penyakit yang diakibatkan oleh kekurangan yodium dalam makanan dan adanya kandungan kapur yang tinggi pada air minum dinamakan...',
+        ['Rabun Senja', 'Merasmus', 'Penyakit Gondok', 'Kwasiorkor'],
+        'C',
+        'Kekurangan yodium menyebabkan pembengkakan kelenjar tiroid yang dikenal sebagai penyakit gondok.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        7,
+        'Urutan saluran pencernaan manusia yang benar adalah...',
+        [
+          'Mulut, kerongkongan, lambung, usus halus, usus besar dan anus',
+          'Mulut, kerongkongan, lambung, usus besar, usus halus dan anus',
+          'Mulut, kerongkongan, usus besar, usus halus dan anus',
+          'Mulut, lambung, kerongkongan, usus halus, usus besar dan anus',
+        ],
+        'A',
+        'Saluran pencernaan manusia berurutan dari mulut → kerongkongan → lambung → usus halus → usus besar → anus.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        8,
+        'Proses perubahan makanan dari ukuran besar menjadi ukuran kecil dengan bantuan gigi disebut pencernaan makanan secara...',
+        ['Kimiawi', 'Intrasel', 'Mekanis', 'Ekstrasel'],
+        'C',
+        'Penghalusan ukuran makanan secara fisik oleh gigi di rongga mulut disebut pencernaan mekanis.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        9,
+        'Enzim yang berfungsi untuk mengubah lemak menjadi gliserol yaitu...',
+        ['Lipase', 'Amilase', 'Renin', 'Tripsin'],
+        'A',
+        'Enzim lipase memecah lemak (lipid) menjadi asam lemak dan gliserol.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        10,
+        'Kadar air dari sisa makanan diatur oleh...',
+        ['Poros usus', 'Usus besar', 'Usus halus', 'Usus dua belas jari'],
+        'B',
+        'Usus besar (kolon) berfungsi menyerap dan mengatur kadar air pada sisa makanan sebelum menjadi feses.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        11,
+        'Berikut ini yang bukan merupakan fungsi darah adalah...',
+        [
+          'mengangkut sisa hasil metabolisme',
+          'meneruskan rangsang dari lingkungan',
+          'membunuh kuman yang masuk ke dalam tubuh',
+          'mengangkut oksigen dan karbon dioksida',
+        ],
+        'B',
+        'Meneruskan rangsang dari lingkungan merupakan fungsi sistem saraf, bukan fungsi darah.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        12,
+        'Jenis sel darah yang berfungsi dalam proses pembekuan darah adalah...',
+        ['sel darah merah', 'plasma darah', 'keping darah', 'sel darah putih'],
+        'C',
+        'Keping darah (trombosit) berperan utama dalam proses pembekuan darah saat terjadi luka.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        13,
+        'Tangan Nia terluka saat memotong wortel, lalu dengan cepat dia menutup luka dengan ibu jarinya. Beberapa saat kemudian lukanya tidak berdarah lagi. Bagian darah yang berperan dalam penutupan luka tersebut adalah...',
+        [
+          'serum dan fibrinogen',
+          'fibrinogen dan keping darah',
+          'keping darah dan plasma darah',
+          'plasma darah dan serum',
+        ],
+        'B',
+        'Keping darah (trombosit) bersama protein fibrinogen membentuk benang fibrin untuk menutup luka.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        14,
+        'Peredaran darah yang aliran darahnya dari jantung ke seluruh tubuh dan kembali ke jantung disebut peredaran darah...',
+        ['besar', 'tertutup', 'tunggal', 'rangkap'],
+        'A',
+        'Peredaran darah besar (sistemik) mengalirkan darah dari jantung ke seluruh tubuh lalu kembali ke jantung.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        15,
+        'Fungsi proses pernapasan bagi tubuh adalah sebagai berikut, kecuali...',
+        [
+          'memasukkan oksigen',
+          'menghasilkan energi untuk oksidasi makanan',
+          'merawat alat peredaran darah',
+          'mengeluarkan sisa oksidasi, yaitu karbondioksida',
+        ],
+        'C',
+        'Merawat alat peredaran darah bukan termasuk fungsi langsung dari proses pernapasan.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        16,
+        'Berikut ini nama organ penyusun sistem pernapasan pada manusia:\n1) rongga hidung\n2) alveolus\n3) bronkus\n4) Faring\n5) bronkiolus\nUrutan yang benar masuknya udara pernapasan adalah...',
+        ['1-2-3-4-5', '1-4-3-5-2', '2-3-4-5-1', '1-3-4-5-2'],
+        'B',
+        'Alur masuknya udara pernapasan sesuai opsi yang tersedia: rongga hidung (1) → faring (4) → bronkus (3) → bronkiolus (5) → alveolus (2).',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        17,
+        'Proses bernapas dibedakan antara pernapasan dada dan pernapasan perut. Pada pernapasan dada yang berkontraksi adalah otot-otot...',
+        [
+          'Antar rusuk dan diafragma',
+          'Diafragma dan pengangkat rusuk',
+          'Antar rusuk, pengangkat rusuk dan diafragma',
+          'Antar rusuk dan pengangkat rusuk',
+        ],
+        'D',
+        'Pernapasan dada digerakkan oleh kontraksi otot antartulang rusuk dan otot pengangkat rusuk.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        18,
+        'Organ pernapasan yang berperan sebagai alat penyaring dan penghangat adalah...',
+        ['Bronkiolus', 'Bronkus', 'Hidung', 'Trakea'],
+        'C',
+        'Rongga hidung memiliki rambut hidung dan selaput lendir untuk menyaring debu serta menghangatkan udara.',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        19,
+        'Udara yang didapatkan pada saat kita menghembuskan napas sekuat-kuatnya disebut udara...',
+        ['Komplementer', 'Tidal', 'Suplementer', 'Residu'],
+        'D',
+        'Sesuai kunci jawaban pada naskah soal guru (D).',
+        P8
+      ),
+      makePg(
+        ipaViiiId,
+        20,
+        'Gangguan pernapasan yang biasanya disebabkan karena terlalu banyak merokok adalah...',
+        ['Kanker paru-paru', 'Pneumonia', 'Salesma', 'Dipteri'],
+        'A',
+        'Zat karsinogenik dalam asap rokok meningkatkan risiko kanker paru-paru secara signifikan.',
+        P8
+      ),
+    ],
+    [ipaIxId]: [
+      makePg(
+        ipaIxId,
+        1,
+        'Proses bertambahnya ukuran fisik, seperti tinggi badan dan berat badan, disebut...',
+        ['Perkembangan', 'Pertumbuhan', 'Reproduksi', 'Adaptasi'],
+        'B',
+        'Pertumbuhan adalah pertambahan ukuran fisik (tinggi, berat, volume) yang bersifat kuantitatif dan ireversibel.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        2,
+        'Kemampuan bayi untuk merangkak, berdiri, lalu berjalan adalah contoh dari...',
+        ['Pertumbuhan', 'Adaptasi', 'Perkembangan', 'Reproduksi'],
+        'C',
+        'Perkembangan merupakan proses pematangan fungsi organ dan kemampuan motorik makhluk hidup.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        3,
+        'Berikut ini adalah tahapan siklus hidup manusia secara berurutan...',
+        [
+          'Remaja – Bayi – Anak-anak – Dewasa',
+          'Bayi – Anak-anak – Remaja – Dewasa',
+          'Dewasa – Anak-anak – Bayi – Remaja',
+          'Anak-anak – Remaja – Bayi – Dewasa',
+        ],
+        'B',
+        'Tahapan siklus hidup manusia pascakelahiran berlangsung berurutan: Bayi → Anak-anak → Remaja → Dewasa.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        4,
+        'Sistem koordinasi tubuh manusia terlaksana oleh adanya...',
+        [
+          'Otak dan sistem saraf',
+          'Otak dan sumsum tulang belakang',
+          'Sistem saraf dan hormon',
+          'Hormon dan sumsum tulang belakang',
+        ],
+        'C',
+        'Sistem koordinasi manusia dijalankan bersama oleh sistem saraf dan sistem hormon (endokrin).',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        5,
+        'Sistem koordinasi manusia yang berfungsi mengatur dan mengendalikan semua aktivitas tubuh dengan respons cepat dan singkat adalah...',
+        ['Sistem endokrin', 'Sistem peredaran darah', 'Sistem saraf', 'Sistem pencernaan'],
+        'C',
+        'Sistem saraf menghantarkan impuls listrik sehingga menghasilkan respons yang cepat dan singkat.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        6,
+        'Bagian dari sel saraf (neuron) yang berfungsi menerima impuls dari neuron lain dan menghantarkannya menuju badan sel adalah...',
+        ['Akson', 'Dendrit', 'Mielin', 'Sinapsis'],
+        'B',
+        'Dendrit adalah juluran pendek neuron yang menerima rangsangan dan meneruskannya ke badan sel saraf.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        7,
+        'Perhatikan gambar berikut!\nBagian otak yang berfungsi sebagai pusat keseimbangan tubuh ditunjukkan oleh...',
+        ['1', '2', '3', '4'],
+        'B',
+        'Nomor 2 menunjuk otak kecil (cerebellum) yang berfungsi mengatur keseimbangan dan koordinasi gerak tubuh.',
+        P9,
+        '/assets/questions/ipa-ix-q7-otak.png'
+      ),
+      makePg(
+        ipaIxId,
+        8,
+        'Ketika tangan tidak sengaja menyentuh benda panas, tubuh akan secara otomatis (Gerak Refleks) menarik tangan. Jalur impuls saraf pada peristiwa ini adalah...',
+        [
+          'Reseptor - saraf sensorik - otak - saraf motorik - efektor',
+          'Reseptor - saraf sensorik - sumsum tulang belakang - saraf motorik - efektor',
+          'Efektor - saraf motorik - otak - saraf sensorik - reseptor',
+          'Saraf motorik - reseptor - sumsum tulang belakang - saraf sensorik - efektor',
+        ],
+        'B',
+        'Gerak refleks diproses melalui sumsum tulang belakang: reseptor → saraf sensorik → sumsum tulang belakang → saraf motorik → efektor.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        9,
+        'Penyakit kehilangan kemampuan untuk peduli terhadap diri sendiri adalah penyakit...',
+        ['Epilepsi', 'Parkison', 'Alzheimer', 'Amnesia'],
+        'C',
+        'Alzheimer ditandai penurunan daya ingat progresif hingga kehilangan kemampuan mengurus diri sendiri.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        10,
+        'Berikut ini adalah fungsi hormon adrenalin, kecuali...',
+        [
+          'Meningkatkan detak jantung',
+          'Mempercepat pernapasan',
+          'Menurunkan kadar gula darah',
+          'Melebarkan pupil mata',
+        ],
+        'C',
+        'Hormon adrenalin justru meningkatkan kadar gula darah (glukosa) sebagai energi siap pakai, bukan menurunkannya.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        11,
+        'Jika seseorang mengalami kerusakan pada bagian retina matanya, dampak yang paling mungkin terjadi adalah...',
+        [
+          'Tidak dapat membedakan warna',
+          'Kesulitan melihat dalam kondisi gelap',
+          'Penglihatan menjadi kabur atau hilang',
+          'Mata menjadi sangat sensitif terhadap cahaya',
+        ],
+        'C',
+        'Retina berisi sel fotoreseptor penangkap bayangan cahaya; kerusakannya membuat penglihatan kabur hingga hilang.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        12,
+        'Gangguan mata yang tidak bisa melihat benda dekat dengan jelas adalah...',
+        ['Miopi', 'Atigmatisma', 'Presbiopi', 'Hipermetropi'],
+        'D',
+        'Hipermetropi (rabun dekat) terjadi ketika bayangan jatuh di belakang retina sehingga benda dekat tampak kabur.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        13,
+        'Telinga kita hanya mampu mendengar suara yang frekuensinya antara...',
+        ['20 Hz – 100 Hz', '20 Hz – 1000 Hz', '20 Hz – 20.000 Hz', '100 Hz – 50.000 Hz'],
+        'C',
+        'Bunyi audiosonik yang dapat didengar telinga manusia memiliki rentang frekuensi 20 Hz hingga 20.000 Hz.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        14,
+        'Membran timpani yang menangkap getaran suara terdapat di bagian...',
+        ['Telinga luar', 'Telinga tengah', 'Telinga dalam', 'Saluran eustachius'],
+        'A',
+        'Sesuai kunci jawaban pada naskah soal guru (A).',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        15,
+        'Perhatikan gambar di bawah ini!\nLidah manusia beserta bagian-bagiannya. Bagian yang bernomor 1, 2, dan 3 secara berturut-turut dapat merasakan...',
+        [
+          'Manis, asin, dan asam',
+          'Manis, asin, dan pahit',
+          'Manis, asam, dan pahit',
+          'Asam, manis, dan pahit',
+        ],
+        'D',
+        'Sesuai kunci jawaban pada naskah soal guru (D).',
+        P9,
+        '/assets/questions/ipa-ix-q15-lidah.png'
+      ),
+      makePg(
+        ipaIxId,
+        16,
+        'Berikut ini yang bukan merupakan tujuan pemberian zat aditif adalah...',
+        [
+          'memberi cita rasa tertentu',
+          'menambah nilai gizi',
+          'mengawetkan',
+          'menurunkan nilai jual',
+        ],
+        'D',
+        'Penambahan zat aditif bertujuan meningkatkan mutu, daya simpan, rasa, atau tampilan makanan, bukan menurunkan nilai jual.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        17,
+        'Bahan-bahan berikut ini termasuk pewarna alami, kecuali...',
+        ['kunyit', 'tartrazin', 'karamel', 'daun suji'],
+        'B',
+        'Tartrazin merupakan pewarna makanan sintetis (buatan) berwarna kuning.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        18,
+        'Monosodium Glutamat (MSG) adalah zat aditif pada makanan yang berfungsi sebagai...',
+        ['pewarna', 'pemanis', 'pengawet', 'penyedap'],
+        'D',
+        'MSG adalah zat penyedap rasa buatan untuk menguatkan cita rasa gurih (umami) makanan.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        19,
+        'Pengertian zat adiktif adalah yang dapat menimbulkan...',
+        ['kesenangan', 'kesedihan', 'ketergantungan', 'kesembuhan'],
+        'C',
+        'Zat adiktif adalah zat yang pemakaiannya dapat menimbulkan kecanduan atau ketergantungan.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        20,
+        'Di dalam memulihkan kondisi fisik dan kejiwaan pecandu narkoba, maka dilakukan upaya...',
+        ['resuitasi jantung', 'detoksifikasi', 'rehabilitasi', 'imunisasi'],
+        'C',
+        'Rehabilitasi dilakukan untuk memulihkan kondisi fisik, psikis, dan sosial pecandu narkoba.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        21,
+        'Fungsi dari testis pada alat reproduksi pria adalah...',
+        ['Penghasil Sperma', 'Penghasil Ovum', 'Penghasil Urin', 'Saluran Anak'],
+        'A',
+        'Testis berfungsi menghasilkan sel kelamin jantan (sperma) serta hormon testosteron.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        22,
+        'Perhatikan gambar organ reproduksi wanita berikut!\nYang ditunjukkan dengan huruf M berfungsi sebagai...',
+        [
+          'Tempat pertumbuhan embrio',
+          'Tempat keluarnya janin',
+          'Tempat penghasil sel telur',
+          'Tempat terjadinya kelahiran',
+        ],
+        'C',
+        'Huruf M menunjuk ovarium (indung telur) yang berfungsi menghasilkan sel telur (ovum).',
+        P9,
+        '/assets/questions/ipa-ix-q22-reproduksi-wanita.png'
+      ),
+      makePg(
+        ipaIxId,
+        23,
+        'Perhatikan gambar berikut!\nBagian yang ditunjuk oleh huruf X berfungsi untuk...',
+        [
+          'Mematikan sperma',
+          'Memproduksi sperma',
+          'Menjaga suhu sperma',
+          'Membuang sperma',
+        ],
+        'B',
+        'Huruf X menunjuk testis yang berfungsi memproduksi sel sperma.',
+        P9,
+        '/assets/questions/ipa-ix-q23-reproduksi-pria.png'
+      ),
+      makePg(
+        ipaIxId,
+        24,
+        'Berikut ini yang bukan termasuk organ reproduksi wanita adalah...',
+        ['Testis', 'Oviduk', 'Ovarium', 'Uterus'],
+        'A',
+        'Testis merupakan organ reproduksi pada pria, bukan wanita.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        25,
+        'Sistem perkembangbiakan pria tersusun dari organ luar yang terdiri dari...',
+        ['Sperma dan ovum', 'Vagina dan rahim', 'Penis dan anus', 'Penis dan skrotum'],
+        'D',
+        'Organ reproduksi luar pria terdiri atas penis dan skrotum (kantung pelindung testis).',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        26,
+        'Pembentukan ovum terjadi di dalam...',
+        ['Tuba fallopi', 'Ovarium', 'Rahim', 'Serviks'],
+        'B',
+        'Oogenesis (pembentukan sel telur/ovum) berlangsung di dalam ovarium.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        27,
+        'Masa ketika seorang anak mengalami pematangan seksual yang disertai perubahan fisik dan psikis disebut masa...',
+        ['Menopause', 'Balita', 'PAUD', 'Pubertas'],
+        'D',
+        'Pubertas adalah masa peralihan menuju dewasa yang ditandai pematangan organ reproduksi serta perubahan fisik dan psikis.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        28,
+        'Seorang wanita sudah tidak produktif untuk bereproduksi yang ditandai dengan tidak mengalami menstruasi disebut...',
+        ['Oogenis', 'Spermatogenesis', 'Ovulasi', 'Menopause'],
+        'D',
+        'Menopause adalah berhentinya siklus menstruasi secara alami sebagai tanda berakhirnya masa subur wanita.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        29,
+        'Di bawah ini penyakit sistem reproduksi manusia yang dapat mengakibatkan menurunnya sistem kekebalan tubuh seseorang adalah...',
+        ['Herpes', 'AIDS', 'Gonore', 'Sifilis'],
+        'B',
+        'AIDS disebabkan oleh virus HIV yang menyerang sel darah putih sehingga menurunkan sistem kekebalan tubuh.',
+        P9
+      ),
+      makePg(
+        ipaIxId,
+        30,
+        'Kemampuan manusia untuk menghasilkan keturunan baru disebut...',
+        ['Respirasi', 'Regenerasi', 'Reproduksi', 'Reaktif'],
+        'C',
+        'Reproduksi adalah kemampuan makhluk hidup menghasilkan keturunan baru untuk melestarikan jenisnya.',
+        P9
       ),
     ],
   };

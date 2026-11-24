@@ -1674,12 +1674,22 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       .filter(
         e =>
           (trialIds.has(e.id) && (e.token !== 'SMPN1PANDAN' || e.showScoreImmediate !== false || e.publishAnswers !== false)) ||
-          (e.id.startsWith('pas-draft-') && (e.showScoreImmediate !== false || e.publishAnswers === undefined))
+          (e.id.startsWith('pas-draft-') &&
+            (e.showScoreImmediate !== false ||
+              e.publishAnswers === undefined ||
+              (e.id === 'pas-draft-h1-ipa-viii' && e.totalQuestions !== 20 && (questionsRef.current[e.id]?.length || 0) <= 20)))
       )
       .map(e =>
         trialIds.has(e.id)
           ? { ...e, token: 'SMPN1PANDAN', isTokenActive: true, showScoreImmediate: false, publishAnswers: false }
-          : { ...e, showScoreImmediate: false, publishAnswers: e.publishAnswers === true }
+          : {
+              ...e,
+              ...(e.id === 'pas-draft-h1-ipa-viii' && (questionsRef.current[e.id]?.length || 0) <= 20
+                ? { totalQuestions: 20 }
+                : {}),
+              showScoreImmediate: false,
+              publishAnswers: e.publishAnswers === true,
+            }
       );
 
     if (missingExams.length > 0 || outdatedTrialExams.length > 0) {
@@ -1761,7 +1771,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      localStorage.setItem('educbt_pas_trial_seeded_v4', 'true');
+      localStorage.setItem('educbt_pas_trial_seeded_v5', 'true');
     } catch {}
 
     const addedQuestionsCount = questionsToWrite.reduce((acc, [, qList]) => acc + qList.length, 0);
@@ -1775,7 +1785,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!isAuthenticated || currentUser.role !== 'admin') return;
     try {
-      if (localStorage.getItem('educbt_pas_trial_seeded_v4') === 'true') return;
+      if (localStorage.getItem('educbt_pas_trial_seeded_v5') === 'true') return;
     } catch {
       return;
     }

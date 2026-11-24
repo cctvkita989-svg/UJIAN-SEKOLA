@@ -20,6 +20,7 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
 
   const [questionType, setQuestionType] = useState<QuestionType>('pg');
   const [questionText, setQuestionText] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   
   // Standard PG options
   const [optA, setOptA] = useState('');
@@ -53,6 +54,7 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
     if (initialQuestion) {
       setQuestionType(initialQuestion.type || 'pg');
       setQuestionText(initialQuestion.questionText);
+      setImageUrl(initialQuestion.imageUrl || '');
       const getOptText = (id: string) =>
         initialQuestion.options.find(o => o.id === id)?.text || '';
       setOptA(getOptText('A'));
@@ -92,6 +94,7 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
     } else {
       setQuestionType('pg');
       setQuestionText('');
+      setImageUrl('');
       setOptA('');
       setOptB('');
       setOptC('');
@@ -175,10 +178,13 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
       computedOptions = [];
     }
 
+    const cleanImageUrl = imageUrl.trim();
+
     if (initialQuestion) {
       updateQuestion(examId, initialQuestion.id, {
         type: questionType,
         questionText: questionText.trim(),
+        ...(cleanImageUrl ? { imageUrl: cleanImageUrl } : { imageUrl: '' }),
         options: computedOptions,
         correctAnswer: computedCorrectAnswer,
         statements: questionType === 'benar_salah' ? statements : undefined,
@@ -191,6 +197,7 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
         examId,
         type: questionType,
         questionText: questionText.trim(),
+        ...(cleanImageUrl ? { imageUrl: cleanImageUrl } : {}),
         options: computedOptions,
         correctAnswer: computedCorrectAnswer,
         statements: questionType === 'benar_salah' ? statements : undefined,
@@ -289,6 +296,29 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
               placeholder="Tuliskan stimulus bacaan, teks pertanyaan, rumus matematika (misal: f(x) = x² + 2x - 3), atau instruksi pengerjaan..."
               className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-indigo-600 font-sans leading-relaxed"
             />
+          </div>
+
+          {/* GAMBAR STIMULUS OPSIONAL */}
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 mb-1">
+              URL / Path Gambar Soal (Opsional)
+            </label>
+            <input
+              type="text"
+              value={imageUrl}
+              onChange={e => setImageUrl(e.target.value)}
+              placeholder="Contoh: /assets/questions/ipa-ix-q7-otak.png"
+              className="w-full px-3 py-2 text-xs bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-indigo-600 font-mono"
+            />
+            {imageUrl.trim() && (
+              <div className="mt-2 p-2 rounded-lg border border-slate-200 bg-slate-50 flex justify-center">
+                <img
+                  src={imageUrl.trim()}
+                  alt="Preview gambar soal"
+                  className="max-h-40 w-auto max-w-full rounded object-contain bg-white"
+                />
+              </div>
+            )}
           </div>
 
           {/* 1. TAMPILAN PILIHAN GANDA (REGULER & KOMPLEKS) */}
@@ -522,8 +552,9 @@ export const QuestionEditorModal: React.FC<QuestionEditorModalProps> = ({
               </label>
               <input
                 type="number"
-                min={1}
+                min={0.5}
                 max={100}
+                step="0.5"
                 value={points}
                 onChange={e => setPoints(Number(e.target.value))}
                 className="w-full px-3 py-2 text-xs font-mono bg-white border border-slate-300 rounded-lg focus:outline-hidden focus:border-indigo-600"

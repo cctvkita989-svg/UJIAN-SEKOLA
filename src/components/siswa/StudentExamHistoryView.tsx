@@ -796,6 +796,16 @@ export const StudentExamHistoryView: React.FC = () => {
                         {q.questionText}
                       </p>
 
+                      {q.imageUrl && (
+                        <div className="rounded-lg border border-stone-200 bg-white p-2 flex justify-center">
+                          <img
+                            src={q.imageUrl}
+                            alt={`Gambar soal nomor ${q.number}`}
+                            className="max-h-56 w-auto max-w-full rounded object-contain"
+                          />
+                        </div>
+                      )}
+
                       {/* Options */}
                       {q.options && q.options.length > 0 && (
                         <div className="space-y-1.5 pt-1">

@@ -3192,6 +3192,15 @@ export const AdminDashboard: React.FC = () => {
                                 <div className="text-slate-800 font-serif line-clamp-2 leading-relaxed">
                                   {q.questionText}
                                 </div>
+                                {q.imageUrl && (
+                                  <div className="rounded-md border border-slate-200 bg-white p-1.5 flex justify-center">
+                                    <img
+                                      src={q.imageUrl}
+                                      alt={`Gambar soal #${q.number}`}
+                                      className="max-h-28 w-auto max-w-full object-contain rounded"
+                                    />
+                                  </div>
+                                )}
                                 <div className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1 pt-1 border-t border-slate-200/60">
                                   <Check className="w-3 h-3 text-emerald-600" /> Kunci Jawaban: {q.correctAnswer}
                                 </div>

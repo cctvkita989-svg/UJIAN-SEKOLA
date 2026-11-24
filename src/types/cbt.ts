@@ -47,6 +47,7 @@ export interface Question {
   number: number;
   type: QuestionType;
   questionText: string;
+  imageUrl?: string;
   options: QuestionOption[];
   correctAnswer: string; // 'B' or 'A,C' for pg_kompleks, or JSON
   statements?: StatementItem[]; // for 'benar_salah'

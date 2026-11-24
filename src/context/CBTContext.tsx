@@ -45,7 +45,7 @@ import {
 import { offlineStorage } from '../lib/offlineStorage';
 import { isInsideExamApp, notifyKioskExamActive } from '../utils/examAppGuard';
 import { formatExamDateId, getExamTimingStatus, getTodayIsoDate } from '../utils/examSchedule';
-import { buildPasDraftExams, buildTrialExamsAndQuestions } from '../data/pasAndTrialPresets';
+import { buildPasDraftExams, buildPasQuestionsMap, buildTrialExamsAndQuestions } from '../data/pasAndTrialPresets';
 import { syncSavedCredentialPassword } from '../utils/savedCredentials';
 
 interface CBTContextType {
@@ -1659,8 +1659,13 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loadPasAndTrialPresets = async (): Promise<{ addedExams: number; addedQuestions: number }> => {
     const pasDrafts = buildPasDraftExams();
+    const pasQuestionsMap = buildPasQuestionsMap();
     const { exams: trialExams, questionsMap: trialQuestionsMap } = buildTrialExamsAndQuestions();
     const allPresetExams = [...trialExams, ...pasDrafts];
+    const allPresetQuestions: Record<string, Question[]> = {
+      ...trialQuestionsMap,
+      ...pasQuestionsMap,
+    };
     const trialIds = new Set(trialExams.map(t => t.id));
 
     const existingIds = new Set(examsRef.current.map(e => e.id));
@@ -1687,13 +1692,46 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       });
     }
 
-    const qKeysToSync: string[] = [];
+    const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine;
+    const currentQuestions = questionsRef.current;
+    const questionsToWrite: Array<[string, Question[]]> = [];
+    const questionsFromCloud: Array<[string, Question[]]> = [];
+
+    for (const [examId, presetQList] of Object.entries(allPresetQuestions)) {
+      const localList = currentQuestions[examId];
+      if (localList && localList.length > 0) {
+        continue;
+      }
+      let cloudHasQuestions = false;
+      if (isOnlineNow) {
+        try {
+          const snap = await getDoc(doc(db, 'examQuestions', examId));
+          if (snap.exists()) {
+            const data = snap.data() as { questions?: Question[] };
+            if (Array.isArray(data.questions) && data.questions.length > 0) {
+              cloudHasQuestions = true;
+              questionsFromCloud.push([examId, data.questions]);
+            }
+          }
+        } catch {
+          // Offline / read note: fall back to local seeding
+        }
+      }
+      if (!cloudHasQuestions) {
+        questionsToWrite.push([examId, presetQList]);
+      }
+    }
+
     setQuestions(prev => {
       const next = { ...prev };
-      Object.entries(trialQuestionsMap).forEach(([examId, qList]) => {
+      questionsFromCloud.forEach(([examId, qList]) => {
         if (!next[examId] || next[examId].length === 0) {
           next[examId] = qList;
-          qKeysToSync.push(examId);
+        }
+      });
+      questionsToWrite.forEach(([examId, qList]) => {
+        if (!next[examId] || next[examId].length === 0) {
+          next[examId] = qList;
         }
       });
       pasDrafts.forEach(d => {
@@ -1704,11 +1742,11 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       return next;
     });
 
-    if (typeof navigator === 'undefined' || navigator.onLine) {
+    if (isOnlineNow) {
       await Promise.allSettled([
         ...missingExams.map(ex => syncExamToFirestore(ex)),
         ...outdatedTrialExams.map(ex => syncExamToFirestore(ex)),
-        ...Object.entries(trialQuestionsMap).map(([examId, qList]) =>
+        ...questionsToWrite.map(([examId, qList]) =>
           setDoc(
             doc(db, 'examQuestions', examId),
             {
@@ -1723,19 +1761,21 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      localStorage.setItem('educbt_pas_trial_seeded_v3', 'true');
+      localStorage.setItem('educbt_pas_trial_seeded_v4', 'true');
     } catch {}
+
+    const addedQuestionsCount = questionsToWrite.reduce((acc, [, qList]) => acc + qList.length, 0);
 
     return {
       addedExams: missingExams.length + outdatedTrialExams.length,
-      addedQuestions: qKeysToSync.length * 10,
+      addedQuestions: addedQuestionsCount,
     };
   };
 
   useEffect(() => {
     if (!isAuthenticated || currentUser.role !== 'admin') return;
     try {
-      if (localStorage.getItem('educbt_pas_trial_seeded_v3') === 'true') return;
+      if (localStorage.getItem('educbt_pas_trial_seeded_v4') === 'true') return;
     } catch {
       return;
     }

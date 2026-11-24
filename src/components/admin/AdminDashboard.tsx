@@ -1992,9 +1992,9 @@ export const AdminDashboard: React.FC = () => {
                   onClick={async () => {
                     const res = await loadPasAndTrialPresets();
                     showScheduleToast(
-                      res.addedExams > 0
-                        ? `Berhasil memuat ${res.addedExams} paket jadwal (Draf PAS & Uji Coba Semua Rombel) + ${res.addedQuestions} soal uji coba.`
-                        : 'Seluruh paket Draf PAS & Uji Coba Semua Rombel sudah tersedia di daftar jadwal.'
+                      res.addedExams > 0 || res.addedQuestions > 0
+                        ? `Berhasil memuat ${res.addedExams} paket jadwal & ${res.addedQuestions} soal (Draf PAS & Uji Coba Semua Rombel).`
+                        : 'Seluruh paket Draf PAS, Soal PAS yang tersedia, & Uji Coba Semua Rombel sudah terpasang.'
                     );
                   }}
                   className="px-3.5 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-800 border border-indigo-200 rounded-lg text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer transition-colors"

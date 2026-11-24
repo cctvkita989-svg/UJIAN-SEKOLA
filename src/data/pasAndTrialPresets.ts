@@ -222,7 +222,8 @@ function makePg(
   questionText: string,
   options: [string, string, string, string],
   correctAnswer: 'A' | 'B' | 'C' | 'D',
-  explanation: string
+  explanation: string,
+  points = 10
 ): Question {
   return {
     id: `${examId}-q${number}`,
@@ -238,7 +239,7 @@ function makePg(
     ],
     correctAnswer,
     explanation,
-    points: 10,
+    points,
   };
 }
 
@@ -478,4 +479,484 @@ export function buildTrialExamsAndQuestions(): {
   };
 
   return { exams, questionsMap };
+}
+
+export function buildPasQuestionsMap(): Record<string, Question[]> {
+  const ppknViiId = 'pas-draft-h1-ppkn-vii';
+  const P = 2.5; // 40 soal x 2.5 = 100
+
+  return {
+    [ppknViiId]: [
+      makePg(
+        ppknViiId,
+        1,
+        'Hari lahir Pancasila diperingati setiap tanggal...',
+        ['1 Mei', '1 Juni', '17 Agustus', '22 Juni'],
+        'B',
+        'Hari lahir Pancasila diperingati setiap tanggal 1 Juni sesuai pidato Ir. Soekarno pada sidang BPUPKI 1 Juni 1945.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        2,
+        'Panitia Sembilan dibentuk untuk...',
+        [
+          'Menyusun teks proklamasi',
+          'Menyepakati rumusan dasar negara',
+          'Menentukan presiden pertama Indonesia',
+          'Melaksanakan upacara kemerdekaan',
+        ],
+        'B',
+        'Panitia Sembilan dibentuk untuk membahas dan menyepakati rumusan dasar negara Indonesia.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        3,
+        'Tokoh yang mengetik teks proklamasi adalah...',
+        ['Sayuti Melik', 'Achmad Soebardjo', 'Mohammad Hatta', 'Laksamana Maeda'],
+        'A',
+        'Sayuti Melik adalah tokoh yang mengetik naskah teks Proklamasi Kemerdekaan Indonesia.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        4,
+        'Pancasila pertama kali dikemukakan dalam sidang...',
+        ['BPUPKI', 'PPKI', 'KNIP', 'MPR'],
+        'A',
+        'Istilah Pancasila pertama kali dikemukakan oleh Ir. Soekarno dalam sidang pertama BPUPKI.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        5,
+        'Rumusan awal Pancasila yang diusulkan dalam Piagam Jakarta berbeda pada sila pertama karena...',
+        [
+          'Menyebutkan kewajiban menjalankan syariat Islam bagi pemeluknya',
+          'Tidak mencantumkan kata "Ketuhanan"',
+          'Memiliki enam sila dalam Pancasila',
+          'Hanya mengutamakan satu agama',
+        ],
+        'A',
+        'Sila pertama pada Piagam Jakarta berbunyi "Ketuhanan dengan kewajiban menjalankan syariat Islam bagi pemeluk-pemeluknya".',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        6,
+        'Teks Proklamasi dirumuskan di rumah...',
+        ['Mohammad Hatta', 'Soekarno', 'Laksamana Maeda', 'Sayuti Melik'],
+        'C',
+        'Naskah teks Proklamasi dirumuskan di kediaman Laksamana Tadashi Maeda di Jalan Imam Bonjol No. 1, Jakarta.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        7,
+        'Nilai-nilai keadilan di dalam Pancasila memiliki makna...',
+        [
+          'Sama rasa, sama rata, dan sama bahagia',
+          'Yang mampu wajib menjadi donator',
+          'Kekeluargaan dan kegotongroyongan',
+          'Yang lemah selalu mengharapkan bantuan',
+        ],
+        'C',
+        'Keadilan sosial dalam Pancasila dimaknai dengan semangat kekeluargaan dan kegotongroyongan.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        8,
+        'Proklamasi kemerdekaan Indonesia dibacakan di...',
+        ['Istana Merdeka', 'Rengasdengklok', 'Rumah Soekarno, Pegangsaan Timur 56', 'Gedung BPUPKI'],
+        'C',
+        'Proklamasi kemerdekaan Indonesia dibacakan di kediaman Ir. Soekarno, Jalan Pegangsaan Timur No. 56 Jakarta.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        9,
+        'Salah satu bentuk penerapan sila keadilan sosial adalah...',
+        [
+          'Mendukung kebijakan pemerintah tanpa kritik',
+          'Membantu sesama tanpa memandang status sosial',
+          'Mementingkan kepentingan pribadi di atas kepentingan umum',
+          'Hanya memperjuangkan hak sendiri',
+        ],
+        'B',
+        'Membantu sesama tanpa membeda-bedakan status sosial merupakan wujud nyata keadilan sosial.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        10,
+        'Tokoh yang mengusulkan istilah "Pancasila" sebagai dasar negara adalah...',
+        ['Mohammad Hatta', 'Soepomo', 'Soekarno', 'Achmad Soebardjo'],
+        'C',
+        'Ir. Soekarno menyampaikan istilah Pancasila sebagai dasar negara pada 1 Juni 1945.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        11,
+        'Panitia Sembilan diketuai oleh...',
+        ['Mohammad Hatta', 'Soekarno', 'Soepomo', 'Ki Hadjar Dewantara'],
+        'B',
+        'Panitia Sembilan diketuai oleh Ir. Soekarno dengan wakil ketua Drs. Mohammad Hatta.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        12,
+        'Perubahan dalam teks proklamasi yang diketik oleh Sayuti Melik adalah...',
+        [
+          'Kata "tempoh" diubah menjadi "tempo"',
+          'Nama negara diubah dari Nusantara menjadi Indonesia',
+          'Kalimat terakhir ditambahkan setelah diskusi panjang',
+          'Teks awal ditulis dalam bahasa daerah',
+        ],
+        'A',
+        'Salah satu perubahan pengetikan oleh Sayuti Melik adalah mengubah kata "tempoh" menjadi "tempo".',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        13,
+        'Konsep demokrasi dalam Pancasila terdapat pada sila...',
+        ['Pertama', 'Kedua', 'Ketiga', 'Keempat'],
+        'D',
+        'Nilai kerakyatan dan demokrasi permusyawaratan/perwakilan terkandung dalam sila keempat Pancasila.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        14,
+        'Salah satu nilai yang terkandung dalam Piagam Jakarta adalah...',
+        [
+          'Kebebasan tanpa batas',
+          'Ketuhanan dengan kewajiban menjalankan syariat Islam bagi pemeluknya',
+          'Pemerintah yang bersifat otoriter',
+          'Persatuan dalam satu suku',
+        ],
+        'B',
+        'Piagam Jakarta memuat rumusan sila pertama "Ketuhanan dengan kewajiban menjalankan syariat Islam bagi pemeluk-pemeluknya".',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        15,
+        'Panitia Sembilan menghasilkan rumusan dasar negara yang dikenal sebagai...',
+        ['UUD 1945', 'Teks Proklamasi', 'Piagam Jakarta', 'Pancasila versi final'],
+        'C',
+        'Hasil kerja Panitia Sembilan pada 22 Juni 1945 dikenal sebagai Piagam Jakarta (Jakarta Charter).',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        16,
+        'Mengembangkan sikap adil terhadap sesama, merupakan butir pengamalan Pancasila sila ke...',
+        ['5', '4', '3', '2'],
+        'A',
+        'Mengembangkan sikap adil terhadap sesama adalah pengamalan sila ke-5 Pancasila (Keadilan Sosial bagi Seluruh Rakyat Indonesia).',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        17,
+        'Rumusan Pancasila yang dikemukakan oleh Moh. Yamin sila kedua berbunyi...',
+        ['Peri Kemanusiaan', 'Keadilan sosial', 'Musyawarah', 'Keadilan rakyat'],
+        'A',
+        'Dalam usulan lisan Moh. Yamin pada 29 Mei 1945, sila kedua berbunyi Peri Kemanusiaan.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        18,
+        'Tujuan dibentuknya BPUPKI adalah...',
+        [
+          'Mempersiapkan kemerdekaan Indonesia',
+          'Membentuk panitia kemerdekaan',
+          'Menyelidiki kemerdekaan Indonesia',
+          'Mengusahakan kemerdekaan Indonesia',
+        ],
+        'A',
+        'BPUPKI dibentuk untuk mempelajari dan mempersiapkan hal-hal penting menuju kemerdekaan Indonesia.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        19,
+        'Ir. Soekarno berpidato dan mengajukan usul tentang konsepsi dasar negara Indonesia yang diberi nama Pancasila dengan urutan pertama...',
+        [
+          'Internasionalisme atau peri kemanusiaan',
+          'Kesejahteraan sosial',
+          'Nasionalisme atau kebangsaan Indonesia',
+          'Ketuhanan yang berkebudayaan',
+        ],
+        'C',
+        'Dalam pidato 1 Juni 1945, urutan pertama usulan Ir. Soekarno adalah Kebangsaan Indonesia (Nasionalisme).',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        20,
+        'Ketika akan mengambil pemungutan suara untuk menentukan bentuk negara, para pendiri negara diliputi suasana berikut, kecuali...',
+        ['Toleransi', 'Permufakatan', 'Religius', 'Perdebatan'],
+        'D',
+        'Sidang berlangsung penuh toleransi, permufakatan, dan suasana religius, bukan perdebatan yang memecah belah.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        21,
+        'Para perumus Pancasila dalam bermusyawarah sangat menghargai perbedaan pendapat. Mereka menjunjung tinggi...',
+        ['Kerja keras', 'Kesukuan', 'Toleransi', 'Egoisme'],
+        'C',
+        'Menghargai perbedaan pendapat saat bermusyawarah merupakan wujud sikap toleransi.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        22,
+        'Persatuan dalam masyarakat dapat terwujud jika...',
+        [
+          'Setiap individu mengutamakan kepentingan sendiri',
+          'Ada kerja sama dan sikap saling menghargai',
+          'Semua orang memiliki pendapat yang sama',
+          'Setiap kelompok berjalan sendiri-sendiri tanpa komunikasi',
+        ],
+        'B',
+        'Persatuan terwujud melalui kerja sama dan saling menghargai di tengah keberagaman.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        23,
+        'Salah satu keputusan penting dalam sidang PPKI adalah...',
+        [
+          'Membubarkan BPUPKI',
+          'Membentuk Komite Nasional Indonesia Pusat',
+          'Mengubah sistem pemerintahan',
+          'Menghapus konstitusi yang telah dibuat',
+        ],
+        'B',
+        'Salah satu keputusan sidang PPKI tanggal 18 Agustus 1945 adalah membentuk Komite Nasional Indonesia Pusat (KNIP).',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        24,
+        'Pembukaan UUD 1945 alinea keempat berisi tentang...',
+        [
+          'Pembagian kekuasaan dan pemerintahan',
+          'Tujuan negara dan rumusan Pancasila',
+          'Aturan tentang kewarganegaraan',
+          'Hak dan kewajiban pemerintah',
+        ],
+        'B',
+        'Alinea keempat Pembukaan UUD 1945 memuat tujuan negara, ketentuan UUD, bentuk negara, dan rumusan Pancasila.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        25,
+        'Warna merah pada lambang sila kedua Pancasila melambangkan...',
+        [
+          'Kesetiaan dan kedamaian',
+          'Kekuatan dan keberanian',
+          'Keseimbangan dan kebersamaan',
+          'Kejujuran dan kemurnian',
+        ],
+        'B',
+        'Warna merah pada perisai lambang rantai emas sila kedua melambangkan kekuatan dan keberanian.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        26,
+        'Akar menjalar pada pohon beringin berfungsi untuk...',
+        [
+          'Melindungi pohon dari hama',
+          'Membantu pohon menyerap air dan udara',
+          'Mempercepat pertumbuhan daun',
+          'Mengurangi dampak erosi tanah',
+        ],
+        'B',
+        'Akar gantung/menjalar pada pohon beringin membantu menyerap air dan udara untuk pertumbuhan pohon.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        27,
+        'Memotong rambut bagi siswa laki-laki bertujuan untuk...',
+        [
+          'Mengikuti tren model rambut',
+          'Menjaga kerapian dan disiplin',
+          'Menunjukkan status sosial',
+          'Membedakan siswa kaya dan kurang mampu',
+        ],
+        'B',
+        'Aturan potongan rambut siswa di sekolah bertujuan menjaga kerapian diri serta melatih kedisiplinan.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        28,
+        'Pada saat tugas kelompok, murid belajar tentang...',
+        [
+          'Bekerja sendiri tanpa bantuan orang lain',
+          'Cara menghindari tanggung jawab',
+          'Pentingnya kerja sama dan menghargai pendapat',
+          'Menyelesaikan tugas secara cepat tanpa diskusi',
+        ],
+        'C',
+        'Kerja kelompok melatih murid bekerja sama dan menghargai pendapat teman.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        29,
+        'Contoh norma dalam kehidupan bermasyarakat adalah...',
+        [
+          'Tidak mengucapkan salam saat bertemu orang lain',
+          'Gotong royong membersihkan lingkungan',
+          'Berbicara kasar kepada tetangga',
+          'Mengabaikan peraturan yang berlaku',
+        ],
+        'B',
+        'Gotong royong membersihkan lingkungan adalah contoh penerapan norma dalam masyarakat.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        30,
+        'Mengucapkan salam saat berkunjung ke rumah orang lain mencerminkan...',
+        [
+          'Sikap individualisme',
+          'Norma kesopanan',
+          'Kebiasaan yang tidak perlu',
+          'Hak pribadi setiap individu',
+        ],
+        'B',
+        'Mengucapkan salam saat bertamu merupakan wujud pelaksanaan norma kesopanan.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        31,
+        'Warna dasar putih pada sila ketiga melambangkan...',
+        [
+          'Keadilan dan kesejahteraan',
+          'Persatuan dan kemurnian',
+          'Keberanian dan kejujuran',
+          'Kebijaksanaan dan kepemimpinan',
+        ],
+        'B',
+        'Warna dasar putih pada lambang pohon beringin sila ketiga melambangkan kesucian, kemurnian, dan persatuan.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        32,
+        'Salah satu ciri kelompok sosial adalah...',
+        [
+          'Terdiri atas individu yang berbeda tanpa tujuan bersama',
+          'Tidak memiliki norma yang mengatur hubungan antar anggota',
+          'Memiliki kepentingan bersama',
+          'Tidak ada interaksi di antara anggotanya',
+        ],
+        'C',
+        'Kelompok sosial terbentuk karena adanya kesamaan tujuan atau kepentingan bersama serta interaksi antaranggota.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        33,
+        'Interaksi sosial penting bagi manusia karena...',
+        [
+          'Membantu memenuhi kebutuhan fisik dan emosional',
+          'Mengurangi perbedaan sosial',
+          'Menjadikan manusia lebih mandiri',
+          'Membuat manusia tidak memerlukan orang lain',
+        ],
+        'A',
+        'Sebagai makhluk sosial, manusia membutuhkan interaksi sosial untuk memenuhi kebutuhan hidup fisik maupun emosional.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        34,
+        'Salah satu contoh norma yang diterapkan di sekolah adalah...',
+        [
+          'Murid boleh datang sesuka hati',
+          'Menggunakan seragam sesuai aturan',
+          'Mengabaikan nasihat guru',
+          'Meninggalkan kelas saat pelajaran berlangsung',
+        ],
+        'B',
+        'Mengenakan seragam sesuai ketentuan tata tertib adalah contoh pelaksanaan norma di lingkungan sekolah.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        35,
+        'Aturan-aturan yang berisi petunjuk tingkah laku yang harus atau tidak boleh dilakukan manusia dan bersifat mengikat disebut...',
+        ['Hukum', 'Adat istiadat', 'Norma', 'Mores'],
+        'C',
+        'Norma adalah aturan atau ketentuan yang mengikat warga masyarakat berisi petunjuk tingkah laku.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        36,
+        '"Kamu harus beribadah", pernyataan tersebut menunjukkan pelaksanaan norma...',
+        ['Hukum', 'Kesusilaan', 'Kesopanan', 'Agama'],
+        'D',
+        'Perintah untuk beribadah kepada Tuhan Yang Maha Esa merupakan wujud pelaksanaan norma agama.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        37,
+        'Norma yang bersumber pada ajaran agama, filsafat, nilai kebudayaan atau ideologi yang dianut oleh masyarakat disebut...',
+        ['Norma kesusilaan', 'Norma hukum', 'Norma moral', 'Norma agama'],
+        'C',
+        'Norma moral berlandaskan nilai kebudayaan, filsafat, ideologi, dan ajaran kebaikan yang diyakini masyarakat.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        38,
+        'Norma-norma yang ada dalam masyarakat, kecuali norma...',
+        ['Agama', 'Hukum', 'Keluarga', 'Kesopanan'],
+        'C',
+        'Empat norma pokok dalam masyarakat meliputi norma agama, kesusilaan, kesopanan, dan hukum.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        39,
+        'Berbuat baik kepada sesama manusia, termasuk dalam penerapan norma...',
+        ['Agama', 'Kesopanan', 'Kesusilaan', 'Hukum'],
+        'C',
+        'Berbuat baik kepada sesama manusia lahir dari hati nurani sebagai penerapan norma kesusilaan.',
+        P
+      ),
+      makePg(
+        ppknViiId,
+        40,
+        'Ciri-ciri norma hukum, kecuali...',
+        [
+          'Aturan dibuat oleh badan / lembaga berwenang',
+          'Sanksi bersifat fleksibel',
+          'Aturan berisi perintah dan larangan',
+          'Aturan tentang perilaku manusia dalam pergaulan masyarakat',
+        ],
+        'B',
+        'Sanksi norma hukum bersifat tegas, memaksa, dan mengikat, bukan fleksibel.',
+        P
+      ),
+    ],
+  };
 }

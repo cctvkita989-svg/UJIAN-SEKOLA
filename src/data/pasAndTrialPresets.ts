@@ -487,6 +487,11 @@ export function buildPasQuestionsMap(): Record<string, Question[]> {
   const ppknViiId = 'pas-draft-h1-ppkn-vii';
   const ipaViiiId = 'pas-draft-h1-ipa-viii';
   const ipaIxId = 'pas-draft-h1-ipa-ix';
+  const pjokViiId = 'pas-draft-h4-pjok-vii';
+  const pjokIxId = 'pas-draft-h4-pjok-ix';
+  const pktViiId = 'pas-draft-h5-pkt-vii';
+  const pktViiiId = 'pas-draft-h5-pkt-viii';
+  const pktIxId = 'pas-draft-h5-pkt-ix';
   const P = 2.5; // 40 soal x 2.5 = 100
   const P8 = 5; // 20 soal x 5 = 100
   const P9 = 10; // 30 soal x 10 = 300 (dinormalisasi ke skala 100)
@@ -1500,6 +1505,2301 @@ export function buildPasQuestionsMap(): Record<string, Question[]> {
         'C',
         'Reproduksi adalah kemampuan makhluk hidup menghasilkan keturunan baru untuk melestarikan jenisnya.',
         P9
+      ),
+    ],
+    [pjokViiId]: [
+      makePg(
+        pjokViiId,
+        1,
+        'Keterampilan gerak adalah kemampuan seseorang dalam melakukan...',
+        [
+          'Aktivitas belajar di kelas',
+          'Gerakan tubuh secara terkoordinasi',
+          'Kegiatan membaca dan menulis',
+          'Aktivitas bermain tanpa aturan',
+        ],
+        'B',
+        'Keterampilan gerak adalah kemampuan seseorang melakukan gerakan tubuh secara terkoordinasi dengan baik.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        2,
+        'Contoh gerak dasar yang menjadi pondasi keterampilan olahraga adalah...',
+        [
+          'Strategi permainan',
+          'Kerja sama tim',
+          'Berjalan, berlari, dan melompat',
+          'Peraturan pertandingan',
+        ],
+        'C',
+        'Gerak lokomotor dasar seperti berjalan, berlari, dan melompat menjadi fondasi berbagai cabang olahraga.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        3,
+        'Tujuan utama melatih keterampilan gerak dalam pembelajaran PJOK yaitu...',
+        [
+          'Meningkatkan nilai rapor',
+          'Membuat murid cepat lelah',
+          'Meningkatkan kemampuan bergerak dan kebugaran',
+          'Menghafal aturan olahraga',
+        ],
+        'C',
+        'Latihan keterampilan gerak bertujuan meningkatkan kemampuan motorik dan kebugaran jasmani siswa.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        4,
+        'Salah satu manfaat melatih keterampilan gerak secara rutin yaitu...',
+        [
+          'Menurunkan minat berolahraga',
+          'Meningkatkan risiko cedera',
+          'Membuat tubuh kaku',
+          'Meningkatkan koordinasi dan keseimbangan',
+        ],
+        'D',
+        'Latihan rutin melatih koordinasi gerak tubuh serta meningkatkan keseimbangan.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        5,
+        'Supaya latihan keterampilan gerak berjalan efektif, sebaiknya dilakukan dengan cara...',
+        [
+          'Langsung melakukan gerakan yang sulit',
+          'Tanpa aturan dan tujuan',
+          'Bertahap dari mudah ke sulit',
+          'Dilakukan satu kali saja',
+        ],
+        'C',
+        'Latihan efektif dilakukan secara progresif dan bertahap dari gerakan sederhana menuju kompleks.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        6,
+        'Gerak dasar berlari termasuk dalam jenis gerak...',
+        ['Nonlokomotor', 'Manipulatif', 'Lokomotor', 'Ritmik'],
+        'C',
+        'Berlari memindahkan tubuh dari satu titik ke titik lain sehingga termasuk gerak lokomotor.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        7,
+        'Contoh keterampilan gerak dasar yang menjadi dasar untuk olahraga voli yaitu...',
+        [
+          'Meloncat dan menyeimbangkan tubuh',
+          'Melempar dan menangkap bola',
+          'Meliukkan tubuh dan membungkuk',
+          'Berlari dan melangkah ke belakang',
+        ],
+        'B',
+        'Penguasaan gerak manipulatif melempar dan menangkap bola mendasari pengendalian bola pada permainan voli.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        8,
+        'Gerakan menyeimbangkan tubuh sangat penting dalam olahraga...',
+        ['Senam lantai', 'Sepak bola', 'Bulu tangkis', 'Bola basket'],
+        'A',
+        'Senam lantai sangat mengandalkan keseimbangan tubuh dalam berbagai sikap dan tumpuan.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        9,
+        'Latihan yang dilakukan secara teratur dan bertahap akan membantu tubuh...',
+        [
+          'Cepat lelah',
+          'Menolak perubahan',
+          'Beradaptasi dan menguatkan koordinasi',
+          'Menjadi kaku',
+        ],
+        'C',
+        'Latihan bertahap membantu otot dan saraf beradaptasi sehingga koordinasi gerak makin kuat.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        10,
+        'Memori otot (muscle memory) terbentuk karena...',
+        [
+          'Latihan dilakukan satu kali',
+          'Latihan dilakukan secara berulang',
+          'Tidak pernah melakukan gerakan',
+          'Menghafal teori gerak',
+        ],
+        'B',
+        'Pengulangan gerakan secara konsisten membentuk memori otot agar gerakan menjadi otomatis dan akurat.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        11,
+        'Ketika seseorang berlatih gerakan secara berulang-ulang, otak membentuk...',
+        ['Jalur memori gerak', 'Sinyal suara', 'Pikiran abstrak', 'Koordinasi statis'],
+        'A',
+        'Latihan berulang memperkuat koneksi saraf membentuk jalur memori gerak di otak.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        12,
+        'Pihak yang dapat memberikan umpan balik dalam pembelajaran PJOK yaitu...',
+        [
+          'Guru dan teman',
+          'Guru, teman, dan diri sendiri',
+          'Penonton pertandingan',
+          'Wasit saja',
+        ],
+        'B',
+        'Umpan balik dalam PJOK dapat berasal dari guru, teman sebaya, maupun refleksi diri sendiri.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        13,
+        'Gerak yang melibatkan penggunaan alat atau benda disebut...',
+        ['Gerak manipulatif', 'Gerak lokomotor', 'Gerak nonlokomotor', 'Gerak ritmik'],
+        'A',
+        'Gerak manipulatif adalah keterampilan gerak yang menggunakan objek atau alat seperti bola atau raket.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        14,
+        'Contoh umpan balik dalam pembelajaran PJOK yaitu...',
+        [
+          'Menghentikan permainan',
+          'Memberikan hukuman',
+          'Mengoreksi posisi tubuh saat bergerak',
+          'Mengganti peralatan',
+        ],
+        'C',
+        'Umpan balik konstruktif berupa koreksi posisi tubuh membantu perbaikan teknik gerak siswa.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        15,
+        'Melihat rekaman video latihan termasuk dalam bentuk umpan balik...',
+        ['Visual', 'Tertulis', 'Demonstrasi', 'Verbal'],
+        'A',
+        'Umpan balik visual memanfaatkan pengamatan gambar atau rekaman video gerakan sendiri.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        16,
+        'Tujuan utama pembelajaran taktik dalam sepak bola yaitu...',
+        [
+          'Menghafal peraturan pertandingan',
+          'Menguasai teknik menendang sejauh mungkin',
+          'Membantu pemain mengambil keputusan yang tepat saat bermain',
+          'Meningkatkan kekuatan otot kaki',
+        ],
+        'C',
+        'Pembelajaran taktik melatih kecerdasan bermain untuk mengambil keputusan tepat di lapangan.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        17,
+        'Contoh penerapan pembelajaran taktik sepak bola di sekolah yaitu...',
+        [
+          'Latihan menendang ke gawang tanpa penjaga',
+          'Bermain sepak bola dengan jumlah pemain lebih sedikit',
+          'Lari mengelilingi lapangan beberapa putaran',
+          'Melakukan peregangan sebelum bermain',
+        ],
+        'B',
+        'Permainan modifikasi (small-sided game) dengan pemain lebih sedikit efektif melatih taktik dan ruang.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        18,
+        'Pada pembelajaran taktik sepak bola, pergerakan tanpa bola bertujuan untuk...',
+        [
+          'Menghindari permainan',
+          'Membuka ruang dan memberikan dukungan kepada rekan satu tim',
+          'Menunggu bola datang sendiri',
+          'Mengurangi kerja sama tim',
+        ],
+        'B',
+        'Gerak tanpa bola penting untuk membuka ruang operan dan mendukung rekan yang menguasai bola.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        19,
+        'Manfaat pembelajaran taktik dalam sepak bola bagi murid adalah...',
+        [
+          'Membuat murid hanya fokus pada kemenangan',
+          'Menurunkan minat bermain sepak bola',
+          'Meningkatkan pemahaman permainan, komunikasi, dan sportivitas',
+          'Menggantikan pembelajaran teknik sepenuhnya',
+        ],
+        'C',
+        'Pendekatan taktik menumbuhkan pemahaman permainan, kerja sama komunikasi tim, dan sikap sportif.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        20,
+        'Rotasi pemain dalam olahraga tim bertujuan untuk...',
+        [
+          'Membingungkan rekan setim',
+          'Membuat lawan kehilangan fokus',
+          'Mengurangi komunikasi',
+          'Menghambat pergerakan sendiri',
+        ],
+        'B',
+        'Rotasi posisi yang terencana mengacaukan penjagaan lawan sehingga mereka kehilangan fokus.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        21,
+        'Pada lompat jauh, pemanfaatan ruang terlihat pada...',
+        ['Gerakan tangan saja', 'Awalan dan pendaratan', 'Kecepatan reaksi', 'Jumlah lompatan'],
+        'B',
+        'Pemanfaatan lintasan awalan serta bak pendaratan menentukan efektivitas lompatan dalam lompat jauh.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        22,
+        'Pemain bulu tangkis memanfaatkan ruang dengan cara...',
+        [
+          'Memukul shuttlecock sembarangan',
+          'Menghindari pergerakan',
+          'Diam di satu posisi',
+          'Mengarahkan shuttlecock ke area kosong',
+        ],
+        'D',
+        'Mengarahkan shuttlecock ke area lapangan yang kosong menyulitkan lawan mengembalikan bola.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        23,
+        'Tujuan utama melakukan pergerakan dengan bola dalam permainan tim yaitu...',
+        [
+          'Menunjukkan kemampuan individu semata',
+          'Mengulur waktu permainan',
+          'Mempertahankan penguasaan bola dan menciptakan peluang',
+          'Menghindari kerja sama dengan tim',
+        ],
+        'C',
+        'Membawa bola bertujuan menjaga penguasaan tim sekaligus membuka peluang mencetak skor.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        24,
+        'Menggiring bola yang baik ditandai dengan...',
+        [
+          'Bola selalu jauh dari kaki pemain',
+          'Pemain berlari secepat mungkin tanpa kontrol',
+          'Pemain berhenti setiap kali menyentuh bola',
+          'Bola terkontrol dan pemain mampu mengubah arah gerak',
+        ],
+        'D',
+        'Dribbling yang baik menjaga bola tetap dalam kendali dan mudah mengubah arah saat melewati lawan.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        25,
+        'Hal yang perlu diperhatikan saat mengoper bola yaitu...',
+        ['Ketepatan sasaran', 'Posisi wasit di lapangan', 'Kekuatan tendangan saja', 'Kecepatan lari lawan'],
+        'A',
+        'Akurasi atau ketepatan sasaran ke rekan setim adalah kunci keberhasilan operan.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        26,
+        'Pertahanan zona menuntut pemain untuk...',
+        ['Bermain sendiri', 'Bekerja sama dan berkomunikasi', 'Fokus individu', 'Menyerang cepat'],
+        'B',
+        'Dalam zone defense, koordinasi, kerja sama, dan komunikasi antarpenjaga wilayah sangat krusial.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        27,
+        'Pertahanan satu lawan satu lebih menekankan pada...',
+        ['Penguasaan ruang', 'Penjagaan individu', 'Rotasi wilayah', 'Formasi tetap'],
+        'B',
+        'Strategi man-to-man defense menugaskan tiap pemain menjaga satu pemain lawan secara langsung.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        28,
+        'Pemilihan strategi bertahan yang tepat akan...',
+        [
+          'Menghambat kerja sama',
+          'Mengurangi peran pemain',
+          'Membingungkan tim sendiri',
+          'Meningkatkan peluang menang',
+        ],
+        'D',
+        'Pertahanan yang solid menutup peluang lawan dan memperbesar peluang tim meraih kemenangan.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        29,
+        'Gerakan mencari ruang kosong dalam basket disebut...',
+        ['Dribbling', 'Cutting', 'Passing', 'Shooting'],
+        'B',
+        'Cutting adalah gerakan cepat pemain tanpa bola memotong ke area kosong untuk menerima umpan.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        30,
+        'Kontrol ruang lebih dominan pada strategi...',
+        ['Satu lawan satu', 'Bertahan bebas', 'Pertahanan zona', 'Serangan cepat'],
+        'C',
+        'Pertahanan zona berfokus menjaga area atau ruang lapangan tertentu daripada individu spesifik.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        31,
+        'Gerak membungkuk termasuk ke dalam jenis gerak...',
+        ['Lokomotor', 'Manipulatif', 'Nonlokomotor', 'Kombinasi'],
+        'C',
+        'Membungkuk dilakukan di tempat tanpa berpindah posisi sehingga tergolong gerak nonlokomotor.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        32,
+        'Tujuan utama melakukan gerak membungkuk dengan teknik yang benar yaitu...',
+        [
+          'Mempercepat gerakan tubuh',
+          'Menunjukkan kekuatan otot kaki',
+          'Memindahkan tubuh ke tempat lain',
+          'Menghindari cedera',
+        ],
+        'D',
+        'Teknik membungkuk yang tepat melindungi punggung dan persendian dari risiko cedera.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        33,
+        'Bagian tubuh yang paling berperan saat melakukan gerak membungkuk yaitu...',
+        [
+          'Lengan dan pergelangan tangan',
+          'Pinggang dan tulang belakang',
+          'Leher dan bahu',
+          'Telapak kaki',
+        ],
+        'B',
+        'Kelenturan pinggang dan tulang belakang menjadi poros utama ketika tubuh membungkuk.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        34,
+        'Tahap pertama dalam belajar gerak disebut...',
+        ['Tahap asosiatif', 'Tahap otonom', 'Tahap kognitif', 'Tahap analisis'],
+        'C',
+        'Belajar gerak dimulai dari tahap kognitif (memahami konsep gerakan), lalu asosiatif, dan otonom.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        35,
+        'Taktik bertahan bertujuan untuk...',
+        [
+          'Menguasai bola terus-menerus',
+          'Mencetak poin sebanyak-banyaknya',
+          'Menghalangi lawan mencetak poin',
+          'Mempercepat tempo permainan',
+        ],
+        'C',
+        'Tujuan utama bertahan adalah menghambat serangan dan mencegah lawan mencetak skor.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        36,
+        'Teknik dan taktik berbeda dalam hal fokus utama, fokus teknik yaitu...',
+        ['Kerja sama tim', 'Pengambilan keputusan', 'Strategi bermain', 'Keterampilan gerak'],
+        'D',
+        'Teknik berfokus pada penguasaan keterampilan gerak dasar, sedangkan taktik pada penerapan strategi.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        37,
+        'Tujuan utama mengoper bola adalah...',
+        [
+          'Memamerkan kemampuan',
+          'Mengulur waktu',
+          'Menghindari aturan permainan',
+          'Melanjutkan serangan tim',
+        ],
+        'D',
+        'Mengoper bola mengalirkan penguasaan ke rekan yang lebih bebas untuk melanjutkan serangan tim.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        38,
+        'Rotasi pertahanan dilakukan ketika...',
+        ['Tim menyerang', 'Pemain kelelahan', 'Ada ruang kosong', 'Wasit meniup peluit'],
+        'C',
+        'Pemain bertahan melakukan rotasi saat muncul celah atau ruang kosong yang ditinggalkan rekan.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        39,
+        'Kelemahan pertahanan satu lawan satu yaitu...',
+        [
+          'Tidak membutuhkan stamina',
+          'Mudah ditembus jika pemain lengah',
+          'Tidak perlu konsentrasi',
+          'Menutup semua ruang',
+        ],
+        'B',
+        'Jika satu pemain kehilangan fokus atau kalah duel kecepatan, pertahanan satu lawan satu mudah ditembus.',
+        P
+      ),
+      makePg(
+        pjokViiId,
+        40,
+        'Umpan balik internal diperoleh dari...',
+        ['Guru atau pelatih', 'Teman sekelompok', 'Pengalaman tubuh sendiri', 'Alat bantu latihan'],
+        'C',
+        'Umpan balik internal (intrinsik) dirasakan langsung dari kesadaran sensori dan pengalaman tubuh sendiri.',
+        P
+      ),
+    ],
+    [pjokIxId]: [
+      makePg(
+        pjokIxId,
+        1,
+        'Salah satu teknik badan pada permainan sepak bola adalah...',
+        [
+          'Cara menyundul',
+          'Melempar bola',
+          'Berlari dan merubah arah',
+          'Menangkap dan menerkam bola',
+        ],
+        'C',
+        'Teknik gerak badan (tanpa bola) dalam sepak bola antara lain berlari dan mengubah arah gerakan.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        2,
+        'Menendang bola mengenai tengah-tengah kaki bagian dalam merupakan teknik menendang bola menggunakan...',
+        ['Kaki bagian dalam', 'Kaki bagian luar', 'Punggung kaki', 'Punggung kaki bagian dalam'],
+        'A',
+        'Perkenaan pada sisi tengah kaki bagian dalam adalah teknik menendang dengan kaki bagian dalam.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        3,
+        'Pada permainan sepak bola, offside terjadi apabila...',
+        [
+          'Saat pemain mencetak gol',
+          'Saat pemain berada di depan garis gawang lawan tanpa ada dua pemain lawan di antara mereka dan garis gawang',
+          'Saat pemain melakukan pelanggaran keras',
+          'Saat pemain melakukan selebrasi setelah mencetak gol',
+        ],
+        'B',
+        'Offside terjadi ketika pemain penyerang berada di area lawan lebih dekat ke garis gawang daripada bola dan pemain belakang kedua terakhir lawan saat bola diumpan.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        4,
+        'Formasi dalam permainan sepak bola dapat diartikan sebagai...',
+        [
+          'Pertahanan pemain belakang',
+          'Penyerangan pemain depan',
+          'Penempatan pemain',
+          'Kombinasi serangan',
+        ],
+        'C',
+        'Formasi adalah sistem pengaturan atau penempatan posisi pemain di lapangan dalam bertahan maupun menyerang.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        5,
+        'Barisan depan pada permainan sepak bola dipersiapkan terutama untuk...',
+        ['Pertahanan', 'Penyerangan', 'Back', 'Pengumpan'],
+        'B',
+        'Pemain barisan depan (penyerang/striker) bertugas utama melakukan serangan dan mencetak gol.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        6,
+        'Bagian kaki yang digunakan untuk menggiring bola, sama dengan bagian kaki yang digunakan untuk...',
+        ['Menendang', 'Menahan', 'Mengontrol', 'Menggiring'],
+        'A',
+        'Bagian kaki yang dipakai menggiring bola (kaki bagian dalam, luar, dan punggung kaki) sama dengan untuk menendang bola.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        7,
+        'Berikut yang bukan tujuan dari menggiring bola adalah...',
+        [
+          'Guna mendekati sasaran',
+          'Melewati lawan',
+          'Guna memberikan bola pada teman',
+          'Menghambat permainan',
+        ],
+        'C',
+        'Sesuai kunci jawaban pada naskah soal guru (C).',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        8,
+        'Tujuan dari menyundul bola dengan gerakan melayang adalah...',
+        ['Mencetak gol', 'Mengumpan', 'Menghambat pergerakan lawan', 'Melewati hadangan lawan'],
+        'A',
+        'Menyundul bola sambil melayang (diving header) umumnya dilakukan untuk menyambut umpan guna mencetak gol.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        9,
+        'Dribbling dalam sepak bola adalah...',
+        [
+          'Menendang bola ke arah gawang',
+          'Mengoper bola kepada teman satu tim',
+          'Menggiring bola melewati pemain lawan',
+          'Melempar bola ke dalam gawang lawan',
+        ],
+        'C',
+        'Dribbling adalah teknik membawa atau menggiring bola melewati penguasaan lawan.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        10,
+        'Pemain dalam sepak bola yang diperbolehkan menggunakan semua anggota badan selama dalam batas garis 16 meter adalah...',
+        ['Pemain bertahan', 'Penjaga gawang', 'Pemain tengah', 'Penyerang'],
+        'B',
+        'Hanya penjaga gawang (kiper) yang diperbolehkan menyentuh bola dengan tangan di dalam kotak penaltinya.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        11,
+        'Umpan bola yang banyak dilakukan untuk memberikan bola jarak jauh antara satu pemain kepada pemain yang lain menggunakan kaki bagian...',
+        ['Kaki bagian dalam', 'Kaki bagian luar', 'Telapak kaki', 'Punggung kaki'],
+        'D',
+        'Punggung kaki menghasilkan tendangan bertenaga untuk umpan lambung jarak jauh.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        12,
+        'Selain untuk mengumpan bola, gerakan menendang bola juga digunakan untuk...',
+        ['Menahan', 'Menembak ke gawang', 'Menggiring', 'Mengontrol bola'],
+        'B',
+        'Menendang bola (shooting) digunakan untuk menembak keras ke arah gawang lawan.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        13,
+        'Berikut yang bukan bagian kaki yang dapat digunakan untuk mengontrol bola adalah...',
+        ['Kaki bagian dalam', 'Punggung kaki', 'Kaki bagian luar', 'Telapak kaki'],
+        'D',
+        'Sesuai kunci jawaban pada naskah soal guru (D).',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        14,
+        'Ketika wasit memberikan tendangan bebas, pemain harus...',
+        [
+          'Pemain boleh bermain dengan tangannya',
+          'Pemain harus berdiri 9 meter dari bola',
+          'Pemain boleh menggiring bola secepat mungkin',
+          'Pemain harus mencetak gol langsung',
+        ],
+        'B',
+        'Pemain bertahan wajib menjaga jarak minimal 9,15 meter (sekitar 9 meter) dari posisi bola tendangan bebas.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        15,
+        'Tendangan bebas langsung dalam sepak bola terjadi ketika...',
+        [
+          'Tendangan yang diambil dari sudut lapangan',
+          'Tendangan yang diambil tanpa rintangan dari pemain lawan',
+          'Tendangan yang diambil setelah terjadinya pelanggaran tertentu',
+          'Tendangan yang diambil setelah bola keluar dari lapangan',
+        ],
+        'C',
+        'Tendangan bebas langsung diberikan wasit setelah pemain lawan melakukan pelanggaran tertentu di luar kotak penalti.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        16,
+        'Jika pemain bertahan melakukan pelanggaran di dalam kotak penalti, maka keuntungan bagi tim lawan adalah...',
+        [
+          'Mendapatkan tendangan bebas',
+          'Mendapatkan tendangan sudut',
+          'Mendapatkan tendangan gawang',
+          'Mendapatkan tendangan penalti',
+        ],
+        'D',
+        'Pelanggaran oleh pemain bertahan di dalam kotak penaltinya sendiri berbuah hukuman tendangan penalti.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        17,
+        'Pertandingan atau event olahraga bola voli profesional disebut...',
+        ['World cup', 'Europa cup', 'Indonesia open', 'Bundes liga cup'],
+        'C',
+        'Sesuai kunci jawaban pada naskah soal guru (C).',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        18,
+        'Tosser merupakan pemain dalam olahraga, yaitu...',
+        ['Bola voli', 'Softball', 'Bulu tangkis', 'Sepak bola'],
+        'A',
+        'Tosser (setter) adalah pengumpan bola dalam permainan bola voli.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        19,
+        'Pada permainan bola voli, istilah libero disebut juga...',
+        ['Set upper', 'Striker', 'Offensive player', 'Defensive player'],
+        'D',
+        'Libero adalah pemain spesialis bertahan (defensive player) dalam tim bola voli.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        20,
+        'Teknik dalam bola voli yang dilakukan setelah gagal melakukan blocking adalah...',
+        ['Servis', 'Tip', 'Passing', 'Dig'],
+        'D',
+        'Dig adalah teknik penyelamatan bola keras hasil smash lawan setelah bola lolos dari bendungan (block).',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        21,
+        'Peran penting dalam permainan bola voli adalah sebagai berikut, kecuali...',
+        ['Tosser', 'Defender', 'Jumper', 'Spiker'],
+        'C',
+        'Posisi resmi dalam bola voli meliputi tosser (setter), spiker (smasher), dan defender/libero; jumper bukan istilah posisi.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        22,
+        'Tosser dalam permainan bola voli memiliki tugas untuk...',
+        ['Smasher', 'Pengumpan bola', 'Lob bola', 'Servis bola'],
+        'B',
+        'Tosser bertugas mengatur serangan dengan mengumpan bola matang kepada spiker/smasher.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        23,
+        'Pada waktu melakukan servis, posisi tangan yang akan memukul bola berada di bawah, maka disebut servis...',
+        ['Atas', 'Bawah', 'Samping', 'Belakang'],
+        'B',
+        'Ayunan lengan memukul bola dari arah bawah pinggang disebut servis bawah.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        24,
+        'Satu regu dalam permainan bola voli memenangkan satu set bila telah mencapai angka...',
+        ['25', '15', '21', '11'],
+        'A',
+        'Dalam sistem rally point bola voli, satu set reguler dimenangkan saat mencapai angka 25 (selisih minimal 2 poin).',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        25,
+        'Posisi 3 pada pemain bola voli, yaitu...',
+        ['Smasher', 'Tosser', 'Libero', 'Server'],
+        'B',
+        'Posisi 3 (tengah depan dekat net) umumnya ditempati oleh pengumpan (tosser) dalam formasi serangan.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        26,
+        'Pemain yang bertugas memberi umpan kepada penyerang dalam bola voli dinamakan...',
+        ['Smasher', 'Tosser', 'Libero', 'Server'],
+        'B',
+        'Pemain pengumpan dalam bola voli disebut tosser atau setter.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        27,
+        'Pukulan sajian bola pertama yang dilakukan pada awal permainan bola voli disebut pukulan...',
+        ['Servis', 'Smash', 'Passing', 'Block'],
+        'A',
+        'Servis merupakan pukulan pembuka untuk memulai permainan bola voli.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        28,
+        'Servis yang bolanya dilambungkan ke atas disebut...',
+        ['Tennis servis', 'Servis atas', 'Servis bawah', 'Overhead servis'],
+        'C',
+        'Sesuai kunci jawaban pada naskah soal guru (C).',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        29,
+        'Induk olahraga permainan bola voli di Indonesia adalah...',
+        ['PSSI', 'PTMSI', 'PERBASASI', 'PBVSI'],
+        'D',
+        'PBVSI adalah singkatan dari Persatuan Bola Voli Seluruh Indonesia.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        30,
+        'Pemain yang bertugas sebagai penyerang dalam bola voli dinamakan...',
+        ['Smasher', 'Tosser', 'Libero', 'Server'],
+        'A',
+        'Smasher (spiker) bertugas melakukan pukulan keras serangan ke daerah lawan.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        31,
+        'Gerakan guling depan sering disebut dengan istilah...',
+        ['Forward roll', 'Back roll', 'Handspring', 'Headspring'],
+        'A',
+        'Guling ke depan dalam senam lantai disebut forward roll.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        32,
+        'Senam dengan menggunakan peti sebagai rintangan termasuk dalam senam...',
+        ['Alat', 'Irama', 'Lantai', 'SKJ'],
+        'C',
+        'Sesuai kunci jawaban pada naskah soal guru (C).',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        33,
+        'Gerakan handstand sangat membutuhkan kekuatan...',
+        ['Kaki', 'Tangan', 'Badan', 'Tungkai'],
+        'B',
+        'Handstand menumpu seluruh berat badan pada kedua telapak tangan sehingga menuntut kekuatan otot lengan dan tangan.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        34,
+        'Gerakan meloncat dan melentingkan badan di udara membutuhkan...',
+        ['Kekuatan kaki', 'Kelenturan', 'Kekuatan badan', 'Ketepatan'],
+        'A',
+        'Tolakan meloncat ke udara bertumpu utama pada kekuatan otot kaki.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        35,
+        'Berdiri dengan kepala dalam senam lantai disebut...',
+        ['Sikap lilin', 'Headstand', 'Handstand', 'Meroda'],
+        'B',
+        'Headstand adalah gerakan sikap tegak terbalik bertumpu pada kepala dan kedua tangan.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        36,
+        'Senam pertama kali diperkenalkan pada zaman...',
+        ['Yunani kuno', 'Prasejarah', 'Babilonia', 'Persia kuno'],
+        'A',
+        'Senam (gymnastics) mulai berkembang sejak zaman Yunani Kuno.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        37,
+        'Senam yang membutuhkan gerakan keseimbangan, kekuatan, dan kelentukan adalah senam...',
+        ['Lantai', 'Irama', 'Kebugaran jasmani', 'Senam pagi'],
+        'A',
+        'Senam lantai memadukan unsur keseimbangan, kekuatan, ketangkasan, dan kelentukan tubuh.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        38,
+        'Fungsi senam lantai adalah...',
+        [
+          'Melatih keseimbangan',
+          'Melatih kecepatan',
+          'Pembentukan otot perut',
+          'Pembentukan otot kaki',
+        ],
+        'A',
+        'Berbagai gerakan senam lantai berfungsi utama melatih keseimbangan, kelenturan, dan koordinasi tubuh.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        39,
+        'Nama induk organisasi senam Indonesia adalah...',
+        ['PSSI', 'PRSI', 'PERSANI', 'IAG'],
+        'C',
+        'PERSANI adalah Persatuan Senam Indonesia.',
+        P
+      ),
+      makePg(
+        pjokIxId,
+        40,
+        'Senam kebugaran pada kekuatan otot lengan dan otot dada adalah latihan...',
+        ['Sit up', 'Pull up', 'Squat jump', 'Back up'],
+        'B',
+        'Pull up melatih kekuatan otot lengan, bahu, dan tubuh bagian atas.',
+        P
+      ),
+    ],
+    [pktViiId]: [
+      makePg(
+        pktViiId,
+        1,
+        'Tanggung jawab manusia terhadap kemampuan yang dianugerahi Allah adalah dengan cara...',
+        [
+          'Memahaminya dengan benar',
+          'Mengakuinya dengan baik',
+          'Mengembangkannya secara bertanggung jawab',
+          'Menjalankan kehendak-Nya',
+        ],
+        'C',
+        'Talenta dan kemampuan anugerah Allah wajib dikembangkan secara tekun dan bertanggung jawab.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        2,
+        'Allah menempatkan manusia pertama di taman...',
+        ['Taman Firdaus', 'Taman Getsemani', 'Bukit Zaitun', 'Taman Vatikan'],
+        'A',
+        'Allah menempatkan Adam dan Hawa di Taman Firdaus (Taman Eden).',
+        P
+      ),
+      makePg(
+        pktViiId,
+        3,
+        'Tindakan manusia yang mencerminkan diri sebagai citra Allah adalah...',
+        [
+          'Merenungkan segala kebaikan',
+          'Membaca buku cerita',
+          'Merenungkan segala kekurangan',
+          'Memberi makan orang yang lapar',
+        ],
+        'D',
+        'Tindakan kasih nyata seperti memberi makan sesama yang lapar mencerminkan diri sebagai citra Allah.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        4,
+        'Perbedaan antara manusia dengan makhluk hidup ciptaan Tuhan yang lain adalah...',
+        [
+          'Dapat tumbuh dan berkembang',
+          'Mempunyai naluri',
+          'Membutuhkan makanan untuk hidup',
+          'Memiliki akal budi dan kehendak',
+        ],
+        'D',
+        'Manusia dianugerahi akal budi, hati nurani, dan kehendak bebas yang membedakannya dari ciptaan lain.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        5,
+        'Perbuatan berikut yang tidak sesuai dengan martabat manusia sebagai citra Allah adalah...',
+        [
+          'Mengunjungi orang yang telah menyakitinya di rumah sakit',
+          'Mendoakan orang yang telah membencinya',
+          'Berteman dengan orang yang berbeda agama',
+          'Membuang sampah di sembarangan tempat',
+        ],
+        'D',
+        'Membuang sampah sembarangan merusak ciptaan Tuhan dan tidak mencerminkan tanggung jawab citra Allah.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        6,
+        'Tujuan Allah menciptakan manusia di bumi adalah...',
+        [
+          'Ikut serta dalam karya penciptaan Allah',
+          'Ikut menciptakan seperti Allah',
+          'Menikmati ciptaan Allah di dunia ini',
+          'Menguasai semua ciptaan Tuhan',
+        ],
+        'A',
+        'Allah memanggil manusia untuk bekerja sama memelihara serta melanjutkan karya penciptaan-Nya.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        7,
+        'Menurut Kej. 1: 26-28, manusia berkuasa atas..., kecuali',
+        [
+          'Manusia yang lain',
+          'Burung-burung di udara',
+          'Ikan-ikan di laut',
+          'Binatang merayap di bumi',
+        ],
+        'A',
+        'Allah memberi manusia kuasa atas ikan, burung, dan binatang di bumi, bukan untuk menindas sesama manusia.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        8,
+        'Berikut perbuatan manusia, yang tidak mencerminkan citra Allah yang diberi kuasa atas bumi ini, yaitu...',
+        [
+          'Menanam dan merawat pohon',
+          'Memakan buah-buahan yang enak',
+          'Menangkap ikan dengan bahan peledak',
+          'Ikut serta menjaga kelestarian alam di sekitarnya',
+        ],
+        'C',
+        'Menangkap ikan memakai bahan peledak merusak ekosistem dan bertentangan dengan tugas menjaga alam.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        9,
+        'Berikut perbuatan yang bukan merupakan konsekuensi sebagai citra Allah adalah saling...',
+        ['Mengasihi', 'Menghormati', 'Bekerjasama', 'Membunuh'],
+        'D',
+        'Membunuh merusak martabat hidup manusia dan bertentangan dengan citra Allah yang penuh kasih.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        10,
+        'Istilah "Citra" biasanya dikaitkan dengan suatu nilai yang dianggap baik berupa...',
+        [
+          'Tindakan, sifat atau karakter',
+          'Perasaan positif-negatif',
+          'Relasi-hobi',
+          'Gaya',
+        ],
+        'A',
+        'Citra mencerminkan sifat, karakter, dan tindakan baik yang memancarkan gambaran Allah.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        11,
+        'Allah menciptakan manusia secitra dengan-Nya, sehingga manusia mempunyai tugas...',
+        [
+          'Melaksanakan kehendak Allah sesukanya',
+          'Melaksanakan kehendak Allah dengan segala konsekuensinya',
+          'Selalu mengingat kebaikan Allah',
+          'Menceritakan kebaikan-kebaikan Allah',
+        ],
+        'B',
+        'Manusia sebagai citra Allah dipanggil setia menjalankan kehendak-Nya beserta segala tanggung jawabnya.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        12,
+        'Manusia sebagai makhluk yang diciptakan secitra dengan Allah mampu menampilkan kecitraan tersebut melalui...',
+        [
+          'Pemberontakan dan ketidakpuasan',
+          'Keberanian dalam bertindak',
+          'Kata dan perbuatan yang sopan',
+          'Demonstrasi dan reformasi',
+        ],
+        'C',
+        'Kecitraan dengan Allah tampak dalam tutur kata yang santun dan perbuatan baik sehari-hari.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        13,
+        'Manusia dipanggil oleh Allah untuk memelihara dunia yang telah diciptakan-Nya dengan...',
+        [
+          'Keinginan dan kebahagiaan sendiri',
+          'Kehendak Allah sehingga semua orang merasakan kebahagiaan yang adil dan damai',
+          'Keinginan kelompok-kelompok yang kuat saja',
+          'Taraf pendidikan yang tinggi',
+        ],
+        'B',
+        'Memelihara dunia harus selaras dengan kehendak Allah demi keadilan dan damai sejahtera bersama.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        14,
+        'Kelebihan manusia sebagai makhluk ciptaan Tuhan...',
+        ['Dapat berkembang biak', 'Bisa berbicara', 'Mempunyai nafsu', 'Memiliki akal budi'],
+        'D',
+        'Akal budi memampukan manusia berpikir, menimbang moral, dan mengenal Tuhan.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        15,
+        'Berikut adalah contoh tindakan manusia yang sesuai dengan statusnya sebagai citra Allah...',
+        [
+          'Menolong nenek yang memiliki cucu cantik',
+          'Membakar hutan dan membuat perkebunan baru',
+          'Mau berdonor darah jika ada bayarannya',
+          'Menolak ajakan teman untuk menyontek saat ujian semester',
+        ],
+        'D',
+        'Menjunjung kejujuran dengan menolak menyontek mencerminkan martabat luhur sebagai citra Allah.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        16,
+        'Akibat tindakan manusia yang tidak mencerminkan sebagai citra Allah, bukan hanya menghancurkan martabat manusia di masanya, tetapi juga menghancurkan...',
+        ['Tumbuh-tumbuhan', 'Binatang', 'Sumber alam', 'Generasi mendatang'],
+        'D',
+        'Kerusakan moral dan lingkungan akan berdampak buruk bagi kehidupan generasi mendatang.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        17,
+        'Manusia diciptakan sebagai makhluk yang tidak bisa hidup sendiri dan selalu membutuhkan orang lain. Maka manusia juga disebut makhluk...',
+        ['Makhluk sosial', 'Makhluk kreatif', 'Makhluk pemalas', 'Makhluk hidup'],
+        'A',
+        'Manusia adalah makhluk sosial yang membutuhkan relasi dan bantuan sesamanya.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        18,
+        'Dokumen Gereja yang mengatakan bahwa manusia dipanggil untuk membangun relasi dengan Sang Pencipta, yaitu dokumen...',
+        ['Gaudium et Spes', 'Nostra Aetate', 'Lumen Gentium', 'Humanae Vitae'],
+        'A',
+        'Konstitusi Pastoral Gaudium et Spes menegaskan panggilan manusia membangun relasi dengan Allah dan sesama.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        19,
+        'Sebagai pelajar, usaha yang dapat Anda lakukan untuk mengembangkan talenta yang dianugerahkan Tuhan adalah...',
+        [
+          'Memahami dan berpikir keras',
+          'Berusaha mengembangkannya dengan berlatih, belajar tanpa putus asa',
+          'Menyimpan kemampuan tersebut',
+          'Memberitahukannya kepada orang tua dan guru',
+        ],
+        'B',
+        'Talenta berkembang lewat latihan rutin dan semangat belajar yang pantang menyerah.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        20,
+        'Perumpamaan tentang talenta yang berbeda-beda mau menjelaskan...',
+        ['Kerajaan Allah', 'Kemampuan manusia', 'Keterbatasan', 'Kekacauan pikiran'],
+        'B',
+        'Perumpamaan talenta menggambarkan keragaman kemampuan yang diberikan Tuhan kepada setiap manusia untuk dikembangkan.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        21,
+        'Adanya perbedaan kemampuan, fisik maupun talenta antara manusia yang satu dengan manusia yang lainnya, menunjukkan bahwa manusia itu...',
+        ['Makhluk yang berkuasa', 'Pribadi yang unik', 'Makhluk yang baik', 'Pribadi yang mandiri'],
+        'B',
+        'Setiap manusia diciptakan sebagai pribadi yang unik dan istimewa dengan kekhasannya masing-masing.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        22,
+        'Mensyukuri diri sebagai laki-laki dan perempuan dilakukan dengan cara...',
+        [
+          'Mengembangkan kepribadian sebagai laki-laki dan perempuan dengan maksimal',
+          'Mengolah kelebihan',
+          'Menguasai kemampuan dan keunikan',
+          'Membayar kebaikan dan keterampilan',
+        ],
+        'A',
+        'Rasa syukur atas jati diri diwujudkan dengan mengembangkan kepribadian secara utuh dan positif.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        23,
+        'Menjadi seorang laki-laki atau perempuan adalah...',
+        ['Pilihan sendiri', 'Program orang tua', 'Anugerah Allah', 'Program pemerintah'],
+        'C',
+        'Kodrat sebagai laki-laki atau perempuan merupakan anugerah luhur dari Allah Sang Pencipta.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        24,
+        'Faktor yang tidak termasuk usaha mengembangkan talenta adalah...',
+        [
+          'Berani mencoba tanpa takut gagal',
+          'Merasa sudah puas dengan keadaannya',
+          'Percaya diri',
+          'Siap membantu siapa pun yang membutuhkan',
+        ],
+        'B',
+        'Cepat merasa puas menghambat seseorang untuk terus berlatih dan mengembangkan talentanya.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        25,
+        'Kemampuan yang berbeda-beda, yang dimiliki manusia, yang membuat mereka unik satu sama lain merupakan...',
+        ['Keinginan dirinya', 'Kehendak orang tua', 'Keinginan teman', 'Kehendak Allah'],
+        'D',
+        'Keberagaman kemampuan pada setiap pribadi terjadi atas kehendak dan kebijaksanaan Allah.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        26,
+        'Laki-laki dan perempuan diciptakan oleh Allah berarti mereka mempunyai...',
+        ['Martabat yang sama', 'Tugas yang sama', 'Fungsi yang sama', 'Anugerah yang sama'],
+        'A',
+        'Keduanya diciptakan secitra dengan Allah sehingga memiliki derajat dan martabat yang sederajat.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        27,
+        'Yang menjadi pendidik yang pertama dan utama dalam keluarga adalah...',
+        ['Saudara dan saudari', 'Orang tua', 'Keluarga terdekat', 'Para guru'],
+        'B',
+        'Orang tua memegang peran sebagai pendidik pertama dan utama bagi anak-anaknya dalam iman dan karakter.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        28,
+        'Tanggung jawab anak sebagai pelajar di sekolah adalah...',
+        [
+          'Mendengar teman yang sedang ngobrol',
+          'Mendengar pelajaran dengan tekun dan tenang',
+          'Main games sembunyi-sembunyi',
+          'Berdoa supaya dapat nilai plus',
+        ],
+        'B',
+        'Pelajar bertanggung jawab mengikuti pembelajaran dengan tekun, tenang, dan penuh hormat.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        29,
+        'Sebagai anggota Gereja dan masyarakat sebaiknya kita perlu...',
+        [
+          'Ikut menolong kalau dibutuhkan',
+          'Mengulur-ngulur waktu dalam bekerja',
+          'Tertutup pada kegiatan masyarakat lingkungan',
+          'Ikut terlibat dalam hidup bersama',
+        ],
+        'D',
+        'Umat Katolik dipanggil aktif terlibat membangun kehidupan bersama di Gereja maupun masyarakat.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        30,
+        'Yang disebut sebagai keluarga adalah...',
+        [
+          'Orang tua, nenek dan paman',
+          'Anak, nenek dan orang tua',
+          'Bapak, Ibu dan anak',
+          'Kakek, nenek, orang tua dan anak',
+        ],
+        'C',
+        'Keluarga inti terdiri atas ayah (bapak), ibu, dan anak.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        31,
+        'Hidup kita tidak terlepas dari peranan orang lain, oleh karena itu kita sebaiknya...',
+        [
+          'Berdoa untuk diri sendiri',
+          'Rajin berdoa agar sehat',
+          'Mensyukuri kehadiran orang lain',
+          'Tidak perlu berteman',
+        ],
+        'C',
+        'Kita patut bersyukur atas kehadiran dan peran sesama yang menopang kehidupan kita.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        32,
+        'Fungsi sekolah bagi seorang siswa adalah...',
+        ['Tempat bermain', 'Tempat istirahat', 'Tempat berkumpul', 'Tempat belajar'],
+        'D',
+        'Sekolah terutama berfungsi sebagai tempat belajar menimba ilmu dan membentuk karakter.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        33,
+        'Doa yang diajarkan oleh Yesus adalah...',
+        ['Doa Salam Maria', 'Doa Bapa Kami', 'Doa Kemuliaan', 'Doa permohonan'],
+        'B',
+        'Yesus secara langsung mengajarkan Doa Bapa Kami kepada para murid-Nya.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        34,
+        'Dalam Gereja Katolik ada Perintah Allah. Berapa jumlahnya...',
+        ['5 Perintah', '15 Perintah', '20 Perintah', '10 Perintah'],
+        'D',
+        'Dalam tradisi iman Katolik dikenal Sepuluh Perintah Allah (Dasatitah).',
+        P
+      ),
+      makePg(
+        pktViiId,
+        35,
+        'Orang Katolik menghormati Bunda Maria secara khusus pada bulan...',
+        ['Mei dan Oktober', 'Januari dan Mei', 'Oktober dan Desember', 'Juni dan Juli'],
+        'A',
+        'Dalam tradisi Gereja Katolik, bulan Mei dikenal sebagai bulan Maria dan Oktober sebagai bulan Rosario.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        36,
+        'Hari kelahiran Yesus Kristus dirayakan pada hari...',
+        ['Paskah', 'Pentakosta', 'Natal', 'Epifani'],
+        'C',
+        'Hari Raya Natal memperingati kelahiran Yesus Kristus Sang Juru Selamat.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        37,
+        'Allah menciptakan Hawa untuk menemani Adam. Hawa diciptakan dari tulang... Adam',
+        ['Rusuk', 'Paha', 'Punggung', 'Kaki'],
+        'A',
+        'Dalam kisah penciptaan Kitab Kejadian, Hawa dibentuk dari tulang rusuk Adam.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        38,
+        'Keterbatasan kelompok atau masyarakat mengubah pandangan dan kebiasaan disebut keterbatasan...',
+        ['Sistem budaya', 'Psikologis', 'Intelektual', 'Fisik'],
+        'A',
+        'Hambatan yang berasal dari tradisi, kebiasaan, dan cara pandang kelompok termasuk keterbatasan sistem budaya.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        39,
+        'Berikut yang bukan keterbatasan fisik yaitu...',
+        ['Lambat berpikir', 'Buta', 'Tuli', 'Bisu'],
+        'A',
+        'Lambat berpikir tergolong keterbatasan intelektual/kognitif, bukan keterbatasan fisik.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        40,
+        'Sebelum masa Natal kita memasuki masa adven. Apa arti adven...',
+        ['Penantian', 'Memimpin', 'Menyelamatkan', 'Berwenang'],
+        'A',
+        'Adven (adventus) berarti kedatangan atau masa penantian penuh harap menyambut kedatangan Kristus.',
+        P
+      ),
+    ],
+    [pktViiiId]: [
+      makePg(
+        pktViiiId,
+        1,
+        'Yesus menyelamatkan semua orang, terutama bagi mereka yang...',
+        ['Pandai dan terpelajar', 'Taat dan patuh', 'Miskin & menderita', 'Memiliki harta'],
+        'C',
+        'Dalam karya-Nya, Yesus memberi perhatian khusus kepada kaum miskin, lemah, dan menderita.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        2,
+        'Orang yang telah mengucapkan janji baptis dan dibaptis, berarti tanda dia sudah...',
+        ['Pertobatan', 'Pengorbanan', 'Perjanjian', 'Kesuksesan'],
+        'A',
+        'Sakramen Baptis menandai pertobatan dan kelahiran baru sebagai murid Kristus.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        3,
+        'Malaikat berpesan kepada Maria agar anaknya nanti apabila sudah lahir...',
+        [
+          'Dipersembahkan kepada imam',
+          'Diberi nama Yesus, dan menjadi penyelamat',
+          'Supaya diberikan kepada Elisabeth',
+          'Disatukan dengan Yohanes Pembaptis',
+        ],
+        'B',
+        'Malaikat Gabriel menyampaikan agar anak itu dinamai Yesus karena Ia akan menyelamatkan umat-Nya.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        4,
+        'Dalam Perjanjian Lama, janji Allah ditandai dengan gejala alam berupa pelangi, yang mengisyaratkan...',
+        [
+          'Kekuasaan Allah yang luar biasa',
+          'Allah mencintai manusia dan menginginkan manusia hidup selamat',
+          'Adanya hubungan yang baik antara surga-bumi',
+          'Adanya rahmat tersembunyi dalam diri Yesus',
+        ],
+        'B',
+        'Pelangi setelah air bah zaman Nuh menjadi tanda kasih dan kesetiaan Allah menyelamatkan manusia.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        5,
+        'Orang yang mengikuti kehendak Allah sering menemukan... namun siapa yang bertahan akan diselamatkan',
+        ['Dukungan', 'Pujian', 'Saudara', 'Risiko - cobaan'],
+        'D',
+        'Mengikuti kehendak Allah kerap menghadapi risiko dan cobaan, tetapi kesetiaan membawa keselamatan.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        6,
+        'Yesus menyebut kita sebagai sahabat-Nya apabila mau...',
+        [
+          'Berkorban untuk guru',
+          'Melaksanakan kehendak Bapa',
+          'Mendalami Injil',
+          'Menghafal Kitab Suci',
+        ],
+        'B',
+        'Yesus memanggil kita sahabat-Nya apabila kita setia melakukan perintah dan kehendak Bapa.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        7,
+        'Yesus pernah mewartakan bahwa diri-Nya adalah pemenuhan janji Allah yang diwartakan lewat perumpamaan tentang...',
+        [
+          'Domba yang hilang',
+          'Garam dan terang dunia',
+          'Seorang penabur',
+          'Penggarap kebun anggur',
+        ],
+        'D',
+        'Melalui perumpamaan penggarap kebun anggur, Yesus menegaskan perutusan Sang Putra sebagai pemenuhan janji Allah.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        8,
+        'Para nabi dipakai Allah untuk...',
+        [
+          'Menyampaikan Firman Allah',
+          'Menyatukan Firman Allah',
+          'Menyampaikan korban persembahan',
+          'Mengajarkan hukum kemasyarakatan',
+        ],
+        'A',
+        'Nabi adalah utusan Allah yang dipanggil menyampaikan sabda dan kehendak-Nya kepada umat.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        9,
+        'Janji Allah yang telah dimulai sejak zaman nabi terpenuhi dalam diri...',
+        ['Santo dan Santa', 'Para Martir', 'Yesus Kristus', 'Bapa Bangsa'],
+        'C',
+        'Seluruh nubuat dan janji keselamatan Allah dalam Perjanjian Lama digenapi dalam diri Yesus Kristus.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        10,
+        'Inti dan pokok pewartaan dan tindakan Yesus adalah...',
+        ['Kebahagiaan', 'Hidup enak', 'Kerajaan Allah', 'Surga'],
+        'C',
+        'Kerajaan Allah adalah pusat seluruh sabda, perumpamaan, dan mukjizat Yesus.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        11,
+        'Kerajaan Allah diperuntukkan bagi...',
+        ['Orang benar', 'Para imam', 'Kaum miskin', 'Seluruh umat manusia'],
+        'D',
+        'Warta keselamatan Kerajaan Allah terbuka bagi semua orang tanpa terkecuali.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        12,
+        'Allah merajai hidup manusia untuk...',
+        ['Berkuasa', 'Menyelamatkan manusia', 'Memimpin', 'Berwenang'],
+        'B',
+        'Kerajaan Allah berarti Allah hadir merajai hidup manusia untuk membawa keselamatan dan damai.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        13,
+        'Yesus menggunakan perumpamaan dengan maksud...',
+        [
+          'Menjadi lebih pintar',
+          'Agar pewartaan dan ajaran-Nya mudah dimengerti',
+          'Membuat cerita lebih seru',
+          'Agar lebih menarik',
+        ],
+        'B',
+        'Perumpamaan memakai kisah sehari-hari agar masyarakat mudah memahami makna Kerajaan Allah.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        14,
+        'Dasar dan motif Yesus mengadakan mukjizat...',
+        [
+          'Pembenaran',
+          'Kekuasaan mutlak',
+          'Kepuasan para murid',
+          'Pemberitaan tentang Kerajaan Allah',
+        ],
+        'D',
+        'Mukjizat Yesus merupakan tanda nyata kehadiran dan pewartaan Kerajaan Allah yang menyelamatkan.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        15,
+        'Orang yang baik dan benar apabila sudah berjanji, maka harus...',
+        [
+          'Menepati janjinya dengan baik dan penuh syukur',
+          'Mencari korban untuk memenuhi janjinya',
+          'Memikirkan dan merenungkan kebaikannya',
+          'Menghapus apa yang sudah pernah diucapkan',
+        ],
+        'A',
+        'Menepati janji menunjukkan kesetiaan dan tanggung jawab moral sebagai pengikut Kristus.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        16,
+        'Janji yang baik adalah janji yang diucapkan dengan serius, penuh kesadaran dan...',
+        ['Sakral', 'Keramaian', 'Menegangkan', 'Hiruk pikuk'],
+        'A',
+        'Janji sejati diucapkan secara sadar, tulus, dan bersifat sakral di hadapan Tuhan dan sesama.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        17,
+        'Dalam Kitab Suci, janji Allah pada manusia telah dinubuatkan oleh...',
+        ['Imam', 'Raja', 'Nabi-nabi', 'Hakim'],
+        'C',
+        'Para nabi dalam Perjanjian Lama menubuatkan kedatangan Mesias sebagai penggenapan janji Allah.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        18,
+        'Sebelum meninggalkan dunia, Tuhan Yesus telah berjanji akan memberikan sesuatu kepada para murid-Nya yaitu...',
+        [
+          'Sawah, ladang yang subur dan makmur',
+          'Raja yang sangat memperhatikan rakyatnya',
+          'Sahabat yang baik dan benar',
+          'Roh Kudus sebagai pembimbing hidup manusia',
+        ],
+        'D',
+        'Yesus menjanjikan pengutusan Roh Kudus (Penolong) untuk membimbing para murid-Nya.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        19,
+        'Pemenuhan janji Allah dalam diri Yesus ditulis dalam Kitab Suci...',
+        ['Perjanjian Lama', '10 Perintah Allah', 'Perjanjian Baru', 'Hukum Taurat'],
+        'C',
+        'Karya penyelamatan dan penggenapan janji Allah dalam diri Yesus Kristus dicatat dalam Perjanjian Baru.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        20,
+        'Alasan Allah ingin solider dengan manusia adalah...',
+        [
+          'Dia ingin menguasai manusia',
+          'Ingin menunjukkan kehebatan-Nya',
+          'Allah memberikan kebebasan kepada manusia',
+          'Ingin mengalami suka-duka seperti yang dialami manusia',
+        ],
+        'D',
+        'Melalui inkarnasi Yesus, Allah solider dengan manusia dan turut merasakan suka-duka hidup manusia.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        21,
+        'Yesus memanggil murid-murid-Nya untuk...',
+        [
+          'Tinggal dan hidup bersama-Nya',
+          'Mewartakan Sabda Tuhan',
+          'Menyembuhkan orang sakit',
+          'Merayakan hari sabat',
+        ],
+        'A',
+        'Yesus memanggil para murid agar tinggal bersama-Nya sebelum diutus mewartakan Kabar Gembira.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        22,
+        'Tuhan memberikan talenta kepada setiap orang agar digunakan demi...',
+        ['Kesenangan hati', 'Kemuliaan-Nya', 'Penebusan dosa', 'Kesenangannya sendiri'],
+        'B',
+        'Talenta dikembangkan untuk melayani sesama dan memuliakan nama Tuhan.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        23,
+        'Setiap orang dipanggil untuk mengabdi Tuhan secara khusus, yaitu dalam...',
+        [
+          'Dalam setiap pekerjaan mereka',
+          'Dalam keluarga sendiri',
+          'Dalam masyarakat',
+          'Dalam diri sendiri',
+        ],
+        'A',
+        'Setiap orang dapat mengabdi kepada Tuhan melalui kesetiaan dalam panggilan hidup dan pekerjaannya.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        24,
+        'Mengikuti Yesus berarti...',
+        [
+          'Percaya sepenuhnya kepada Dia yang memanggil kita',
+          'Yakin bahwa panggilan itu sungguh mulia',
+          'Siap untuk mengikuti-Nya melalui jalan salib – kemuliaan',
+          'Mencontoh semangat Yesus selama hidup-Nya',
+        ],
+        'C',
+        'Mengikuti Yesus menuntut kesediaan memanggul salib perjuangan menuju kemuliaan bersama-Nya.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        25,
+        'Mengikuti Yesus bukan semata-mata usaha manusia, melainkan...',
+        [
+          'Karya Roh Kristus yang membentuk orang beriman menurut Kristus',
+          'Jasa orang tua kita',
+          'Berkat ajaran guru agama yang telah kita terima',
+          'Hasil dari Gereja berkat perayaan ekaristi',
+        ],
+        'A',
+        'Iman dan kesetiaan mengikuti Yesus merupakan buah karya Roh Kudus dalam diri orang beriman.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        26,
+        'Mukjizat adalah perbuatan yang luar biasa. Alasan Tuhan Yesus membuat mukjizat adalah karena Tuhan Yesus...',
+        ['Sungguh putera Maria', 'Adalah seorang malaikat', 'Seorang nabi', 'Sungguh Allah'],
+        'D',
+        'Kuasa mukjizat Yesus menyatakan keallahan-Nya bahwa Ia sungguh Allah yang penuh belas kasih.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        27,
+        'Allah menghendaki supaya manusia hidup dan selamat. Berita ini berlaku untuk...',
+        [
+          'Hanya umat keturunan Yahudi',
+          'Semua keturunan dan keluarga Yesus',
+          'Semua umat manusia tanpa pandang bulu',
+          'Hanya umat kristiani saja',
+        ],
+        'C',
+        'Keselamatan Allah bersifat universal bagi seluruh umat manusia tanpa memandang golongan.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        28,
+        'Yesus melukiskan Kerajaan Allah sebagai Bapa yang memerintah umat-Nya. Allah dianggap sebagai...',
+        [
+          'Hakim yang menguasai manusia',
+          'Sebagai penguasa bangsa Israel',
+          'Bapa yang selalu mencintai dan mengampuni',
+          'Sebagai saudara Allah yang penuh kasih',
+        ],
+        'C',
+        'Yesus memperkenalkan Allah sebagai Bapa (Abba) yang mahakasih dan selalu siap mengampuni.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        29,
+        'Setiap manusia menghendaki hidup selamat maka usaha yang hendaknya dilakukan manusia adalah...',
+        [
+          'Berusaha mencari harta demi keselamatan',
+          'Bertobat sebagai manusia lemah dan berdosa',
+          'Mengeluh saat jatuh',
+          'Protes dan marah bila dihina orang lain',
+        ],
+        'B',
+        'Langkah utama menanggapi tawaran keselamatan Allah adalah bertobat dan membarui diri.',
+        P
+      ),
+      makePg(
+        pktViiId,
+        30,
+        'Salah satu contoh teladan pimpinan yang melayani yang dilakukan Yesus adalah...',
+        [
+          'Membangkitkan orang mati',
+          'Meredakan angin ribut',
+          'Mengusir setan',
+          'Mencuci kaki para rasul-Nya',
+        ],
+        'D',
+        'Pada Perjamuan Malam Terakhir, Yesus membasuh kaki para murid sebagai teladan kepemimpinan yang melayani.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        31,
+        'Risiko perjuangan Yesus menegakkan nilai-nilai Kerajaan Allah adalah...',
+        ['Derita dan salib', 'Pembunuhan', 'Peperangan', 'Penganiayaan'],
+        'A',
+        'Kesetiaan Yesus mewartakan Kerajaan Allah harus ditempuh lewat jalan penderitaan dan wafat di kayu salib.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        32,
+        'Tuhan Yesus pernah menyembuhkan mata orang buta. Apakah profesi orang buta tersebut?',
+        ['PNS', 'Seorang gelandangan', 'Pelajar', 'Pegawai Bait Allah'],
+        'B',
+        'Bartimeus, orang buta yang disembuhkan Yesus di Yerikho, hidup sebagai pengemis/gelandangan di pinggir jalan.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        33,
+        'Cinta Bunda Maria kepada Puteranya sungguh luar biasa. Salah satu bukti cinta Bunda Maria tersebut adalah...',
+        [
+          'Marah kepada para rasul saat Yesus diadili',
+          'Marah kepada Pontius Pilatus saat Yesus dihukum',
+          'Marah kepada Yusuf dari Arimatea',
+          'Mengikuti Yesus dalam jalan salib-Nya',
+        ],
+        'D',
+        'Bunda Maria setia mendampingi Yesus di sepanjang jalan salib hingga berdiri di bawah kaki salib-Nya.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        34,
+        'Berikut adalah contoh pengalaman kemanusiaan Yesus seperti yang dialami semua manusia, yaitu...',
+        [
+          'Mampu membuat mukjizat yang luar biasa',
+          'Lahir dari seorang ibu, bertumbuh dan berkembang',
+          'Lahir atas kuasa Roh Kudus',
+          'Menguasai dunia dan menebus manusia',
+        ],
+        'B',
+        'Sebagai manusia sejati, Yesus lahir dari rahim Bunda Maria, bertumbuh, dan berkembang seperti manusia lainnya.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        35,
+        'Allah menciptakan laki-laki dan perempuan adalah sederajat. Tetapi menurut paham Yahudi, perempuan punya kedudukan...',
+        [
+          'Tidak diperhitungkan dalam kehidupan',
+          'Dijunjung tinggi',
+          'Lebih tinggi dibandingkan dengan laki-laki',
+          'Menguasai laki-laki',
+        ],
+        'A',
+        'Dalam budaya patriarki Yahudi kala itu, kedudukan perempuan kerap dinomorduakan dan kurang diperhitungkan.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        36,
+        'Yesus Kristus adalah 100% Allah dan sekaligus 100% manusia. Salah satu ciri ke-Allah-an Yesus adalah...',
+        [
+          'Makan bersama para murid-Nya',
+          'Membangkitkan Lazarus yang sudah mati',
+          'Menangis saat Lazarus mati',
+          'Sedih saat mau ditangkap di taman Getzemani',
+        ],
+        'B',
+        'Membangkitkan Lazarus dari kematian membuktikan kuasa ilahi Yesus sebagai Allah.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        37,
+        'Kerajaan Allah adalah karunia dari Allah secara cuma-cuma. Maka sikap manusia sebaiknya...',
+        [
+          'Memperjuangkan dan mengembangkan nilai yang paling tinggi',
+          'Menerima apa saja secara pasrah',
+          'Berusaha untuk menjadi orang sukses',
+          'Menguasai sesama yang lemah',
+        ],
+        'A',
+        'Karunia Kerajaan Allah ditanggapi dengan aktif memperjuangkan nilai kasih, keadilan, dan damai.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        38,
+        'Kerajaan Allah merupakan sesuatu yang sangat berharga. Yesus mengumpamakannya dengan...',
+        ['Anak yang hilang', 'Harta terpendam', 'Domba yang hilang', 'Dirham yang hilang'],
+        'B',
+        'Dalam perumpamaan harta terpendam di ladang, Kerajaan Allah digambarkan lebih berharga dari segalanya.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        39,
+        'Allah mewahyukan diri-Nya melalui Putera-Nya yang tercinta. Maka sikap kita terhadap kebaikan Tuhan adalah...',
+        [
+          'Membiarkan karena merupakan rahasia Allah',
+          'Menanggapi dengan iman sepenuh hati',
+          'Belajar teologi yang benar',
+          'Rajin ke Gereja',
+        ],
+        'B',
+        'Wahyu Allah ditanggapi dengan penyerahan diri dan iman yang teguh sepenuh hati.',
+        P
+      ),
+      makePg(
+        pktViiiId,
+        40,
+        'Tempat Yesus disalibkan bernama...',
+        ['Gunung Muria', 'Bukit Golgota', 'Gunung Sinai', 'Gunung Kelud'],
+        'B',
+        'Yesus disalibkan di Bukit Golgota (tempat tengkorak) di luar tembok Yerusalem.',
+        P
+      ),
+    ],
+    [pktIxId]: [
+      makePg(
+        pktIxId,
+        1,
+        'Menurut ajaran Gereja, yang menjadi sumber keselamatan sejati adalah...',
+        ['Allah Tri Tunggal', 'Para nabi', 'Iptek', 'Harta yang melimpah'],
+        'A',
+        'Sumber keselamatan sejati dalam iman Katolik berasal dari Allah Tritunggal Mahakudus.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        2,
+        'Allah sungguh sayang pada umat manusia dan menganugerahkan keselamatan yang bersifat...',
+        ['Barter', 'Kontrak', 'Cuma-cuma', 'Balas jasa'],
+        'C',
+        'Keselamatan adalah rahmat dan kasih karunia Allah yang diberikan secara cuma-cuma (gratis).',
+        P
+      ),
+      makePg(
+        pktIxId,
+        3,
+        'Allah menganugerahkan keselamatan kepada semua orang tanpa pandang bulu..., maksudnya adalah...',
+        [
+          'Hanya untuk orang yang dikasihi-Nya saja',
+          'Semua orang tanpa pilih kasih',
+          'Orang yang rajin bekerja',
+          'Orang yang baik dan suci',
+        ],
+        'B',
+        'Kasih keselamatan Allah berlaku universal bagi semua orang tanpa membeda-bedakan.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        4,
+        'Siapakah yang diutus Allah untuk menyelamatkan manusia...',
+        ['Yesus Kristus', 'Petrus', 'Maria', 'Yusuf'],
+        'A',
+        'Allah mengutus Putra Tunggal-Nya, Yesus Kristus, sebagai Juru Selamat umat manusia.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        5,
+        'Hal yang paling didambakan manusia dari Allah adalah...',
+        ['Kehebatan', 'Kekuatan', 'Keselamatan', 'Kemakmuran'],
+        'C',
+        'Kerinduan terdalam manusia sebagai makhluk beriman adalah memperoleh keselamatan dari Allah.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        6,
+        'Bukti manusia menanggapi tawaran keselamatan dari Allah tampak dalam usaha...',
+        [
+          'Mau mengikuti dan melaksanakan ajaran Yesus Kristus',
+          'Rela belajar agama yang ada',
+          'Banyak memiliki ilmu pengetahuan',
+          'Memahami budi pekerti dengan baik',
+        ],
+        'A',
+        'Tanggapan iman diwujudkan melalui kesetiaan mengikuti teladan dan ajaran Yesus Kristus.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        7,
+        'Secara khusus, menurut Kitab Suci, siapakah ciptaan Allah yang mendapatkan tawaran tentang keselamatan hidup?...',
+        ['Orang Yahudi', 'Orang Kristen', 'Orang Katolik', 'Semua orang di dunia'],
+        'A',
+        'Sesuai kunci jawaban pada naskah soal guru (A).',
+        P
+      ),
+      makePg(
+        pktIxId,
+        8,
+        'Ungkapan yang benar sebagai orang beriman dalam menanggapi undangan keselamatan Allah adalah...',
+        [
+          'Menyediakan hidangan yang disukai Allah',
+          'Menjual harta dan menyerahkan ke departemen sosial',
+          'Berdoa dengan penuh rasa syukur dan terima kasih atas keselamatan Allah',
+          'Selalu bertindak simpati terhadap sesama yang kesulitan',
+        ],
+        'C',
+        'Orang beriman menanggapi anugerah keselamatan dengan doa syukur yang tulus kepada Allah.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        9,
+        'Tindakan menolong orang lain atau sesama akan bermanfaat jika didasari oleh...',
+        [
+          'Sikap pamrih, mengharapkan balasan jika suatu saat dibutuhkan',
+          'Kesadaran dari dalam diri untuk berbuat baik bagi orang lain',
+          'Balas jasa, supaya tidak ada beban',
+          'Supaya mendapat pahala yang berlimpah dari Allah',
+        ],
+        'B',
+        'Pertolongan yang tulus lahir dari kesadaran hati mengasihi sesama tanpa pamrih.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        10,
+        'Keselamatan yang ditawarkan Allah akan berlangsung sampai dengan...',
+        ['Wafatnya Yesus', 'Terbentuknya Gereja', 'Turunnya Roh Kudus', 'Akhir zaman'],
+        'D',
+        'Karya penyelamatan Allah terus berlangsung sepanjang sejarah hingga akhir zaman.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        11,
+        'Keselamatan adalah anugerah Allah yang didambakan setiap manusia. Mengapa?...',
+        [
+          'Supaya bersatu dengan Allah yang penuh kedamaian',
+          'Supaya hidup enak, tidak perlu lagi bekerja keras',
+          'Supaya menjadi manusia yang hebat, sakti dan adidaya',
+          'Tidak mengalami kematian dunia',
+        ],
+        'A',
+        'Puncak keselamatan sejati adalah persatuan abadi dengan Allah dalam damai sukacita.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        12,
+        'Dalam karya keselamatan, siapakah pribadi yang dipakai Allah untuk mewahyukan diri-Nya kepada manusia?...',
+        ['Yohanes Pembaptis', 'Bunda Maria', 'Yesus Kristus Tuhan', 'Para rasul'],
+        'C',
+        'Yesus Kristus adalah kepenuhan wahyu Allah yang menyatakan kasih Bapa kepada manusia.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        13,
+        'Dalam kehidupan bersama, Gereja menghargai setiap agama dan perbedaan. Tetapi Gereja tetap mewartakan bahwa...',
+        [
+          'Gereja yang baik dan benar hanya satu, yaitu Katolik',
+          'Memberi bantuan kepada semua orang yang membutuhkan',
+          'Yesus Kristus adalah jalan, kebenaran dan hidup',
+          'Mengusahakan kesucian hidup yang layak',
+        ],
+        'C',
+        'Sambil menghargai agama lain, Gereja setia mewartakan imannya akan Kristus sebagai jalan, kebenaran, dan hidup.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        14,
+        'Sila pertama Pancasila, Ketuhanan Yang Maha Esa, menunjukkan bahwa negara memberi kebebasan kepada warganya untuk...',
+        [
+          'Membangun tempat ibadah salah satu agama saja',
+          'Memberi kebebasan kepada setiap pemeluk agama untuk beribadah sesuai dengan agama dan kepercayaannya',
+          'Menyatukan semua keyakinan yang ada',
+          'Beribadah harus seizin pemerintah',
+        ],
+        'B',
+        'Negara menjamin kemerdekaan tiap warga negara memeluk dan beribadah menurut agama serta kepercayaannya.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        15,
+        'Semua penganut agama menghendaki hidup dalam situasi damai, tenteram dan membahagiakan. Oleh karena itu semua penganut agama harus mengedepankan...',
+        [
+          'Menyatukan semua agama menjadi satu saja',
+          'Masing-masing agama saling mengorbankan keyakinannya',
+          'Semua manusia wajib menghormati perbedaan yang ada',
+          'Rajin melaksanakan ibadah agamanya masing-masing',
+        ],
+        'C',
+        'Kerukunan hidup beragama terbangun bila setiap umat saling menghormati perbedaan keyakinan.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        16,
+        'Ciptaan Allah yang segambar dan secitra dengan Allah adalah...',
+        ['Tumbuh-tumbuhan', 'Orang hutan', 'Kingkong', 'Manusia'],
+        'D',
+        'Hanya manusia yang diciptakan menurut gambar dan rupa (citra) Allah.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        17,
+        'Hubungan yang perlu dibangun dalam rangka toleransi antarumat beragama adalah hubungan yang...',
+        [
+          'Hubungan yang harmonis dengan Tuhan dan sesama',
+          'Hubungan antara imam dengan umatnya',
+          'Hubungan antar mereka yang memiliki keyakinan yang sama',
+          'Hubungan dengan para nabi dan para rasul',
+        ],
+        'A',
+        'Toleransi terwujud melalui relasi yang harmonis kepada Tuhan dan sesama manusia tanpa memandang agama.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        18,
+        'Yesus memilih dari para pengikut-Nya menjadi para rasul sebanyak...',
+        ['11 orang', '12 orang', '13 orang', '14 orang'],
+        'B',
+        'Yesus memilih dua belas rasul untuk menjadi saksi-saksi pewartaan-Nya.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        19,
+        'Sumber keselamatan bagi orang Katolik adalah...',
+        ['Yesus Kristus', 'Brahmana', 'Nabi Muhammad', 'Petrus'],
+        'A',
+        'Bagi umat Katolik, Yesus Kristus adalah Tuhan dan Juru Selamat sumber keselamatan.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        20,
+        'Ketika membawa bangsa Israel menuju tanah terjanji, nabi Musa digantikan oleh...',
+        ['Nabi Yesaya', 'Nabi Amos', 'Nabi Nuh', 'Nabi Yosua'],
+        'D',
+        'Yosua meneruskan kepemimpinan Musa membawa bangsa Israel memasuki Tanah Terjanji.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        21,
+        'Sikap Yesus dalam hidup beragama menurut Kitab Suci adalah...',
+        [
+          'Menantang hukum Taurat',
+          'Menyelamatkan orang benar',
+          'Bergaul dengan siapa saja tanpa melihat latar belakang agamanya',
+          'Meniadakan hukum Taurat',
+        ],
+        'C',
+        'Yesus terbuka bersahabat dan menolong semua orang tanpa membedakan suku maupun latar belakangnya.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        22,
+        'Hidup beragama menurut orang Farisi dan ahli-ahli Taurat adalah...',
+        [
+          'Menjalankan Perintah Allah',
+          'Menjalankan hukum kasih',
+          'Melaksanakan aturan-aturan dalam hukum Taurat dengan ketat',
+          'Mementingkan rasa kemanusiaan',
+        ],
+        'C',
+        'Kaum Farisi dan ahli Taurat menekankan pelaksanaan aturan lahiriah hukum Taurat secara sangat ketat.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        23,
+        'Berapa jumlah KTP yang dibutuhkan untuk mendirikan rumah ibadah di suatu wilayah...',
+        ['70', '80', '90', '100'],
+        'C',
+        'Sesuai Peraturan Bersama Menteri, pendirian rumah ibadah mensyaratkan daftar nama dan KTP pengguna paling sedikit 90 orang.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        24,
+        'Paham yang menganggap bahwa agamanya yang paling benar adalah...',
+        ['Liberalisme', 'Fanatisme', 'Proselitisme', 'Idealisme'],
+        'B',
+        'Fanatisme sempit memandang keyakinan sendiri paling benar sambil menutup diri terhadap toleransi.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        25,
+        'Segala sesuatu yang wajib diberikan kepada seseorang berdasarkan martabatnya sebagai manusia disebut...',
+        ['Hak', 'Aturan', 'Kewajiban', 'Sumbangan'],
+        'A',
+        'Hak asasi adalah sesuatu yang layak diterima dan dihormati pada setiap manusia sesuai martabatnya.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        26,
+        'Segala sesuatu yang dibebankan kepada seseorang untuk dilaksanakan disebut...',
+        ['Hak', 'Kewajiban', 'Aturan', 'Sumbangan'],
+        'B',
+        'Kewajiban adalah tugas atau beban tanggung jawab yang harus dilaksanakan seseorang.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        27,
+        'Sifat yang ditimbulkan oleh sikap yang jujur adalah...',
+        ['Fanatisme', 'Egoisme', 'Iman yang teguh', 'Damai sejahtera'],
+        'D',
+        'Kejujuran menghadirkan ketenangan hati, saling percaya, dan damai sejahtera dalam hidup bersama.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        28,
+        'Adil artinya...',
+        [
+          'Tidak berpegang pada kebenaran',
+          'Tidak menutupi kesalahan',
+          'Tidak berat sebelah',
+          'Berpegang pada hukum',
+        ],
+        'C',
+        'Adil berarti tidak memihak atau tidak berat sebelah serta memberikan sesuai porsi dan haknya.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        29,
+        'Pandangan Gereja tentang beragama dan hidup beragama tertuang dalam dokumen ajaran Gereja yang bernama...',
+        [
+          'Nostra Aetate',
+          'Sacrosanctum Consilium',
+          'Gaudium et Spes',
+          'Populorum Progressio',
+        ],
+        'A',
+        'Deklarasi Nostra Aetate (Konsili Vatikan II) membahas hubungan Gereja dengan agama-agama bukan Kristen.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        30,
+        'Ajaran, sistem yang mengatur tata keimanan dan peribadatan kepada Tuhan Yang Maha Kuasa serta tata kaidah yang berhubungan dengan pergaulan manusia dan manusia serta lingkungan merupakan definisi dari...',
+        ['Wahyu', 'Agama', 'Iman', 'Religi'],
+        'B',
+        'Agama mencakup sistem tata keimanan, peribadatan kepada Tuhan, serta tata kaidah hubungan antarsesama dan lingkungan.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        31,
+        'Menurut rasul Yakobus, beriman tidak cukup hanya menjadi pendengar saja. Maksud ungkapan rasul Yakobus tersebut adalah...',
+        [
+          'Iman harus diwujudkan dalam kehidupan konkret',
+          'Iman tidak cukup hanya didengarkan sendiri, tetapi disebarluaskan',
+          'Iman yang benar harus mendengarkan suara hati',
+          'Orang harus belajar mendengarkan suara hati agar imannya teguh',
+        ],
+        'A',
+        'Rasul Yakobus menegaskan bahwa iman tanpa perbuatan nyata pada hakikatnya adalah mati.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        32,
+        'Kita dipanggil menjadi murid Tuhan Yesus. Sebagai murid, pribadi siapakah yang perlu kita teladani?...',
+        ['Tuhan Yesus', 'Murid Tuhan Yesus', 'Para rasul', 'Para uskup'],
+        'A',
+        'Tuhan Yesus Kristus adalah Guru dan teladan utama yang diikuti oleh setiap murid-Nya.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        33,
+        'Setiap orang memiliki persoalan masing-masing. Sebagai orang beriman, sikap kita saat menghadapi persoalan adalah...',
+        [
+          'Berserah pada Tuhan dan berjuang semaksimal mungkin',
+          'Mencari bantuan pada orang pintar',
+          'Menghindari setiap masalah',
+          'Melaporkan semua persoalan ke aparat kepolisian',
+        ],
+        'A',
+        'Orang beriman menghadapi cobaan dengan berdoa berserah kepada Tuhan disertai usaha maksimal.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        34,
+        'Allah adalah Allah yang Maha Rahim. Ketika manusia berbuat dosa, Allah selalu memberikan...',
+        [
+          'Hukuman yang setimpal atas perbuatan manusia',
+          'Mengirim utusan untuk mengingatkan manusia',
+          'Tidak peduli dengan dosa dan kesalahan manusia',
+          'Menawarkan pengampunan dan keselamatan dengan cara bertobat',
+        ],
+        'D',
+        'Allah yang Maharahim senantiasa mengampuni dan menyelamatkan pendosa yang mau bertobat.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        35,
+        'Iman memiliki dimensi personal dan sosial. Yang dimaksud dengan dimensi personal adalah...',
+        [
+          'Urusan iman kita tidak boleh dicampuri orang lain',
+          'Iman adalah hubungan pribadi dengan Allah',
+          'Iman berhubungan dengan pribadi kita dengan orang lain',
+          'Iman adalah urusan saya dengan agama',
+        ],
+        'B',
+        'Dimensi personal iman merujuk pada relasi batin yang akrab antara pribadi manusia dan Allah.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        36,
+        'Menurut iman Katolik, yang dikehendaki Allah terhadap hidup manusia adalah...',
+        [
+          'Setiap hari, hidup manusia bahagia',
+          'Semua orang hidup selamat',
+          'Semua orang harus beragama Katolik',
+          'Semua orang harus pergi ke tempat ibadah',
+        ],
+        'B',
+        'Kehendak luhur Allah bagi seluruh ciptaan-Nya adalah agar semua manusia beroleh keselamatan.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        37,
+        'Fungsi hutan bagi kehidupan dunia adalah bagaikan... dunia',
+        ['Perut', 'Jantung', 'Paru-paru', 'Mata'],
+        'C',
+        'Hutan menghasilkan oksigen dan menyerap karbon dioksida sehingga disebut paru-paru dunia.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        38,
+        'Sebagai orang beriman, melestarikan hutan berarti...',
+        [
+          'Pengabdian pada Tuhan',
+          'Penyerahan diri pada Tuhan',
+          'Berpasrah pada Tuhan',
+          'Mengaku Tuhan adalah baik',
+        ],
+        'A',
+        'Menjaga dan melestarikan alam ciptaan merupakan wujud pengabdian dan syukur kepada Tuhan Sang Pencipta.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        39,
+        'Mengapa manusia tidak bisa dipisahkan dari alam... karena',
+        [
+          'Manusia dilahirkan dari alam',
+          'Alam selalu membutuhkan manusia',
+          'Alam merupakan bagian dari hidup manusia',
+          'Manusia merupakan bagian dari alam',
+        ],
+        'D',
+        'Manusia hidup, bernapas, dan bergantung pada alam sebagai bagian integral dari ciptaan-Nya.',
+        P
+      ),
+      makePg(
+        pktIxId,
+        40,
+        'Berkaitan dengan alam, pencemaran lingkungan digolongkan ke dalam tiga bentuk pencemaran, yaitu...',
+        [
+          'Udara, tanah dan nama baik',
+          'Udara, tanah dan air',
+          'Udara, pikiran dan air',
+          'Nama baik, pohon dan udara',
+        ],
+        'B',
+        'Tiga jenis utama pencemaran lingkungan fisik adalah pencemaran udara, tanah, dan air.',
+        P
       ),
     ],
   };

@@ -1771,7 +1771,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      localStorage.setItem('educbt_pas_trial_seeded_v5', 'true');
+      localStorage.setItem('educbt_pas_trial_seeded_v7', 'true');
     } catch {}
 
     const addedQuestionsCount = questionsToWrite.reduce((acc, [, qList]) => acc + qList.length, 0);
@@ -1785,7 +1785,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!isAuthenticated || currentUser.role !== 'admin') return;
     try {
-      if (localStorage.getItem('educbt_pas_trial_seeded_v5') === 'true') return;
+      if (localStorage.getItem('educbt_pas_trial_seeded_v7') === 'true') return;
     } catch {
       return;
     }

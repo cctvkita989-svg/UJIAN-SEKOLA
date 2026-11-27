@@ -1662,54 +1662,26 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const pasQuestionsMap = buildPasQuestionsMap();
     const { exams: trialExams, questionsMap: trialQuestionsMap } = buildTrialExamsAndQuestions();
     const allPresetExams = [...trialExams, ...pasDrafts];
+    const presetById = new Map(allPresetExams.map(e => [e.id, e]));
     const allPresetQuestions: Record<string, Question[]> = {
       ...trialQuestionsMap,
       ...pasQuestionsMap,
     };
     const trialIds = new Set(trialExams.map(t => t.id));
 
-    const existingIds = new Set(examsRef.current.map(e => e.id));
-    const missingExams = allPresetExams.filter(e => !existingIds.has(e.id));
-    const outdatedTrialExams = examsRef.current
-      .filter(
-        e =>
-          (trialIds.has(e.id) && (e.token !== 'SMPN1PANDAN' || e.showScoreImmediate !== false || e.publishAnswers !== false)) ||
-          (e.id.startsWith('pas-draft-') &&
-            (e.showScoreImmediate !== false ||
-              e.publishAnswers === undefined ||
-              (e.id === 'pas-draft-h1-ipa-viii' && e.totalQuestions !== 20 && (questionsRef.current[e.id]?.length || 0) <= 20)))
-      )
-      .map(e =>
-        trialIds.has(e.id)
-          ? { ...e, token: 'SMPN1PANDAN', isTokenActive: true, showScoreImmediate: false, publishAnswers: false }
-          : {
-              ...e,
-              ...(e.id === 'pas-draft-h1-ipa-viii' && (questionsRef.current[e.id]?.length || 0) <= 20
-                ? { totalQuestions: 20 }
-                : {}),
-              showScoreImmediate: false,
-              publishAnswers: e.publishAnswers === true,
-            }
-      );
-
-    if (missingExams.length > 0 || outdatedTrialExams.length > 0) {
-      const updatedMap = new Map(outdatedTrialExams.map(u => [u.id, u]));
-      setExams(prev => {
-        const ids = new Set(prev.map(e => e.id));
-        const toAdd = allPresetExams.filter(e => !ids.has(e.id));
-        const updatedPrev = prev.map(e => updatedMap.get(e.id) || e);
-        return [...toAdd, ...updatedPrev];
-      });
-    }
-
     const isOnlineNow = typeof navigator === 'undefined' || navigator.onLine;
     const currentQuestions = questionsRef.current;
     const questionsToWrite: Array<[string, Question[]]> = [];
     const questionsFromCloud: Array<[string, Question[]]> = [];
+    const cloudQuestionCounts = new Map<string, number>();
+
+    // Check question availability first (for both preset banks and custom questions in Firestore)
+    const pasDraftIdsWithoutPreset = pasDrafts.filter(d => !allPresetQuestions[d.id]).map(d => d.id);
 
     for (const [examId, presetQList] of Object.entries(allPresetQuestions)) {
       const localList = currentQuestions[examId];
       if (localList && localList.length > 0) {
+        cloudQuestionCounts.set(examId, localList.length);
         continue;
       }
       let cloudHasQuestions = false;
@@ -1721,6 +1693,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             if (Array.isArray(data.questions) && data.questions.length > 0) {
               cloudHasQuestions = true;
               questionsFromCloud.push([examId, data.questions]);
+              cloudQuestionCounts.set(examId, data.questions.length);
             }
           }
         } catch {
@@ -1729,7 +1702,97 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       if (!cloudHasQuestions) {
         questionsToWrite.push([examId, presetQList]);
+        cloudQuestionCounts.set(examId, presetQList.length);
       }
+    }
+
+    if (isOnlineNow) {
+      await Promise.allSettled(
+        pasDraftIdsWithoutPreset.map(async examId => {
+          const localList = currentQuestions[examId];
+          if (localList && localList.length > 0) {
+            cloudQuestionCounts.set(examId, localList.length);
+            return;
+          }
+          try {
+            const snap = await getDoc(doc(db, 'examQuestions', examId));
+            if (snap.exists()) {
+              const data = snap.data() as { questions?: Question[] };
+              if (Array.isArray(data.questions) && data.questions.length > 0) {
+                questionsFromCloud.push([examId, data.questions]);
+                cloudQuestionCounts.set(examId, data.questions.length);
+              }
+            }
+          } catch {
+            // Ignore read error when offline
+          }
+        })
+      );
+    }
+
+    const existingIds = new Set(examsRef.current.map(e => e.id));
+    const missingExams = allPresetExams.filter(e => !existingIds.has(e.id));
+
+    const outdatedTrialExams = examsRef.current
+      .filter(e => {
+        if (trialIds.has(e.id)) {
+          return e.token !== 'SMPN1PANDAN' || e.showScoreImmediate !== false || e.publishAnswers !== false;
+        }
+        if (e.id.startsWith('pas-draft-')) {
+          const preset = presetById.get(e.id);
+          const effectiveQCount =
+            cloudQuestionCounts.get(e.id) ?? (currentQuestions[e.id]?.length || 0);
+          const desiredStatus: Exam['status'] =
+            e.status === 'ongoing' || e.status === 'completed'
+              ? e.status
+              : effectiveQCount > 0
+              ? 'published'
+              : 'draft';
+          const needsDateUpdate = Boolean(preset?.examDate && e.examDate !== preset.examDate);
+          const needsStatusUpdate = e.status !== desiredStatus;
+          return (
+            e.showScoreImmediate !== false ||
+            e.publishAnswers === undefined ||
+            needsDateUpdate ||
+            needsStatusUpdate ||
+            (e.id === 'pas-draft-h1-ipa-viii' && e.totalQuestions !== 20 && effectiveQCount <= 20)
+          );
+        }
+        return false;
+      })
+      .map(e => {
+        if (trialIds.has(e.id)) {
+          return { ...e, token: 'SMPN1PANDAN', isTokenActive: true, showScoreImmediate: false, publishAnswers: false };
+        }
+        const preset = presetById.get(e.id);
+        const effectiveQCount =
+          cloudQuestionCounts.get(e.id) ?? (currentQuestions[e.id]?.length || 0);
+        const desiredStatus: Exam['status'] =
+          e.status === 'ongoing' || e.status === 'completed'
+            ? e.status
+            : effectiveQCount > 0
+            ? 'published'
+            : 'draft';
+        return {
+          ...e,
+          ...(e.id === 'pas-draft-h1-ipa-viii' && effectiveQCount <= 20
+            ? { totalQuestions: 20 }
+            : {}),
+          ...(preset?.examDate ? { examDate: preset.examDate } : {}),
+          status: desiredStatus,
+          showScoreImmediate: false,
+          publishAnswers: e.publishAnswers === true,
+        };
+      });
+
+    if (missingExams.length > 0 || outdatedTrialExams.length > 0) {
+      const updatedMap = new Map(outdatedTrialExams.map(u => [u.id, u]));
+      setExams(prev => {
+        const ids = new Set(prev.map(e => e.id));
+        const toAdd = allPresetExams.filter(e => !ids.has(e.id));
+        const updatedPrev = prev.map(e => updatedMap.get(e.id) || e);
+        return [...toAdd, ...updatedPrev];
+      });
     }
 
     setQuestions(prev => {
@@ -1771,7 +1834,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     try {
-      localStorage.setItem('educbt_pas_trial_seeded_v7', 'true');
+      localStorage.setItem('educbt_pas_trial_seeded_v9', 'true');
     } catch {}
 
     const addedQuestionsCount = questionsToWrite.reduce((acc, [, qList]) => acc + qList.length, 0);
@@ -1785,7 +1848,7 @@ export const CBTProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     if (!isAuthenticated || currentUser.role !== 'admin') return;
     try {
-      if (localStorage.getItem('educbt_pas_trial_seeded_v7') === 'true') return;
+      if (localStorage.getItem('educbt_pas_trial_seeded_v9') === 'true') return;
     } catch {
       return;
     }

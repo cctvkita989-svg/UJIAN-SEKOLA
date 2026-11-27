@@ -1,14 +1,53 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import { VitePWA } from 'vite-plugin-pwa';
+
+function safeDisabledHmrPlugin(): Plugin {
+  return {
+    name: 'safe-disabled-hmr-client',
+    apply: 'serve',
+    enforce: 'post',
+    transform(code, id) {
+      if (id.includes('vite/dist/client/client.mjs')) {
+        let patched = code.replace(
+          'ws.send(JSON.stringify(data));',
+          'if (ws?.readyState === 1) ws.send(JSON.stringify(data));'
+        );
+        if (process.env.DISABLE_HMR === 'true') {
+          patched = patched.replace(
+            'transport.connect(createHMRHandler(handleMessage));',
+            '/* WebSocket HMR connection skipped when DISABLE_HMR=true */'
+          );
+        }
+        return patched;
+      }
+
+      if (id.includes('pwa-entry-point-loaded') && code.includes('import.meta.hot.send(')) {
+        if (process.env.DISABLE_HMR === 'true') {
+          return code.replace(
+            /import\.meta\.hot\.send\(([^)]+)\);/g,
+            'void 0;'
+          );
+        }
+        return code.replace(
+          /import\.meta\.hot\.send\(([^)]+)\);/g,
+          'Promise.resolve(import.meta.hot?.send($1)).catch(() => {});'
+        );
+      }
+
+      return null;
+    },
+  };
+}
 
 export default defineConfig(() => {
   return {
     plugins: [
       react(),
       tailwindcss(),
+      safeDisabledHmrPlugin(),
       VitePWA({
         registerType: 'autoUpdate',
         manifestFilename: 'manifest.json',

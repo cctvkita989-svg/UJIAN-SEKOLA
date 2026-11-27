@@ -9,6 +9,7 @@ const ALL_24_CLASSES = [...ALL_CLASSES_VII, ...ALL_CLASSES_VIII, ...ALL_CLASSES_
 interface PasScheduleBlueprint {
   code: string;
   dayLabel: string;
+  examDate: string;
   startTime: string;
   endTime: string;
   subject: string;
@@ -19,10 +20,11 @@ interface PasScheduleBlueprint {
 }
 
 const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
-  // Hari ke-1
+  // Hari ke-1 (Senin, 7 Desember 2026)
   {
     code: 'h1-ipa',
     dayLabel: 'Hari ke-1',
+    examDate: '2026-12-07',
     startTime: '07:30',
     endTime: '09:00',
     subject: 'Ilmu Pengetahuan Alam (IPA)',
@@ -33,6 +35,7 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
   {
     code: 'h1-ppkn',
     dayLabel: 'Hari ke-1',
+    examDate: '2026-12-07',
     startTime: '09:30',
     endTime: '11:00',
     subject: 'Pendidikan Pancasila & Kewarganegaraan (PPKn)',
@@ -40,10 +43,11 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
     teacherId: 'usr-guru-8',
     teacherName: 'Ibu Ratna Dewi, S.Pd',
   },
-  // Hari ke-2
+  // Hari ke-2 (Selasa, 8 Desember 2026)
   {
     code: 'h2-mat',
     dayLabel: 'Hari ke-2',
+    examDate: '2026-12-08',
     startTime: '07:30',
     endTime: '09:00',
     subject: 'Matematika',
@@ -54,6 +58,7 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
   {
     code: 'h2-ips',
     dayLabel: 'Hari ke-2',
+    examDate: '2026-12-08',
     startTime: '09:30',
     endTime: '11:00',
     subject: 'Ilmu Pengetahuan Sosial (IPS)',
@@ -61,10 +66,11 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
     teacherId: 'usr-guru-7',
     teacherName: 'Ibu Dewi Astuti, M.Pd',
   },
-  // Hari ke-3
+  // Hari ke-3 (Rabu, 9 Desember 2026)
   {
     code: 'h3-bin',
     dayLabel: 'Hari ke-3',
+    examDate: '2026-12-09',
     startTime: '07:30',
     endTime: '09:00',
     subject: 'Bahasa Indonesia',
@@ -75,6 +81,7 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
   {
     code: 'h3-sbk',
     dayLabel: 'Hari ke-3',
+    examDate: '2026-12-09',
     startTime: '09:30',
     endTime: '11:00',
     subject: 'Seni Budaya',
@@ -82,10 +89,11 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
     teacherId: 'usr-guru-2',
     teacherName: 'Ibu Maya Safitri, S.Pd',
   },
-  // Hari ke-4
+  // Hari ke-4 (Kamis, 10 Desember 2026)
   {
     code: 'h4-big',
     dayLabel: 'Hari ke-4',
+    examDate: '2026-12-10',
     startTime: '07:30',
     endTime: '09:00',
     subject: 'Bahasa Inggris',
@@ -96,6 +104,7 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
   {
     code: 'h4-pjok',
     dayLabel: 'Hari ke-4',
+    examDate: '2026-12-10',
     startTime: '09:30',
     endTime: '11:00',
     subject: 'PJOK (Pendidikan Jasmani & Olahraga)',
@@ -103,10 +112,11 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
     teacherId: 'usr-guru-6',
     teacherName: 'Bpk. Arif Rahman, S.Pd',
   },
-  // Hari ke-5 (Agama hanya Islam, Kristen, Katolik + TIK/Informatika)
+  // Hari ke-5 (Jumat, 11 Desember 2026 — Agama hanya Islam, Kristen, Katolik + TIK/Informatika)
   {
     code: 'h5-pai',
     dayLabel: 'Hari ke-5',
+    examDate: '2026-12-11',
     startTime: '07:30',
     endTime: '09:00',
     subject: 'Pendidikan Agama Islam & Budi Pekerti',
@@ -118,6 +128,7 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
   {
     code: 'h5-pak',
     dayLabel: 'Hari ke-5',
+    examDate: '2026-12-11',
     startTime: '07:30',
     endTime: '09:00',
     subject: 'Pendidikan Agama Kristen Protestan & Budi Pekerti',
@@ -129,6 +140,7 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
   {
     code: 'h5-pkt',
     dayLabel: 'Hari ke-5',
+    examDate: '2026-12-11',
     startTime: '07:30',
     endTime: '09:00',
     subject: 'Pendidikan Agama Katolik & Budi Pekerti',
@@ -140,6 +152,7 @@ const PAS_BLUEPRINTS: PasScheduleBlueprint[] = [
   {
     code: 'h5-tik',
     dayLabel: 'Hari ke-5',
+    examDate: '2026-12-11',
     startTime: '09:30',
     endTime: '11:00',
     subject: 'Informatika',
@@ -157,11 +170,13 @@ const GRADE_TIERS: Array<{ key: 'vii' | 'viii' | 'ix'; label: string; classes: s
 
 export function buildPasDraftExams(): Exam[] {
   const drafts: Exam[] = [];
+  const pasQuestionsMap = buildPasQuestionsMap();
 
   for (const tier of GRADE_TIERS) {
     for (let idx = 0; idx < PAS_BLUEPRINTS.length; idx++) {
       const bp = PAS_BLUEPRINTS[idx];
       const id = `pas-draft-${bp.code}-${tier.key}`;
+      const hasPresetQuestions = (pasQuestionsMap[id]?.length || 0) > 0;
       const shortSubject =
         bp.subject === 'Ilmu Pengetahuan Alam (IPA)'
           ? 'IPA'
@@ -189,9 +204,10 @@ export function buildPasDraftExams(): Exam[] {
         token,
         isTokenActive: false,
         dayLabel: bp.dayLabel,
+        examDate: bp.examDate,
         startTime: bp.startTime,
         endTime: bp.endTime,
-        status: 'draft',
+        status: hasPresetQuestions ? 'published' : 'draft',
         createdByTeacherId: bp.teacherId,
         teacherName: bp.teacherName,
         subjectTeachers: [bp.teacherName],
@@ -487,6 +503,7 @@ export function buildPasQuestionsMap(): Record<string, Question[]> {
   const ppknViiId = 'pas-draft-h1-ppkn-vii';
   const ipaViiiId = 'pas-draft-h1-ipa-viii';
   const ipaIxId = 'pas-draft-h1-ipa-ix';
+  const bigIxId = 'pas-draft-h4-big-ix';
   const pjokViiId = 'pas-draft-h4-pjok-vii';
   const pjokIxId = 'pas-draft-h4-pjok-ix';
   const pktViiId = 'pas-draft-h5-pkt-vii';
@@ -3802,5 +3819,440 @@ export function buildPasQuestionsMap(): Record<string, Question[]> {
         P
       ),
     ],
+    [bigIxId]: (() => {
+      const orangutanText =
+        'Read the text carefully!\n\nOrangutans\nOrangutans are great apes that live in the tropical rainforests of Sumatra and Borneo in Indonesia. The name "orangutan" comes from the Malay words orang (person) and hutan (forest), meaning "person of the forest".\nThere are two species of orangutan: the Bornean orangutan (Pongo pygmaeus) and the Sumatran orangutan (Pongo abelii). Orangutans have reddish-brown hair and long, strong arms, which they use to swing from tree to tree in their arboreal habitat. Unlike monkeys, they do not have tails.\nAdult males are much larger than females, with males weighing over 100 kilograms and reaching up to 150 centimeters in height, while females weigh about 40 kilograms and are around 120 centimeters tall. Orangutans live in small family groups in the trees, building nests for sleeping. Their diet primarily consists of fruits but also includes insects, honey, bird eggs, bark, and plants.\nOrangutans are an endangered species. Their numbers are declining due to deforestation and the loss of their rainforest habitat.';
+      const cendrawasihText =
+        'Fill in the blanks to complete the paragraph!\n\nCendrawasih also known as (13) ... is one of the most beautiful birds in the world. People admire this bird because of its amazing (14) ... Cendrawasih comes in many types and sizes, the smallest one is the king bird of paradise while (15) ... one is the Curl-Crested Manucode. It is an (16) ... It eats fruits and small animals such as insects. Sadly, Cendrawasih has been (17) ... for many years because of its beautiful feathers.';
+      const kangarooDialogue =
+        'Read the conversation carefully!\n\nBasuki : Hey Sabeni, did you know that Indonesia also has kangaroos?\nSabeni : Really? I thought kangaroos only lived in Australia.\nBasuki : Most kangaroos do live in Australia, especially the red kangaroo, which is the largest species. But in Papua, Indonesia, there are tree kangaroos.\nSabeni : Oh, I see. What makes tree kangaroos different from the Australian ones?\nBasuki : Tree kangaroos are smaller and have stronger fore-limbs to help them climb. They spend a lot of time in the trees, eating leaves and fruits.\nSabeni : That\'s interesting! Meanwhile, Australian kangaroos live on open grasslands and feed mainly on grass, right?\nBasuki : Yes, exactly. Australian kangaroos are much larger, and they use their powerful hind legs to hop quickly across long distances. They also live in groups called mobs.\nSabeni : Do tree kangaroos also live in groups?\nBasuki : Not really. Tree kangaroos are more solitary and often live alone or in small numbers.';
+      const holidayText =
+        'Read the text carefully!\n\nLast school holiday was one of the most enjoyable times I have ever had. I spent a week visiting my grandparents in Yogyakarta with my family. We left home early in the morning and drove for about seven hours. The trip was long, but the view along the way was beautiful, with green rice fields and small villages.\nWhen we arrived, my grandparents were very happy to see us. The next day, we visited some famous places in Yogyakarta, such as Malioboro Street and Prambanan Temple. I bought some souvenirs and tried local foods like gudeg and bakpia. Everything was delicious!\nOne of the most exciting parts of the trip was when we went to Parangtritis Beach. My brother and I played on the sand and took pictures of the sunset. The sky looked so amazing that evening.\nAt night, we usually gathered with my grandparents, talked, and shared stories. I really enjoyed spending time with them because I don\'t see them very often.\nWhen the holiday ended, I felt a little sad, but also grateful. I learned how important family time is and how beautiful Indonesia\'s culture can be. It was a simple yet unforgettable holiday.';
+      const elephantDialogue =
+        'Read the dialogue carefully!\n\nMarcel : Hi, Nathalie! Did you finish the assignment about endangered animals?\nNathalie : Hi, Marcel! Yes, I chose the Sumatran Elephant. Did you choose the same animal?\nMarcel : Yes, I did! The Sumatran Elephant is really interesting. How would you describe it?\nNathalie : Well, the Sumatran Elephant is smaller than other Asian elephants. It has smaller ears and a shorter trunk.\nMarcel : True. I also read that its skin is grey and has little hair on it.\nNathalie : Yes, and its tusks are usually shorter, especially the females. Some female elephants even don\'t have tusks at all.\nMarcel : That\'s right. They live in the forests of Sumatra, but sadly their habitat is getting smaller.\nNathalie : I know. Many forests are being cut down, so the elephants lose their homes.\nMarcel : That\'s why the Sumatran Elephant is now considered critically endangered.\nNathalie : We really need to protect them. I hope more people learn about this.\nMarcel : Me too. If we don\'t protect them now, they might disappear forever.\nNathalie : Exactly. We should raise awareness and support conservation programs.';
+
+      return [
+        makePg(
+          bigIxId,
+          1,
+          `${orangutanText}\n\nWhere do Orangutans live?`,
+          ['Africa and Asia', 'Sumatra and Borneo', 'Australia and New Zealand', 'South America'],
+          'B',
+          'Paragraf pertama menyatakan bahwa orangutan hidup di hutan hujan tropis Sumatra dan Kalimantan (Borneo), Indonesia.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          2,
+          `${orangutanText}\n\nWhat does the word "orangutan" mean?`,
+          ['"Animal of the jungle"', '"Forest monkey"', '"Person of the forest"', '"Tree dweller"'],
+          'C',
+          'Berdasarkan teks, kata "orangutan" berasal dari bahasa Melayu orang dan hutan yang berarti "person of the forest".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          3,
+          `${orangutanText}\n\nWhich of the following are the food that Orangutans eat?`,
+          ['Fish and seeds', 'Meat and nuts', 'Fruits and honey', 'Leaves and roots'],
+          'C',
+          'Teks menyebutkan makanan utama orangutan adalah buah-buahan (fruits), serta serangga, madu (honey), telur burung, kulit kayu, dan tumbuhan.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          4,
+          `${orangutanText}\n\nHow do orangutans move in the trees?`,
+          [
+            'By jumping from branch to branch',
+            'By swimming between trees',
+            'By using their strong arms to swing',
+            'By flying from tree to tree',
+          ],
+          'C',
+          'Paragraf kedua menjelaskan bahwa orangutan memiliki lengan panjang dan kuat untuk berayun (swing) dari satu pohon ke pohon lain.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          5,
+          `${orangutanText}\n\nIn terms of behaviour, orangutans are "solitary" compared with other apes.\nThe word "solitary" means ...`,
+          ['Living alone', 'More dominant', 'More social', 'Stay together'],
+          'A',
+          'Kata "solitary" berarti menyendiri atau hidup sendiri (living alone).',
+          P
+        ),
+        makePg(
+          bigIxId,
+          6,
+          '1. Large nose\n2. Change color\n3. Reddish-brown fur\n4. Excellent swimmer\n5. Sea creature\n\nEverything about Bekantan are shown numbers ...',
+          ['1 - 2 - 3', '2 - 3 - 4', '1 - 3 - 4', '1 - 3 - 5'],
+          'C',
+          'Ciri khas bekantan adalah berhidung besar (1), berbulu cokelat kemerahan (3), dan perenang yang andal (4).',
+          P
+        ),
+        makePg(
+          bigIxId,
+          7,
+          'She bought a delicious chocolate cake.\nWhich one is noun phrase?',
+          ['Cake', 'She bought', 'Delicious chocolate', 'Chocolate cake'],
+          'D',
+          '"Chocolate cake" adalah frasa nomina (noun phrase) dengan kata benda utama "cake" yang dimodifikasi oleh "chocolate".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          8,
+          'The generic structure of Report Text is ...',
+          [
+            'Orientation and complication',
+            'General classification and introduction',
+            'Description and orientation',
+            'General classification and description',
+          ],
+          'D',
+          'Struktur umum (generic structure) dari Report Text adalah General Classification diikuti oleh Description.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          9,
+          '... old book on the shelf.\nThe suitable determiner for the sentence above is ...',
+          ['A', 'An', 'Some', 'Many'],
+          'B',
+          'Kata "old" diawali bunyi vokal dan merujuk pada benda tunggal ("book"), sehingga determiner yang tepat adalah "An".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          10,
+          'Which of the following is a correct noun phrase?',
+          [
+            'The color bird beautiful',
+            'A beautiful tropical bird',
+            'A bird tropical beautiful',
+            'Tropical a beautiful bird',
+          ],
+          'B',
+          'Urutan kata sifat dan kata benda dalam bahasa Inggris yang benar adalah determiner + opinion + origin/type + noun: "A beautiful tropical bird".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          11,
+          'Which of the following a correct noun phrase?',
+          ['Hot tea', 'Skin white', 'Bag big', 'Chair brown'],
+          'A',
+          'Dalam bahasa Inggris, kata sifat (adjective) diletakkan sebelum kata benda (noun), sehingga "Hot tea" yang benar.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          12,
+          'She is wearing ... in the party.',
+          ['a dress beautiful', 'a beautiful dress', 'beautiful a dress', 'dress a beautiful'],
+          'B',
+          'Susunan noun phrase yang benar adalah article ("a") + adjective ("beautiful") + noun ("dress").',
+          P
+        ),
+        makePg(
+          bigIxId,
+          13,
+          `${cendrawasihText}\n\nChoose the best answer to fill blank number (13)!`,
+          ['The Bird of Garden', 'The Bird of City', 'The Bird of Paradise', 'The Bird of Jungle'],
+          'C',
+          'Burung cenderawasih dikenal secara internasional sebagai "The Bird of Paradise".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          14,
+          `${cendrawasihText}\n\nChoose the best answer to fill blank number (14)!`,
+          ['feathers', 'fur', 'skin', 'scale'],
+          'A',
+          'Burung memiliki bulu yang disebut "feathers" (sedangkan "fur" untuk mamalia berbulu).',
+          P
+        ),
+        makePg(
+          bigIxId,
+          15,
+          `${cendrawasihText}\n\nChoose the best answer to fill blank number (15)!`,
+          ['the longest', 'the shortest', 'the widest', 'the largest'],
+          'D',
+          'Konteks kalimat membandingkan "the smallest one" dengan lawannya yaitu "the largest" (yang terbesar).',
+          P
+        ),
+        makePg(
+          bigIxId,
+          16,
+          `${cendrawasihText}\n\nChoose the best answer to fill blank number (16)!`,
+          ['omnivore', 'herbivore', 'carnivore', 'drugstore'],
+          'A',
+          'Karena memakan buah-buahan dan hewan kecil seperti serangga, burung ini tergolong pemakan segala ("omnivore").',
+          P
+        ),
+        makePg(
+          bigIxId,
+          17,
+          `${cendrawasihText}\n\nChoose the best answer to fill blank number (17)!`,
+          ['protected', 'hunted', 'collected', 'painted'],
+          'B',
+          'Kata "Sadly" menandakan hal negatif, yaitu cenderawasih telah lama diburu ("hunted") karena keindahan bulunya.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          18,
+          'A place where birds lay eggs is a ...',
+          ['shelter', 'ponds', 'home', 'nest'],
+          'D',
+          'Tempat burung bertelur adalah sarang atau "nest".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          19,
+          `${kangarooDialogue}\n\nWhat is the largest Kangaroos species in Australia?`,
+          [
+            'The stronger Kangaroos',
+            'The smaller Kangaroos',
+            'The tree Kangaroos',
+            'The red Kangaroos',
+          ],
+          'D',
+          'Dalam dialog, Basuki menyatakan "especially the red kangaroo, which is the largest species".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          20,
+          `${kangarooDialogue}\n\nCompare Australian Kangaroos and Indonesian tree Kangaroos.`,
+          [
+            'Australian Kangaroos live in groups while Indonesian tree Kangaroos often live alone.',
+            'Australian Kangaroos spend a lot time in trees while Indonesian tree Kangaroos live on open grassland.',
+            'Australian Kangaroos are smaller than Indonesian tree Kangaroos.',
+            'Australian Kangaroos eat leaves and fruits while Indonesian tree Kangaroos eat grass.',
+          ],
+          'A',
+          'Dialog menjelaskan bahwa kanguru Australia hidup berkelompok ("mobs"), sedangkan kanguru pohon Indonesia lebih soliter atau sering hidup menyendiri.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          21,
+          'One of the main threats to animals native of Indonesian wildlife is ...',
+          ['Conservation programs', 'Legal hunting', 'Palm oil plantation', 'Eco-friendly tourism'],
+          'C',
+          'Pembukaan hutan untuk perkebunan kelapa sawit (palm oil plantation) merupakan salah satu ancaman utama hilangnya habitat satwa liar asli Indonesia.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          22,
+          'We ... in the sea and ... volleyball yesterday.',
+          ['swam, played', 'swim, play', 'swam, play', 'swim, played'],
+          'A',
+          'Keterangan waktu "yesterday" menandakan Simple Past Tense, sehingga kedua kata kerja menggunakan bentuk lampau (V2): "swam" dan "played".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          23,
+          `${holidayText}\n\nWhat is the main idea of the text?`,
+          [
+            'The writer describes a school trip.',
+            'The writer tells about a holiday trip.',
+            'The writer explains how to cook local food.',
+            'The writer discusses the importance of culture.',
+          ],
+          'B',
+          'Secara keseluruhan, teks menceritakan pengalaman liburan penulis bersama keluarganya ke Yogyakarta.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          24,
+          `${holidayText}\n\nWhich two famous locations did the family visit on the day after their arrival in Yogyakarta?`,
+          [
+            'Malioboro Street and Prambanan Temple.',
+            'Parangtritis Beach and Prambanan Temple.',
+            'A small village and Prambanan Temple.',
+            'Malioboro Street and Parangtritis Beach.',
+          ],
+          'A',
+          'Paragraf kedua menyebutkan keesokan harinya mereka mengunjungi Jalan Malioboro dan Candi Prambanan.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          25,
+          `${holidayText}\n\nWhat was the writer\'s feeling at the end of the holiday?`,
+          [
+            'Sad but thankful for the experience.',
+            'Angry because the trip was too short.',
+            'Bored with family activities.',
+            'Tired and wanted to stay longer.',
+          ],
+          'A',
+          'Paragraf terakhir berbunyi: "When the holiday ended, I felt a little sad, but also grateful."',
+          P
+        ),
+        makePg(
+          bigIxId,
+          26,
+          `${holidayText}\n\nWhat can we learn from the writer\'s holiday experience?`,
+          [
+            'Family trips are not necessary for students.',
+            'Traveling abroad is more enjoyable than local trips.',
+            'Spending time with family strengthens relationships.',
+            'Visiting cities is more fun than visiting nature.',
+          ],
+          'C',
+          'Penulis belajar betapa pentingnya waktu bersama keluarga ("how important family time is").',
+          P
+        ),
+        makePg(
+          bigIxId,
+          27,
+          `${holidayText}\n\nWhat kind of text is it?`,
+          ['Recount text', 'Report text', 'Descriptive text', 'Narrative text'],
+          'A',
+          'Teks yang menceritakan kembali pengalaman pribadi di masa lampau disebut Recount Text.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          28,
+          'Farah : What were you doing last night?\nDella : I was watching a movie ... my friend called me.',
+          ['While', 'Because', 'When', 'Before'],
+          'C',
+          'Konjungsi "when" digunakan untuk menghubungkan kejadian yang sedang berlangsung (Past Continuous) dengan kejadian singkat yang menyela (Simple Past).',
+          P
+        ),
+        makePg(
+          bigIxId,
+          29,
+          'Vira : I saw you and your mom in the kitchen yesterday.\nLatri : Yes, I was cooking noodles ... my mom was frying eggs.\nVira : That sounds delicious!',
+          ['after', 'before', 'when', 'while'],
+          'D',
+          'Dua aktivitas yang berlangsung bersamaan di masa lampau (Past Continuous + Past Continuous) dihubungkan dengan "while".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          30,
+          `${elephantDialogue}\n\nWhat is the color of most Sumatran elephants?`,
+          ['Dark brown fur', 'Light gray skin', 'Gray-brown color', 'Black striped body'],
+          'B',
+          'Dalam dialog, Marcel mengatakan "its skin is grey and has little hair on it", sesuai dengan opsi "Light gray skin".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          31,
+          `${elephantDialogue}\n\nWhy are Sumatran elephants considered endangered?`,
+          [
+            'Because their habitat is destroyed.',
+            'Because they migrate every season.',
+            'Because they only eat fresh leaves.',
+            'Because they live near other animals.',
+          ],
+          'A',
+          'Nathalie dan Marcel menjelaskan bahwa hutan tempat tinggal gajah banyak ditebang sehingga mereka kehilangan habitatnya.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          32,
+          `${elephantDialogue}\n\nWhich action helps protect Sumatran elephants?`,
+          [
+            'Feeding elephants in the forest',
+            'Visiting elephants during migration.',
+            'Supporting wildlife conservation.',
+            'Watching elephants from far away.',
+          ],
+          'C',
+          'Di akhir dialog, Nathalie menyarankan "We should raise awareness and support conservation programs."',
+          P
+        ),
+        makePg(
+          bigIxId,
+          33,
+          `${elephantDialogue}\n\nWhat is the best idea for a school project to raise awareness about Sumatran elephants?`,
+          [
+            'Drawing elephants in art class only.',
+            'Watching elephant videos at home.',
+            'Reading a story about forest animals.',
+            'Making posters about elephant protection.',
+          ],
+          'D',
+          'Membuat poster tentang perlindungan gajah merupakan proyek sekolah yang efektif untuk meningkatkan kesadaran.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          34,
+          '... you ... any tigers in the forest?',
+          ['did, saw', 'were, see', 'did, see', 'were, saw'],
+          'C',
+          'Kalimat tanya Simple Past Tense menggunakan auxiliary "Did" diikuti kata kerja dasar (V1) "see".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          35,
+          'Which option is NOT a noun phrase?',
+          ['The old bicycle.', 'A black jacket.', 'The long river.', 'Runs very quickly.'],
+          'D',
+          '"Runs very quickly." adalah verb phrase (frasa kata kerja), bukan noun phrase.',
+          P
+        ),
+        makePg(
+          bigIxId,
+          36,
+          'Which noun phrase correctly shows quantity?',
+          ['Three big chairs.', 'Three big chair.', 'Three chair big.', 'Big chairs three.'],
+          'A',
+          'Jumlah lebih dari satu ("Three") diikuti kata sifat ("big") dan kata benda jamak ("chairs"): "Three big chairs."',
+          P
+        ),
+        makePg(
+          bigIxId,
+          37,
+          'The children ... (play) football when the bell rang.',
+          ['was playing', 'were playing', 'is playing', 'are playing'],
+          'B',
+          'Subjek jamak "The children" dalam Past Continuous Tense menggunakan "were playing".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          38,
+          'Yesterday, my family ... to the beach for a short holiday.',
+          ['going', 'goes', 'go', 'went'],
+          'D',
+          'Keterangan waktu lampau "Yesterday" menggunakan kata kerja bentuk ke-2 dari "go", yaitu "went".',
+          P
+        ),
+        makePg(
+          bigIxId,
+          39,
+          'We ... any souvenirs when we visited Bandung last week.',
+          ['hadn\'t bought', 'aren\'t buying', 'didn\'t buy', 'don\'t buy'],
+          'C',
+          'Kalimat negatif Simple Past Tense ("last week") dibentuk dengan "didn\'t + V1" ("didn\'t buy").',
+          P
+        ),
+        makePg(
+          bigIxId,
+          40,
+          'I was taking pictures ... my brother was swimming in the lake.',
+          ['while', 'when', 'before', 'after'],
+          'A',
+          'Kedua klausa menggunakan Past Continuous Tense yang terjadi bersamaan, sehingga konjungsi yang tepat adalah "while".',
+          P
+        ),
+      ];
+    })(),
   };
 }
